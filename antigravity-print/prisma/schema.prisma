@@ -1,0 +1,338 @@
+// This is your Prisma schema file
+// Learn more about it in the docs: https://pris.ly/d/prisma-schema
+
+generator client {
+  provider = "prisma-client-js"
+}
+
+datasource db {
+  provider = "postgresql"
+  url      = env("DATABASE_URL")
+}
+
+enum UserRole {
+  ADMIN
+  CUSTOMER
+}
+
+enum OrderStatus {
+  UPLOADED
+  VERIFIED
+  ACCEPTED
+  PRINTING
+  PRINTED
+  READY_FOR_PICKUP
+  DELIVERED
+  CANCELLED
+  COMPLETED
+}
+
+enum PaymentStatus {
+  PENDING
+  PAID
+  FAILED
+  REFUNDED
+}
+
+enum PaymentMethod {
+  UPI
+  PHONEPE
+  GOOGLEPAY
+  PAYTM
+  RAZORPAY
+  CASH
+}
+
+enum PaperSize {
+  A4
+  A3
+  LETTER
+  LEGAL
+}
+
+enum Orientation {
+  PORTRAIT
+  LANDSCAPE
+}
+
+enum PrintSide {
+  SINGLE
+  DOUBLE
+}
+
+enum PrintColor {
+  COLOR
+  BLACK_AND_WHITE
+}
+
+enum NotificationChannel {
+  EMAIL
+  SMS
+  WHATSAPP
+  IN_APP
+}
+
+enum NotificationStatus {
+  PENDING
+  SENT
+  FAILED
+}
+
+enum SupportTicketStatus {
+  OPEN
+  IN_PROGRESS
+  RESOLVED
+  CLOSED
+}
+
+model User {
+  id                String    @id @default(cuid())
+  firebaseUid       String    @unique
+  email             String?   @unique
+  name              String?
+  phone             String?
+  profilePhoto      String?
+  role              UserRole  @default(CUSTOMER)
+  authProvider      String?   // google, microsoft, apple, phone, email
+  isActive          Boolean   @default(true)
+  registrationDate  DateTime  @default(now())
+  lastLogin         DateTime?
+  createdAt         DateTime  @default(now())
+  updatedAt         DateTime  @updatedAt
+
+  orders            Order[]
+  payments          Payment[]
+  notifications     Notification[]
+  invoices          Invoice[]
+  supportTickets    SupportTicket[]
+  auditLogs         AuditLog[]
+
+  @@index([email])
+  @@index([phone])
+  @@index([firebaseUid])
+}
+
+model Order {
+  id              String        @id @default(cuid())
+  orderNumber     String        @unique @default(cuid())
+  userId          String
+  user            User          @relation(fields: [userId], references: [id], onDelete: Cascade)
+  
+  // File Info
+  fileName        String
+  fileUrl         String        // Secure signed URL
+  fileKey         String        // Storage key
+  fileSize        Int           // in bytes
+  totalPages      Int
+  colorPages      Int           @default(0)
+  bwPages         Int           @default(0)
+  
+  // Print Options
+  paperSize       PaperSize     @default(A4)
+  orientation     Orientation   @default(PORTRAIT)
+  printSide       PrintSide     @default(SINGLE)
+  printColor      PrintColor    @default(BLACK_AND_WHITE)
+  copies          Int           @default(1)
+  binding         Boolean       @default(false)
+  lamination      Boolean       @default(false)
+  paperQuality    String        @default("standard")
+  instructions    String?
+  
+  // Pricing
+  colorPrice      Float         @default(0)
+  bwPrice         Float         @default(0)
+  bindingCost     Float         @default(0)
+  laminationCost  Float         @default(0)
+  subtotal        Float
+  gstRate         Float         @default(0)
+  gstAmount       Float         @default(0)
+  discount        Float         @default(0)
+  totalAmount     Float
+  
+  // Status
+  status          OrderStatus   @default(UPLOADED)
+  paymentStatus   PaymentStatus @default(PENDING)
+  
+  // Admin notes
+  adminNotes      String?
+  rejectionReason String?
+  
+  createdAt       DateTime      @default(now())
+  updatedAt       DateTime      @updatedAt
+  completedAt     DateTime?
+  
+  payments        Payment[]
+  notifications   Notification[]
+  invoice         Invoice?
+  statusHistory   OrderStatusHistory[]
+
+  @@index([userId])
+  @@index([status])
+  @@index([paymentStatus])
+  @@index([createdAt])
+  @@index([orderNumber])
+}
+
+model OrderStatusHistory {
+  id        String      @id @default(cuid())
+  orderId   String
+  order     Order       @relation(fields: [orderId], references: [id], onDelete: Cascade)
+  status    OrderStatus
+  changedBy String      // admin user id or "system"
+  notes     String?
+  createdAt DateTime    @default(now())
+
+  @@index([orderId])
+}
+
+model Payment {
+  id             String        @id @default(cuid())
+  orderId        String
+  order          Order         @relation(fields: [orderId], references: [id], onDelete: Cascade)
+  userId         String
+  user           User          @relation(fields: [userId], references: [id], onDelete: Cascade)
+  
+  amount         Float
+  method         PaymentMethod?
+  status         PaymentStatus @default(PENDING)
+  transactionId  String?       @unique
+  razorpayId     String?
+  upiId          String?
+  
+  paidAt         DateTime?
+  createdAt      DateTime      @default(now())
+  updatedAt      DateTime      @updatedAt
+
+  @@index([orderId])
+  @@index([userId])
+  @@index([status])
+}
+
+model Invoice {
+  id            String    @id @default(cuid())
+  invoiceNumber String    @unique
+  orderId       String    @unique
+  order         Order     @relation(fields: [orderId], references: [id], onDelete: Cascade)
+  userId        String
+  user          User      @relation(fields: [userId], references: [id], onDelete: Cascade)
+  
+  amount        Float
+  gstAmount     Float     @default(0)
+  totalAmount   Float
+  
+  pdfUrl        String?
+  issuedAt      DateTime  @default(now())
+  dueDate       DateTime?
+  
+  createdAt     DateTime  @default(now())
+  updatedAt     DateTime  @updatedAt
+
+  @@index([userId])
+  @@index([orderId])
+}
+
+model Pricing {
+  id              String   @id @default(cuid())
+  name            String   @unique
+  colorPrice      Float    @default(10.0)   // per page
+  bwPrice         Float    @default(2.0)    // per page
+  a3Multiplier    Float    @default(2.0)
+  bindingCost     Float    @default(50.0)
+  laminationCost  Float    @default(20.0)   // per page
+  gstRate         Float    @default(18.0)   // percentage
+  maxFileSize     Int      @default(52428800) // 50MB in bytes
+  isActive        Boolean  @default(true)
+  createdAt       DateTime @default(now())
+  updatedAt       DateTime @updatedAt
+}
+
+model AdminSettings {
+  id               String   @id @default(cuid())
+  businessName     String   @default("Antigravity")
+  businessLogo     String?
+  ownerName        String?
+  phone            String?
+  whatsapp         String?
+  email            String?
+  address          String?
+  googleMapsUrl    String?
+  workingHours     String?
+  pickupAddress    String?
+  razorpayKey      String?
+  upiId            String?
+  enableBinding    Boolean  @default(true)
+  enableLamination Boolean  @default(true)
+  enableGST        Boolean  @default(true)
+  enableDiscount   Boolean  @default(false)
+  maxFileSize      Int      @default(52428800)
+  createdAt        DateTime @default(now())
+  updatedAt        DateTime @updatedAt
+}
+
+model Notification {
+  id        String              @id @default(cuid())
+  userId    String
+  user      User                @relation(fields: [userId], references: [id], onDelete: Cascade)
+  orderId   String?
+  order     Order?              @relation(fields: [orderId], references: [id], onDelete: SetNull)
+  
+  title     String
+  message   String
+  channel   NotificationChannel @default(IN_APP)
+  status    NotificationStatus  @default(PENDING)
+  isRead    Boolean             @default(false)
+  
+  createdAt DateTime            @default(now())
+  sentAt    DateTime?
+
+  @@index([userId])
+  @@index([orderId])
+  @@index([isRead])
+}
+
+model AuditLog {
+  id          String   @id @default(cuid())
+  userId      String?
+  user        User?    @relation(fields: [userId], references: [id], onDelete: SetNull)
+  action      String
+  entity      String
+  entityId    String?
+  oldData     Json?
+  newData     Json?
+  ipAddress   String?
+  userAgent   String?
+  createdAt   DateTime @default(now())
+
+  @@index([userId])
+  @@index([entity])
+  @@index([createdAt])
+}
+
+model OTPLog {
+  id        String   @id @default(cuid())
+  phone     String
+  otp       String
+  isUsed    Boolean  @default(false)
+  expiresAt DateTime
+  createdAt DateTime @default(now())
+
+  @@index([phone])
+}
+
+model SupportTicket {
+  id          String              @id @default(cuid())
+  userId      String
+  user        User                @relation(fields: [userId], references: [id], onDelete: Cascade)
+  
+  subject     String
+  message     String
+  status      SupportTicketStatus @default(OPEN)
+  adminReply  String?
+  
+  createdAt   DateTime            @default(now())
+  updatedAt   DateTime            @updatedAt
+  resolvedAt  DateTime?
+
+  @@index([userId])
+  @@index([status])
+}
