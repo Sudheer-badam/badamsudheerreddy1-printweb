@@ -12,32 +12,32 @@ import { useRouter } from "next/navigation";
 import { useEffect } from "react";
 
 const features = [
-  { icon: Upload,     title: "Easy PDF Upload",          description: "Upload your PDF files securely. Real-time progress tracking and instant confirmation.",    iconBg: "#EEF2FF", iconColor: "#2D63FF" },
-  { icon: Zap,        title: "Instant Cost Calculation",  description: "Auto-pricing based on pages, color, paper size and finishing options — no surprises.",      iconBg: "#FFF7ED", iconColor: "#F39C12" },
-  { icon: Bell,       title: "Real-time Notifications",   description: "SMS, Email & WhatsApp updates at every step — from upload to ready for pickup.",           iconBg: "#F0FDF4", iconColor: "#00C851" },
-  { icon: Shield,     title: "Enterprise Security",       description: "Files encrypted end-to-end. Only you and our admin can access your documents.",             iconBg: "#EEF2FF", iconColor: "#2D63FF" },
-  { icon: CreditCard, title: "Multiple Payments",         description: "UPI, PhonePe, Google Pay, Paytm, Razorpay, or Cash. Instant payment confirmation.",        iconBg: "#FFF7ED", iconColor: "#F39C12" },
-  { icon: Clock,      title: "Live Order Tracking",       description: "Track your print from upload to completion with a beautiful visual status timeline.",       iconBg: "#F0FDF4", iconColor: "#00C851" },
+  { icon: Upload, title: "Easy PDF Upload", description: "Upload your PDF files securely. Real-time progress tracking and instant confirmation.", iconBg: "#EEF2FF", iconColor: "#2D63FF" },
+  { icon: Zap, title: "Instant Cost Calculation", description: "Auto-pricing based on pages, color, paper size and finishing options — no surprises.", iconBg: "#FFF7ED", iconColor: "#F39C12" },
+  { icon: Bell, title: "Real-time Notifications", description: "SMS, Email & WhatsApp updates at every step — from upload to ready for pickup.", iconBg: "#F0FDF4", iconColor: "#00C851" },
+  { icon: Shield, title: "Enterprise Security", description: "Files encrypted end-to-end. Only you and our admin can access your documents.", iconBg: "#EEF2FF", iconColor: "#2D63FF" },
+  { icon: CreditCard, title: "Multiple Payments", description: "UPI, PhonePe, Google Pay, Paytm, Razorpay, or Cash. Instant payment confirmation.", iconBg: "#FFF7ED", iconColor: "#F39C12" },
+  { icon: Clock, title: "Live Order Tracking", description: "Track your print from upload to completion with a beautiful visual status timeline.", iconBg: "#F0FDF4", iconColor: "#00C851" },
 ];
 
 const steps = [
-  { step: "01", title: "Upload PDF",      desc: "Select and upload your PDF file securely in seconds" },
-  { step: "02", title: "Choose Options",  desc: "Pick paper size, color mode, copies & finishing" },
-  { step: "03", title: "Pay Online",      desc: "Pay securely via your preferred payment method" },
+  { step: "01", title: "Upload PDF", desc: "Select and upload your PDF file securely in seconds" },
+  { step: "02", title: "Choose Options", desc: "Pick paper size, color mode, copies & finishing" },
+  { step: "03", title: "Pay Online", desc: "Pay securely via your preferred payment method" },
   { step: "04", title: "Track & Collect", desc: "Get real-time updates and collect your prints" },
 ];
 
 const stats = [
   { label: "Orders Completed", value: "10,000+", color: "#2D63FF" },
-  { label: "Happy Customers",  value: "2,500+",  color: "#00C851" },
-  { label: "Pages Printed",    value: "5M+",     color: "#F39C12" },
-  { label: "Uptime",           value: "99.9%",   color: "#2D63FF" },
+  { label: "Happy Customers", value: "2,500+", color: "#00C851" },
+  { label: "Pages Printed", value: "5M+", color: "#F39C12" },
+  { label: "Uptime", value: "99.9%", color: "#2D63FF" },
 ];
 
 const testimonials = [
-  { name: "Ravi Kumar",    role: "Engineering Student",   text: "Got my project report printed in minutes! The tracking feature is incredible.",   avatar: "R" },
-  { name: "Priya Sharma",  role: "MBA Student",           text: "Super easy to use. Uploaded from my phone and collected prints same day.",         avatar: "P" },
-  { name: "Arjun Reddy",   role: "Research Scholar",      text: "Best printing service in the city. Fast, affordable, and always on time.",         avatar: "A" },
+  { name: "Ravi Kumar", role: "Engineering Student", text: "Got my project report printed in minutes! The tracking feature is incredible.", avatar: "R" },
+  { name: "Priya Sharma", role: "MBA Student", text: "Super easy to use. Uploaded from my phone and collected prints same day.", avatar: "P" },
+  { name: "Arjun Reddy", role: "Research Scholar", text: "Best printing service in the city. Fast, affordable, and always on time.", avatar: "A" },
 ];
 
 export default function HomePage() {
@@ -64,8 +64,8 @@ export default function HomePage() {
               <span className="font-extrabold text-xl" style={{ color: "#0B1D3A" }}>Sudheer Reddy Print</span>
             </div>
             <div className="hidden md:flex items-center gap-8 text-sm font-semibold" style={{ color: "#444B54" }}>
-              <a href="#features"     className="hover:text-[#2D63FF] transition-colors">Features</a>
-              <a href="#videos"       className="hover:text-[#2D63FF] transition-colors">Videos</a>
+              <a href="#features" className="hover:text-[#2D63FF] transition-colors">Features</a>
+              <a href="#videos" className="hover:text-[#2D63FF] transition-colors">Videos</a>
               <a href="#how-it-works" className="hover:text-[#2D63FF] transition-colors">How It Works</a>
               <a href="#testimonials" className="hover:text-[#2D63FF] transition-colors">Reviews</a>
             </div>
@@ -391,7 +391,12 @@ export default function HomePage() {
                 <div className="flex mb-3 gap-0.5">
                   {[...Array(5)].map((_, j) => <Star key={j} className="w-4 h-4 fill-[#F39C12] text-[#F39C12]" />)}
                 </div>
-                <p className="text-base font-medium mb-5" style={{ color: "#444B54", lineHeight: "1.7" }}>"{t.text}"</p>
+                <p
+                  className="text-base font-medium mb-5"
+                  style={{ color: "#444B54", lineHeight: "1.7" }}
+                >
+                  &ldquo;{t.text}&rdquo;
+                </p>
                 <div className="flex items-center gap-3">
                   <div className="w-10 h-10 rounded-full flex items-center justify-center text-sm font-bold text-white"
                     style={{ background: "#2D63FF" }}>{t.avatar}</div>
@@ -485,7 +490,7 @@ export default function HomePage() {
               <div>
                 <div className="text-white font-bold text-sm mb-4">Quick Links</div>
                 <div className="flex flex-col gap-2 text-sm font-medium" style={{ color: "rgba(255,255,255,0.55)" }}>
-                  <a href="#features"     className="hover:text-white transition-colors">Features</a>
+                  <a href="#features" className="hover:text-white transition-colors">Features</a>
                   <a href="#how-it-works" className="hover:text-white transition-colors">How It Works</a>
                   <a href="#testimonials" className="hover:text-white transition-colors">Reviews</a>
                 </div>
@@ -495,7 +500,7 @@ export default function HomePage() {
                 <div className="flex flex-col gap-2 text-sm font-medium" style={{ color: "rgba(255,255,255,0.55)" }}>
                   <a href="/support" className="hover:text-white transition-colors">Support</a>
                   <a href="/privacy" className="hover:text-white transition-colors">Privacy</a>
-                  <a href="/terms"   className="hover:text-white transition-colors">Terms</a>
+                  <a href="/terms" className="hover:text-white transition-colors">Terms</a>
                 </div>
               </div>
             </div>
