@@ -3,9 +3,9 @@
 import { useState, useEffect } from "react";
 import { useRouter, usePathname } from "next/navigation";
 import Link from "next/link";
+import Image from "next/image";
 import { motion, AnimatePresence } from "framer-motion";
 import {
-  Printer,
   LayoutDashboard,
   Upload,
   FileText,
@@ -45,8 +45,11 @@ export default function DashboardLayout({ children }: { children: React.ReactNod
 
   if (loading) {
     return (
-      <div className="min-h-screen mesh-gradient flex items-center justify-center">
-        <div className="w-12 h-12 border-2 border-violet-500 border-t-transparent rounded-full animate-spin" />
+      <div className="min-h-screen flex items-center justify-center" style={{ background: "#f5f7fa" }}>
+        <div
+          className="w-12 h-12 border-[3px] border-t-transparent rounded-full animate-spin"
+          style={{ borderColor: "#2D63FF", borderTopColor: "transparent" }}
+        />
       </div>
     );
   }
@@ -54,7 +57,7 @@ export default function DashboardLayout({ children }: { children: React.ReactNod
   if (!user || userRole === "ADMIN") return null;
 
   return (
-    <div className="min-h-screen mesh-gradient flex">
+    <div className="min-h-screen flex" style={{ background: "#f5f7fa" }}>
       {/* Mobile overlay */}
       <AnimatePresence>
         {sidebarOpen && (
@@ -62,34 +65,40 @@ export default function DashboardLayout({ children }: { children: React.ReactNod
             initial={{ opacity: 0 }}
             animate={{ opacity: 1 }}
             exit={{ opacity: 0 }}
-            className="fixed inset-0 bg-black/60 z-40 lg:hidden"
+            className="fixed inset-0 z-40 lg:hidden"
+            style={{ background: "rgba(11,29,58,0.45)" }}
             onClick={() => setSidebarOpen(false)}
           />
         )}
       </AnimatePresence>
 
-      {/* Sidebar */}
+      {/* ── Sidebar ── */}
       <motion.aside
         initial={false}
         animate={{ x: sidebarOpen ? 0 : -280 }}
-        className="fixed left-0 top-0 bottom-0 w-64 glass-strong border-r border-white/5 z-50 lg:relative lg:translate-x-0 lg:z-auto flex flex-col"
+        className="fixed left-0 top-0 bottom-0 w-64 z-50 lg:relative lg:translate-x-0 lg:z-auto flex flex-col"
+        style={{
+          background: "#ffffff",
+          borderRight: "1px solid #E2E6EF",
+          boxShadow: "2px 0 16px rgba(0,0,0,0.04)",
+        }}
         transition={{ type: "spring", damping: 30, stiffness: 300 }}
       >
         {/* Logo */}
-        <div className="p-6 border-b border-white/5">
+        <div className="p-6" style={{ borderBottom: "1px solid #E2E6EF" }}>
           <div className="flex items-center gap-3">
-            <div className="w-9 h-9 rounded-xl gradient-primary flex items-center justify-center glow-purple">
-              <Printer className="w-5 h-5 text-white" />
+            <div className="w-10 h-10 rounded-full overflow-hidden flex-shrink-0" style={{ border: "2.5px solid #2D63FF", boxShadow: "0 2px 8px rgba(45,99,255,0.2)" }}>
+              <Image src="/BADAMSUDHEERREDDY.jpg" alt="Sudheer Reddy Print" width={40} height={40} className="w-full h-full object-cover" />
             </div>
             <div>
-              <div className="font-bold text-gradient">Antigravity</div>
-              <div className="text-xs text-white/30">Customer Portal</div>
+              <div className="font-bold text-sm" style={{ color: "#0B1D3A" }}>Sudheer Reddy Print</div>
+              <div className="text-xs font-medium" style={{ color: "#6B7280" }}>Customer Portal</div>
             </div>
           </div>
         </div>
 
         {/* Nav */}
-        <nav className="flex-1 p-4 space-y-1">
+        <nav className="flex-1 p-4 space-y-1 overflow-y-auto">
           {navItems.map((item) => {
             const isActive = pathname === item.href;
             return (
@@ -97,36 +106,45 @@ export default function DashboardLayout({ children }: { children: React.ReactNod
                 key={item.href}
                 href={item.href}
                 onClick={() => setSidebarOpen(false)}
-                className={`flex items-center gap-3 px-4 py-3 rounded-xl text-sm font-medium transition-all group ${
-                  isActive
-                    ? "bg-violet-600/20 text-violet-300 border border-violet-500/20"
-                    : "text-white/50 hover:text-white hover:bg-white/5"
+                className={`flex items-center gap-3 px-4 py-3 text-sm font-medium transition-all group ${
+                  isActive ? "sidebar-item-active" : "sidebar-item"
                 }`}
               >
-                <item.icon className={`w-4 h-4 ${isActive ? "text-violet-400" : "group-hover:text-white"}`} />
+                <item.icon
+                  className="w-4 h-4 flex-shrink-0"
+                  style={{ color: isActive ? "#2D63FF" : "#6B7280" }}
+                />
                 {item.label}
-                {isActive && <ChevronRight className="w-3.5 h-3.5 ml-auto text-violet-400" />}
+                {isActive && <ChevronRight className="w-3.5 h-3.5 ml-auto" style={{ color: "#2D63FF" }} />}
               </Link>
             );
           })}
         </nav>
 
         {/* User + Logout */}
-        <div className="p-4 border-t border-white/5">
+        <div className="p-4" style={{ borderTop: "1px solid #E2E6EF" }}>
           <div className="flex items-center gap-3 mb-3 px-2">
-            <div className="w-8 h-8 rounded-full bg-violet-600/20 border border-violet-500/20 flex items-center justify-center text-sm font-bold text-violet-300">
+            <div
+              className="w-8 h-8 rounded-full flex items-center justify-center text-sm font-bold text-white"
+              style={{ background: "#2D63FF" }}
+            >
               {user.displayName?.charAt(0) || user.email?.charAt(0) || "U"}
             </div>
             <div className="flex-1 min-w-0">
-              <div className="text-sm font-medium text-white truncate">
+              <div className="text-sm font-semibold truncate" style={{ color: "#0B1D3A" }}>
                 {user.displayName || "User"}
               </div>
-              <div className="text-xs text-white/30 truncate">{user.email || user.phoneNumber}</div>
+              <div className="text-xs truncate" style={{ color: "#6B7280" }}>
+                {user.email || user.phoneNumber}
+              </div>
             </div>
           </div>
           <button
             onClick={logout}
-            className="w-full flex items-center gap-3 px-4 py-2.5 rounded-xl text-sm text-red-400 hover:bg-red-500/10 transition-colors"
+            className="w-full flex items-center gap-3 px-4 py-2.5 rounded-xl text-sm font-medium transition-colors"
+            style={{ color: "#ef4444" }}
+            onMouseEnter={(e) => (e.currentTarget.style.background = "#fef2f2")}
+            onMouseLeave={(e) => (e.currentTarget.style.background = "transparent")}
           >
             <LogOut className="w-4 h-4" />
             Sign Out
@@ -134,12 +152,20 @@ export default function DashboardLayout({ children }: { children: React.ReactNod
         </div>
       </motion.aside>
 
-      {/* Main content */}
+      {/* ── Main content ── */}
       <div className="flex-1 flex flex-col min-w-0">
         {/* Topbar */}
-        <header className="h-16 glass border-b border-white/5 flex items-center gap-4 px-4 lg:px-8 sticky top-0 z-30">
+        <header
+          className="h-16 flex items-center gap-4 px-4 lg:px-8 sticky top-0 z-30"
+          style={{
+            background: "rgba(255,255,255,0.95)",
+            borderBottom: "1px solid #E2E6EF",
+            backdropFilter: "blur(12px)",
+          }}
+        >
           <button
-            className="lg:hidden p-2 text-white/60 hover:text-white"
+            className="lg:hidden p-2 rounded-lg transition-colors"
+            style={{ color: "#444B54" }}
             onClick={() => setSidebarOpen(!sidebarOpen)}
           >
             {sidebarOpen ? <X className="w-5 h-5" /> : <Menu className="w-5 h-5" />}
@@ -147,12 +173,16 @@ export default function DashboardLayout({ children }: { children: React.ReactNod
           <div className="flex-1" />
           <Link
             href="/dashboard/notifications"
-            className="w-9 h-9 rounded-xl glass border border-white/10 flex items-center justify-center text-white/60 hover:text-white transition-colors"
+            className="w-9 h-9 rounded-xl flex items-center justify-center transition-colors hover:bg-blue-50"
+            style={{ color: "#6B7280", border: "1px solid #E2E6EF", background: "#ffffff" }}
           >
             <Bell className="w-4 h-4" />
           </Link>
           <Link href="/dashboard/profile">
-            <div className="w-9 h-9 rounded-xl bg-violet-600/20 border border-violet-500/20 flex items-center justify-center text-sm font-bold text-violet-300 cursor-pointer">
+            <div
+              className="w-9 h-9 rounded-full flex items-center justify-center text-sm font-bold text-white cursor-pointer"
+              style={{ background: "#2D63FF" }}
+            >
               {user.displayName?.charAt(0) || user.email?.charAt(0) || "U"}
             </div>
           </Link>

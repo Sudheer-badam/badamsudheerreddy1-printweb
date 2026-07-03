@@ -12,35 +12,35 @@ const inter = Inter({
 
 export const metadata: Metadata = {
   title: {
-    default: "Antigravity - Smart Online Printing Management",
-    template: "%s | Antigravity",
+    default: "Sudheer Reddy Print - Smart Online Printing Management",
+    template: "%s | Sudheer Reddy Print",
   },
   description:
-    "Professional online printing management system. Upload PDFs, track orders, manage payments, and get real-time status updates.",
+    "Sudheer Reddy Print — Professional online printing management. Upload PDFs, track orders, manage payments, and get real-time status updates.",
   keywords: [
     "printing service",
     "online printing",
     "PDF printing",
     "print management",
-    "Antigravity",
+    "Sudheer Reddy Print",
   ],
-  authors: [{ name: "Antigravity" }],
-  creator: "Antigravity",
+  authors: [{ name: "Sudheer Reddy Print" }],
+  creator: "Sudheer Reddy Print",
   robots: "index, follow",
   openGraph: {
     type: "website",
     locale: "en_IN",
-    title: "Antigravity - Smart Online Printing Management",
+    title: "Sudheer Reddy Print - Smart Online Printing Management",
     description:
       "Professional online printing management system. Upload PDFs, track orders, manage payments.",
-    siteName: "Antigravity",
+    siteName: "Sudheer Reddy Print",
   },
 };
 
 export const viewport: Viewport = {
   themeColor: [
-    { media: "(prefers-color-scheme: light)", color: "#ffffff" },
-    { media: "(prefers-color-scheme: dark)", color: "#0a0a0a" },
+    { media: "(prefers-color-scheme: light)", color: "#2D63FF" },
+    { media: "(prefers-color-scheme: dark)", color: "#0B1D3A" },
   ],
   width: "device-width",
   initialScale: 1,
@@ -56,22 +56,23 @@ export default function RootLayout({
       <body className={`${inter.variable} font-sans antialiased`}>
         <ThemeProvider
           attribute="class"
-          defaultTheme="dark"
-          enableSystem
+          defaultTheme="light"
+          enableSystem={false}
           disableTransitionOnChange
         >
           <AuthProvider>
             {children}
             <Toaster
               position="top-right"
-              theme="dark"
+              theme="light"
               richColors
               closeButton
               toastOptions={{
                 style: {
-                  background: "rgba(15, 15, 25, 0.95)",
-                  border: "1px solid rgba(255,255,255,0.1)",
-                  backdropFilter: "blur(20px)",
+                  background: "#ffffff",
+                  border: "1px solid #E2E6EF",
+                  color: "#0B1D3A",
+                  boxShadow: "0 4px 20px rgba(0,0,0,0.08)",
                 },
               }}
             />
