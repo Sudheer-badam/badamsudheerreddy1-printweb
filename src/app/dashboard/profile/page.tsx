@@ -17,7 +17,7 @@ import { formatDate } from "@/lib/utils";
 import { toast } from "sonner";
 
 export default function ProfilePage() {
-  const { user } = useAuth();
+  const { user, logout } = useAuth();
   const [profile, setProfile] = useState({
     name: "",
     phone: "",
@@ -209,6 +209,25 @@ export default function ProfilePage() {
             value={getProviderLabel(profile.authProvider)}
           />
         </div>
+      </motion.div>
+
+      {/* Danger Zone */}
+      <motion.div
+        initial={{ opacity: 0, y: 20 }}
+        animate={{ opacity: 1, y: 0 }}
+        transition={{ delay: 0.3 }}
+        className="glass rounded-3xl p-6 border border-red-500/20 bg-red-500/5"
+      >
+        <h3 className="font-bold text-red-600 mb-2">Account Actions</h3>
+        <p className="text-gray-500 text-sm mb-4">
+          You can safely sign out of your account here.
+        </p>
+        <button
+          onClick={logout}
+          className="flex items-center gap-2 px-6 py-2.5 rounded-xl bg-red-50 text-red-600 text-sm font-semibold hover:bg-red-100 transition-colors border border-red-200"
+        >
+          Sign Out
+        </button>
       </motion.div>
     </div>
   );
