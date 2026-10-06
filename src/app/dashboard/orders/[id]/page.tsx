@@ -598,7 +598,6 @@ export default function OrderDetailPage() {
                   <Smartphone className="w-5 h-5" />
                   UPI Payment (Auto-Fetch)
                 </button>
-                </button>
               </div>
 
               <div className="mt-auto pt-10 flex items-center gap-2 text-xs text-gray-400">
