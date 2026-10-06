@@ -36,10 +36,28 @@ interface FileAnalysis {
 }
 
 const PAPER_SIZES = ["A4", "A3", "LETTER", "LEGAL"];
-const ORIENTATIONS = ["PORTRAIT", "LANDSCAPE"];
-const PRINT_SIDES = ["SINGLE", "DOUBLE"];
-const PRINT_COLORS = ["BLACK_AND_WHITE", "COLOR"];
 const PAPER_QUALITIES = ["standard", "premium", "glossy"];
+
+const getPrintablePageCount = (rangeStr: string, totalPages: number): number => {
+  if (!rangeStr.trim()) return 0;
+  const parts = rangeStr.split(',');
+  let count = 0;
+  for (const part of parts) {
+    const p = part.trim();
+    if (p.includes('-')) {
+      const [start, end] = p.split('-').map(Number);
+      if (!isNaN(start) && !isNaN(end) && start <= end && start >= 1 && end <= totalPages) {
+        count += (end - start + 1);
+      }
+    } else {
+      const pageNum = Number(p);
+      if (!isNaN(pageNum) && pageNum >= 1 && pageNum <= totalPages) {
+        count += 1;
+      }
+    }
+  }
+  return count;
+};
 
 export default function UploadPage() {
   const { user } = useAuth();
@@ -64,14 +82,18 @@ export default function UploadPage() {
   }, [file]);
 
   const [options, setOptions] = useState({
-    paperSize: "A4",
-    orientation: "PORTRAIT",
-    printSide: "SINGLE",
-    printColor: "BLACK_AND_WHITE",
     copies: 1,
+    collate: true,
+    pagesToPrint: "ALL",
+    customPageRange: "",
+    printColor: "BLACK_AND_WHITE",
+    pageSizing: "FIT",
+    printSide: "SINGLE",
+    orientation: "AUTO",
+    paperSize: "A4",
+    paperQuality: "standard",
     binding: false,
     lamination: false,
-    paperQuality: "standard",
     instructions: "",
   });
 
@@ -123,26 +145,39 @@ export default function UploadPage() {
     if (!pricing || !fileAnalysis) return null;
 
     const { colorPages, bwPages, totalPages } = fileAnalysis;
-    const { copies, binding, lamination, paperSize, printColor } = options;
+    const { copies, binding, lamination, paperSize, printColor, pagesToPrint, customPageRange } = options;
     const sizeMultiplier = paperSize === "A3" ? pricing.a3Multiplier : 1;
+
+    const pagesToCharge = pagesToPrint === "ALL" 
+      ? totalPages 
+      : getPrintablePageCount(customPageRange, totalPages);
+      
+    if (pagesToCharge === 0) return null;
+
+    const ratio = pagesToCharge / totalPages;
+    const estimatedColorPages = Math.round(colorPages * ratio);
+    const estimatedBwPages = pagesToCharge - estimatedColorPages;
 
     let colorCost = 0;
     let bwCost = 0;
 
     if (printColor === "COLOR") {
-      colorCost = colorPages * pricing.colorPrice * sizeMultiplier * copies;
-      bwCost = bwPages * pricing.bwPrice * sizeMultiplier * copies;
+      colorCost = estimatedColorPages * pricing.colorPrice * sizeMultiplier * copies;
+      bwCost = estimatedBwPages * pricing.bwPrice * sizeMultiplier * copies;
     } else {
-      bwCost = totalPages * pricing.bwPrice * sizeMultiplier * copies;
+      bwCost = pagesToCharge * pricing.bwPrice * sizeMultiplier * copies;
     }
 
     const bindingCost = binding ? pricing.bindingCost : 0;
-    const laminationCost = lamination ? totalPages * pricing.laminationCost * copies : 0;
+    const laminationCost = lamination ? pagesToCharge * pricing.laminationCost * copies : 0;
     const subtotal = colorCost + bwCost + bindingCost + laminationCost;
     const gstAmount = (subtotal * pricing.gstRate) / 100;
     const total = subtotal + gstAmount;
 
     return {
+      pagesToCharge,
+      estimatedColorPages,
+      estimatedBwPages,
       colorCost,
       bwCost,
       bindingCost,
@@ -334,40 +369,87 @@ export default function UploadPage() {
           <div className="glass rounded-3xl p-6 border border-gray-200 space-y-5">
             <h3 className="font-bold text-[#0B1D3A]">Print Options</h3>
 
-            <div className="grid grid-cols-2 sm:grid-cols-3 gap-4">
+            <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
+              <SelectField
+                label="Pages to Print"
+                value={options.pagesToPrint}
+                onChange={(v) => setOptions({ ...options, pagesToPrint: v })}
+                options={[
+                  {value:"ALL", label:"All"}, 
+                  {value:"CUSTOM", label:"Custom Range"}
+                ]}
+              />
+              
+              {options.pagesToPrint === "CUSTOM" && (
+                <div>
+                  <label className="text-xs text-gray-500 mb-2 block">Page Range</label>
+                  <input
+                    type="text"
+                    value={options.customPageRange}
+                    onChange={(e) => setOptions({ ...options, customPageRange: e.target.value })}
+                    placeholder="e.g. 1-5, 8, 11-13"
+                    className="w-full px-3 py-2.5 bg-white border border-gray-300 rounded-xl text-[#0B1D3A] text-sm focus:outline-none focus:border-violet-500"
+                  />
+                </div>
+              )}
+
+              <SelectField
+                label="Page Sizing & Handling"
+                value={options.pageSizing}
+                onChange={(v) => setOptions({ ...options, pageSizing: v })}
+                options={[
+                  {value:"FIT", label:"Fit"},
+                  {value:"ACTUAL_SIZE", label:"Actual Size"},
+                  {value:"SHRINK", label:"Shrink oversized pages"}
+                ]}
+              />
+
+              <SelectField
+                label="Print on both sides of paper"
+                value={options.printSide}
+                onChange={(v) => setOptions({ ...options, printSide: v })}
+                options={[
+                  {value:"SINGLE", label:"None (Single Sided)"},
+                  {value:"DOUBLE_LONG_EDGE", label:"Flip on long edge"},
+                  {value:"DOUBLE_SHORT_EDGE", label:"Flip on short edge"}
+                ]}
+              />
+
+              <SelectField
+                label="Orientation"
+                value={options.orientation}
+                onChange={(v) => setOptions({ ...options, orientation: v })}
+                options={[
+                  {value:"AUTO", label:"Auto portrait/landscape"},
+                  {value:"PORTRAIT", label:"Portrait"},
+                  {value:"LANDSCAPE", label:"Landscape"}
+                ]}
+              />
+
+              <SelectField
+                label="Color/Grayscale"
+                value={options.printColor}
+                onChange={(v) => setOptions({ ...options, printColor: v })}
+                options={[
+                  { value: "BLACK_AND_WHITE", label: "Black & White" },
+                  { value: "COLOR", label: "Color" },
+                ]}
+              />
+
               <SelectField
                 label="Paper Size"
                 value={options.paperSize}
                 onChange={(v) => setOptions({ ...options, paperSize: v })}
                 options={PAPER_SIZES}
               />
-              <SelectField
-                label="Orientation"
-                value={options.orientation}
-                onChange={(v) => setOptions({ ...options, orientation: v })}
-                options={ORIENTATIONS}
-              />
-              <SelectField
-                label="Print Side"
-                value={options.printSide}
-                onChange={(v) => setOptions({ ...options, printSide: v })}
-                options={PRINT_SIDES.map((s) => ({ value: s, label: s === "SINGLE" ? "Single Side" : "Double Side" }))}
-              />
-              <SelectField
-                label="Color Mode"
-                value={options.printColor}
-                onChange={(v) => setOptions({ ...options, printColor: v })}
-                options={[
-                  { value: "BLACK_AND_WHITE", label: "Black & White" },
-                  { value: "COLOR", label: "Full Color" },
-                ]}
-              />
+
               <SelectField
                 label="Paper Quality"
                 value={options.paperQuality}
                 onChange={(v) => setOptions({ ...options, paperQuality: v })}
                 options={PAPER_QUALITIES.map((q) => ({ value: q, label: q.charAt(0).toUpperCase() + q.slice(1) }))}
               />
+
               <div>
                 <label className="text-xs text-gray-500 mb-2 block">Copies</label>
                 <div className="flex items-center gap-2">
@@ -377,13 +459,25 @@ export default function UploadPage() {
                   >
                     -
                   </button>
-                  <span className="flex-1 text-center font-bold text-[#0B1D3A]">{options.copies}</span>
+                  <span className="w-8 text-center font-bold text-[#0B1D3A]">{options.copies}</span>
                   <button
                     onClick={() => setOptions({ ...options, copies: options.copies + 1 })}
                     className="w-9 h-9 rounded-lg bg-white border border-gray-300 text-[#0B1D3A] hover:bg-gray-100 flex items-center justify-center"
                   >
                     +
                   </button>
+                  
+                  {options.copies > 1 && (
+                    <label className="flex items-center gap-2 ml-3 cursor-pointer">
+                      <input 
+                        type="checkbox" 
+                        checked={options.collate} 
+                        onChange={(e) => setOptions({...options, collate: e.target.checked})}
+                        className="rounded border-gray-300 text-violet-600 focus:ring-violet-500 w-4 h-4 cursor-pointer"
+                      />
+                      <span className="text-sm text-[#0B1D3A]">Collate</span>
+                    </label>
+                  )}
                 </div>
               </div>
             </div>
@@ -433,9 +527,9 @@ export default function UploadPage() {
               </div>
             ) : cost ? (
               <div className="space-y-3">
-                <CostRow label={`B&W Pages (${fileAnalysis.bwPages} × ${options.copies} copies)`} value={cost.bwCost} />
+                <CostRow label={`B&W Pages (${cost.estimatedBwPages} × ${options.copies} copies)`} value={cost.bwCost} />
                 {options.printColor === "COLOR" && cost.colorCost > 0 && (
-                  <CostRow label={`Color Pages (${fileAnalysis.colorPages} × ${options.copies} copies)`} value={cost.colorCost} />
+                  <CostRow label={`Color Pages (${cost.estimatedColorPages} × ${options.copies} copies)`} value={cost.colorCost} />
                 )}
                 {options.binding && <CostRow label="Binding" value={cost.bindingCost} />}
                 {options.lamination && <CostRow label="Lamination" value={cost.laminationCost} />}
