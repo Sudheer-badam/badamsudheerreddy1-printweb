@@ -496,16 +496,6 @@ export default function OrderDetailPage() {
                   <Smartphone className="w-5 h-5" />
                   UPI Payment (Auto-Fetch)
                 </button>
-                <button
-                  onClick={() => { setPaymentMethod("RAZORPAY"); handleRazorpay(); }}
-                  className={`w-full flex items-center gap-3 p-3 rounded-xl transition-all ${
-                    paymentMethod === "RAZORPAY"
-                      ? "bg-violet-100 text-violet-700 font-semibold border-violet-200 border"
-                      : "text-gray-600 hover:bg-gray-100 border border-transparent"
-                  }`}
-                >
-                  <CreditCard className="w-5 h-5" />
-                  Cards & Net Banking
                 </button>
               </div>
 
