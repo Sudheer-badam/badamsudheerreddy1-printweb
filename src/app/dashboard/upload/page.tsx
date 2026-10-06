@@ -239,12 +239,20 @@ export default function UploadPage() {
             setUploadProgress(progress);
           },
           (error) => {
-            console.error("Upload failed", error);
-            reject(error);
+            console.error("Firebase Upload failed:", error);
+            if (error.code === 'storage/unauthorized') {
+              reject(new Error("Storage permission denied. Please check Firebase rules."));
+            } else {
+              reject(error);
+            }
           },
           async () => {
-            downloadURL = await getDownloadURL(uploadTask.snapshot.ref);
-            resolve();
+            try {
+              downloadURL = await getDownloadURL(uploadTask.snapshot.ref);
+              resolve();
+            } catch (err) {
+              reject(err);
+            }
           }
         );
       });
@@ -302,8 +310,8 @@ export default function UploadPage() {
       } else {
         throw new Error("Failed to create order");
       }
-    } catch (error) {
-      toast.error("Failed to submit order. Please try again.");
+    } catch (error: any) {
+      toast.error(error.message || "Failed to submit order. Please try again.");
       console.error(error);
     } finally {
       setUploading(false);
@@ -389,12 +397,18 @@ export default function UploadPage() {
                   <p className="text-gray-500 font-medium">Analyzing PDF...</p>
                 </div>
               ) : fileUrl ? (
-                <div className="w-full h-[500px] rounded-2xl overflow-hidden border border-gray-200 bg-gray-50">
-                  <iframe 
-                    src={`${fileUrl}#view=FitH`} 
+                <div className="w-full h-[500px] rounded-2xl overflow-hidden border border-gray-200 bg-gray-50 flex items-center justify-center">
+                  <object 
+                    data={`${fileUrl}#view=FitH`} 
+                    type="application/pdf"
                     className="w-full h-full" 
-                    title="PDF Preview"
-                  />
+                  >
+                    <div className="flex flex-col items-center justify-center text-gray-500 space-y-2">
+                      <FileText className="w-12 h-12 text-gray-300" />
+                      <p>Preview not available in this browser.</p>
+                      <a href={fileUrl} target="_blank" rel="noopener noreferrer" className="text-violet-600 hover:underline">Click here to open PDF</a>
+                    </div>
+                  </object>
                 </div>
               ) : null}
             </div>
