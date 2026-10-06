@@ -18,8 +18,7 @@ import { useAuth } from "@/contexts/AuthContext";
 import { useRouter } from "next/navigation";
 import { toast } from "sonner";
 import { formatCurrency, formatFileSize } from "@/lib/utils";
-import { storage } from "@/lib/firebase";
-import { ref, uploadBytes, getDownloadURL } from "firebase/storage";
+import { upload } from '@vercel/blob/client';
 
 interface Pricing {
   colorPrice: number;
@@ -227,34 +226,28 @@ export default function UploadPage() {
       let downloadURL = "";
       const storageKey = `orders/${user.uid}/${Date.now()}-${file.name}`;
 
-      // Upload to Firebase Storage
-      const storageRef = ref(storage, storageKey);
+      // Upload to Vercel Blob
+      toast.loading("Uploading to secure storage...", { id: "upload-toast" });
+      setUploadProgress(10);
       
-      // Simulate progress for UI since uploadBytes doesn't have on-progress
-      setUploadProgress(30);
-
       try {
-        toast.loading("Uploading to secure storage...", { id: "upload-toast" });
+        const newBlob = await upload(file.name, file, {
+          access: 'public',
+          handleUploadUrl: '/api/upload',
+          onUploadProgress: (progressEvent) => {
+            if (progressEvent.percentage) {
+              setUploadProgress(progressEvent.percentage);
+            }
+          }
+        });
         
-        const uploadPromise = uploadBytes(storageRef, file);
-        const timeoutPromise = new Promise((_, reject) => 
-          setTimeout(() => reject(new Error("Firebase upload timed out. This is usually caused by missing CORS configuration in your Firebase Storage bucket.")), 15000)
-        );
-        
-        const snapshot = await Promise.race([uploadPromise, timeoutPromise]) as any;
-        
-        setUploadProgress(80);
-        downloadURL = await getDownloadURL(snapshot.ref);
+        downloadURL = newBlob.url;
         setUploadProgress(100);
         toast.loading("Syncing authentication...", { id: "upload-toast" });
       } catch (error: any) {
         toast.dismiss("upload-toast");
-        console.error("Firebase Upload failed:", error);
-        if (error.code === 'storage/unauthorized') {
-          throw new Error("Storage permission denied. Please check Firebase rules.");
-        } else {
-          throw new Error(error.message || "File upload failed.");
-        }
+        console.error("Vercel Blob Upload failed:", error);
+        throw new Error(error.message || "File upload failed.");
       }
 
       const idToken = await user.getIdToken();
