@@ -51,6 +51,17 @@ export default function UploadPage() {
   const [uploadProgress, setUploadProgress] = useState(0);
   const [analyzing, setAnalyzing] = useState(false);
   const [submitted, setSubmitted] = useState(false);
+  const [fileUrl, setFileUrl] = useState<string | null>(null);
+
+  useEffect(() => {
+    if (file) {
+      const url = URL.createObjectURL(file);
+      setFileUrl(url);
+      return () => URL.revokeObjectURL(url);
+    } else {
+      setFileUrl(null);
+    }
+  }, [file]);
 
   const [options, setOptions] = useState({
     paperSize: "A4",
@@ -236,31 +247,14 @@ export default function UploadPage() {
         {/* Left: Upload + Options */}
         <div className="xl:col-span-2 space-y-6">
           {/* Drop Zone */}
-          <div
-            {...getRootProps()}
-            className={`upload-zone rounded-3xl p-10 text-center cursor-pointer transition-all ${
-              isDragActive ? "drag-over" : ""
-            } ${file ? "border-emerald-500/40 bg-emerald-500/5" : ""}`}
-          >
-            <input {...getInputProps()} />
-            {analyzing ? (
-              <div className="space-y-3">
-                <Loader2 className="w-12 h-12 text-violet-400 mx-auto animate-spin" />
-                <p className="text-gray-600">Analyzing PDF...</p>
-              </div>
-            ) : file ? (
-              <div className="space-y-3">
-                <CheckCircle className="w-12 h-12 text-emerald-400 mx-auto" />
-                <div className="font-medium text-[#0B1D3A]">{file.name}</div>
-                <div className="text-sm text-gray-500">{formatFileSize(file.size)}</div>
-                <button
-                  onClick={(e) => { e.stopPropagation(); setFile(null); setFileAnalysis(null); }}
-                  className="inline-flex items-center gap-1.5 text-sm text-red-400 hover:text-red-300"
-                >
-                  <X className="w-4 h-4" /> Remove
-                </button>
-              </div>
-            ) : (
+          {!file && (
+            <div
+              {...getRootProps()}
+              className={`upload-zone rounded-3xl p-10 text-center cursor-pointer transition-all ${
+                isDragActive ? "drag-over" : ""
+              }`}
+            >
+              <input {...getInputProps()} />
               <div className="space-y-3">
                 <Upload className="w-12 h-12 text-gray-400 mx-auto" />
                 <div>
@@ -272,8 +266,47 @@ export default function UploadPage() {
                   </p>
                 </div>
               </div>
-            )}
-          </div>
+            </div>
+          )}
+
+          {/* File Preview */}
+          {file && (
+            <div className="glass rounded-3xl p-4 border border-gray-200 space-y-4">
+              <div className="flex items-center justify-between px-2">
+                <div className="flex items-center gap-3">
+                  <div className="w-10 h-10 rounded-xl bg-emerald-500/10 flex items-center justify-center">
+                    <CheckCircle className="w-5 h-5 text-emerald-600" />
+                  </div>
+                  <div>
+                    <div className="font-semibold text-[#0B1D3A] line-clamp-1">{file.name}</div>
+                    <div className="text-xs text-gray-500">{formatFileSize(file.size)}</div>
+                  </div>
+                </div>
+                <button
+                  onClick={() => { setFile(null); setFileAnalysis(null); }}
+                  className="p-2 rounded-xl text-red-500 hover:bg-red-50 transition-colors"
+                  title="Remove File"
+                >
+                  <X className="w-5 h-5" />
+                </button>
+              </div>
+
+              {analyzing ? (
+                <div className="w-full h-[500px] rounded-2xl bg-gray-50 border border-gray-200 flex flex-col items-center justify-center space-y-3">
+                  <Loader2 className="w-10 h-10 text-violet-400 animate-spin" />
+                  <p className="text-gray-500 font-medium">Analyzing PDF...</p>
+                </div>
+              ) : fileUrl ? (
+                <div className="w-full h-[500px] rounded-2xl overflow-hidden border border-gray-200 bg-gray-50">
+                  <iframe 
+                    src={`${fileUrl}#view=FitH`} 
+                    className="w-full h-full" 
+                    title="PDF Preview"
+                  />
+                </div>
+              ) : null}
+            </div>
+          )}
 
           {/* File Analysis */}
           <AnimatePresence>
