@@ -92,7 +92,7 @@ export default function AdminLayout({ children }: { children: React.ReactNode })
               <Image src="/BADAMSUDHEERREDDY.jpg" alt="Sudheer Reddy Print" width={40} height={40} className="w-full h-full object-cover" />
             </div>
             <div>
-              <div className="font-bold text-white text-sm">Sudheer Reddy Print</div>
+              <div className="font-bold text-[#0B1D3A] text-sm">Sudheer Reddy Print</div>
               <div className="flex items-center gap-1.5 text-xs font-medium" style={{ color: "#F39C12" }}>
                 <Shield className="w-3 h-3" />
                 Admin Panel
@@ -144,13 +144,13 @@ export default function AdminLayout({ children }: { children: React.ReactNode })
         <div className="p-4" style={{ borderTop: "1px solid rgba(255,255,255,0.08)" }}>
           <div className="flex items-center gap-3 mb-3 px-2">
             <div
-              className="w-8 h-8 rounded-full flex items-center justify-center text-sm font-bold text-white"
+              className="w-8 h-8 rounded-full flex items-center justify-center text-sm font-bold text-[#0B1D3A]"
               style={{ background: "#F39C12" }}
             >
               A
             </div>
             <div className="flex-1 min-w-0">
-              <div className="text-sm font-semibold text-white">Admin</div>
+              <div className="text-sm font-semibold text-[#0B1D3A]">Admin</div>
               <div className="text-xs truncate" style={{ color: "rgba(255,255,255,0.4)" }}>
                 {user.email}
               </div>

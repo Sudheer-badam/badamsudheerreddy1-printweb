@@ -184,8 +184,8 @@ export default function AdminDashboard() {
     <div className="space-y-8">
       {/* Header */}
       <div>
-        <h1 className="text-2xl font-bold text-white">Admin Dashboard</h1>
-        <p className="text-white/40 mt-1">Antigravity Printing Management Overview</p>
+        <h1 className="text-2xl font-bold text-[#0B1D3A]">Admin Dashboard</h1>
+        <p className="text-gray-500 mt-1">Antigravity Printing Management Overview</p>
       </div>
 
       {/* Stats Grid */}
@@ -196,11 +196,11 @@ export default function AdminDashboard() {
             initial={{ opacity: 0, y: 20 }}
             animate={{ opacity: 1, y: 0 }}
             transition={{ delay: i * 0.07 }}
-            className="glass rounded-2xl p-5 border border-white/5 hover-card"
+            className="glass rounded-2xl p-5 border border-gray-200 hover-card"
           >
             <div className="flex items-center justify-between mb-3">
               <div className={`w-10 h-10 rounded-xl bg-gradient-to-br ${card.color} flex items-center justify-center`}>
-                <card.icon className="w-5 h-5 text-white" />
+                <card.icon className="w-5 h-5 text-[#0B1D3A]" />
               </div>
               {card.trend && (
                 <div className="flex items-center gap-1 text-xs text-emerald-400">
@@ -209,8 +209,8 @@ export default function AdminDashboard() {
                 </div>
               )}
             </div>
-            <div className="text-xl font-bold text-white">{card.value}</div>
-            <div className="text-xs text-white/40 mt-1">{card.label}</div>
+            <div className="text-xl font-bold text-[#0B1D3A]">{card.value}</div>
+            <div className="text-xs text-gray-500 mt-1">{card.label}</div>
           </motion.div>
         ))}
       </div>
@@ -218,10 +218,10 @@ export default function AdminDashboard() {
       {/* Charts */}
       <div className="grid grid-cols-1 lg:grid-cols-3 gap-6">
         {/* Revenue Chart */}
-        <div className="lg:col-span-2 glass rounded-3xl p-6 border border-white/5">
+        <div className="lg:col-span-2 glass rounded-3xl p-6 border border-gray-200">
           <div className="flex items-center gap-2 mb-6">
             <Activity className="w-5 h-5 text-violet-400" />
-            <h2 className="font-bold text-white">Revenue Trend</h2>
+            <h2 className="font-bold text-[#0B1D3A]">Revenue Trend</h2>
           </div>
           <ResponsiveContainer width="100%" height={220}>
             <AreaChart data={mockRevenueData}>
@@ -254,8 +254,8 @@ export default function AdminDashboard() {
         </div>
 
         {/* Order Status Pie */}
-        <div className="glass rounded-3xl p-6 border border-white/5">
-          <h2 className="font-bold text-white mb-6">Order Status</h2>
+        <div className="glass rounded-3xl p-6 border border-gray-200">
+          <h2 className="font-bold text-[#0B1D3A] mb-6">Order Status</h2>
           {pieData.length > 0 ? (
             <>
               <ResponsiveContainer width="100%" height={160}>
@@ -286,14 +286,14 @@ export default function AdminDashboard() {
                 {pieData.slice(0, 5).map((d) => (
                   <div key={d.name} className="flex items-center gap-2 text-xs">
                     <div className="w-2 h-2 rounded-full" style={{ background: d.color }} />
-                    <span className="text-white/60 flex-1">{d.name}</span>
-                    <span className="text-white font-medium">{d.value}</span>
+                    <span className="text-gray-600 flex-1">{d.name}</span>
+                    <span className="text-[#0B1D3A] font-medium">{d.value}</span>
                   </div>
                 ))}
               </div>
             </>
           ) : (
-            <div className="text-center text-white/30 py-8">No order data</div>
+            <div className="text-center text-gray-400 py-8">No order data</div>
           )}
         </div>
       </div>
@@ -307,11 +307,11 @@ export default function AdminDashboard() {
             </div>
             <div>
               <div className="text-xs text-amber-400 font-medium">Most Active Customer</div>
-              <div className="font-bold text-white">{stats.mostActiveCustomer.name}</div>
+              <div className="font-bold text-[#0B1D3A]">{stats.mostActiveCustomer.name}</div>
             </div>
             <div className="ml-auto text-right">
-              <div className="text-sm text-white/60">{stats.mostActiveCustomer.email}</div>
-              <div className="text-sm text-white/60">{stats.mostActiveCustomer.phone}</div>
+              <div className="text-sm text-gray-600">{stats.mostActiveCustomer.email}</div>
+              <div className="text-sm text-gray-600">{stats.mostActiveCustomer.phone}</div>
             </div>
             <div className="text-2xl font-extrabold text-amber-400 ml-4">
               {stats.mostActiveCustomer.orderCount} orders
@@ -321,9 +321,9 @@ export default function AdminDashboard() {
       )}
 
       {/* Recent Orders */}
-      <div className="glass rounded-3xl border border-white/5 overflow-hidden">
-        <div className="flex items-center justify-between p-6 border-b border-white/5">
-          <h2 className="font-bold text-white">Recent Orders</h2>
+      <div className="glass rounded-3xl border border-gray-200 overflow-hidden">
+        <div className="flex items-center justify-between p-6 border-b border-gray-200">
+          <h2 className="font-bold text-[#0B1D3A]">Recent Orders</h2>
           <Link href="/admin/orders" className="text-sm text-amber-400 hover:text-amber-300 flex items-center gap-1">
             View All <ArrowUpRight className="w-3.5 h-3.5" />
           </Link>
@@ -331,24 +331,24 @@ export default function AdminDashboard() {
         <div className="overflow-x-auto">
           <table className="w-full">
             <thead>
-              <tr className="border-b border-white/5">
-                <th className="text-left px-6 py-3 text-xs text-white/30 font-medium uppercase tracking-wider">Order</th>
-                <th className="text-left px-4 py-3 text-xs text-white/30 font-medium uppercase tracking-wider">Customer</th>
-                <th className="text-left px-4 py-3 text-xs text-white/30 font-medium uppercase tracking-wider">Status</th>
-                <th className="text-left px-4 py-3 text-xs text-white/30 font-medium uppercase tracking-wider">Payment</th>
-                <th className="text-right px-6 py-3 text-xs text-white/30 font-medium uppercase tracking-wider">Amount</th>
+              <tr className="border-b border-gray-200">
+                <th className="text-left px-6 py-3 text-xs text-gray-400 font-medium uppercase tracking-wider">Order</th>
+                <th className="text-left px-4 py-3 text-xs text-gray-400 font-medium uppercase tracking-wider">Customer</th>
+                <th className="text-left px-4 py-3 text-xs text-gray-400 font-medium uppercase tracking-wider">Status</th>
+                <th className="text-left px-4 py-3 text-xs text-gray-400 font-medium uppercase tracking-wider">Payment</th>
+                <th className="text-right px-6 py-3 text-xs text-gray-400 font-medium uppercase tracking-wider">Amount</th>
               </tr>
             </thead>
             <tbody className="divide-y divide-white/5">
               {(analytics?.recentOrders || []).map((order) => (
-                <tr key={order.id} className="hover:bg-white/3 transition-colors">
+                <tr key={order.id} className="hover:bg-gray-50 transition-colors">
                   <td className="px-6 py-4">
-                    <div className="text-sm font-medium text-white truncate max-w-[140px]">{order.fileName}</div>
-                    <div className="text-xs text-white/30">{order.orderNumber}</div>
+                    <div className="text-sm font-medium text-[#0B1D3A] truncate max-w-[140px]">{order.fileName}</div>
+                    <div className="text-xs text-gray-400">{order.orderNumber}</div>
                   </td>
                   <td className="px-4 py-4">
-                    <div className="text-sm text-white">{order.user.name}</div>
-                    <div className="text-xs text-white/40">{order.user.phone}</div>
+                    <div className="text-sm text-[#0B1D3A]">{order.user.name}</div>
+                    <div className="text-xs text-gray-500">{order.user.phone}</div>
                   </td>
                   <td className="px-4 py-4">
                     <span className={`px-2 py-1 rounded-lg text-xs border ${ORDER_STATUS_COLORS[order.status]}`}>
@@ -360,7 +360,7 @@ export default function AdminDashboard() {
                       {order.paymentStatus}
                     </span>
                   </td>
-                  <td className="px-6 py-4 text-right font-semibold text-white text-sm">
+                  <td className="px-6 py-4 text-right font-semibold text-[#0B1D3A] text-sm">
                     {formatCurrency(order.totalAmount)}
                   </td>
                 </tr>
@@ -368,7 +368,7 @@ export default function AdminDashboard() {
             </tbody>
           </table>
           {(!analytics?.recentOrders || analytics.recentOrders.length === 0) && (
-            <div className="p-10 text-center text-white/30">No orders yet</div>
+            <div className="p-10 text-center text-gray-400">No orders yet</div>
           )}
         </div>
       </div>

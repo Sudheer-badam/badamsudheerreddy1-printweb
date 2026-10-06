@@ -168,8 +168,8 @@ export default function AdminOrdersPage() {
     <div className="space-y-6">
       <div className="flex items-center justify-between">
         <div>
-          <h1 className="text-2xl font-bold text-white">All Orders</h1>
-          <p className="text-white/40 mt-1">Manage all customer print orders</p>
+          <h1 className="text-2xl font-bold text-[#0B1D3A]">All Orders</h1>
+          <p className="text-gray-500 mt-1">Manage all customer print orders</p>
         </div>
       </div>
 
@@ -177,12 +177,12 @@ export default function AdminOrdersPage() {
       <div className="flex flex-col gap-3">
         <form onSubmit={handleSearch} className="flex gap-2">
           <div className="relative flex-1">
-            <Search className="absolute left-3 top-1/2 -translate-y-1/2 w-4 h-4 text-white/30" />
+            <Search className="absolute left-3 top-1/2 -translate-y-1/2 w-4 h-4 text-gray-400" />
             <input
               value={search}
               onChange={(e) => setSearch(e.target.value)}
               placeholder="Search by name, phone, email, order ID..."
-              className="w-full pl-9 pr-4 py-2.5 bg-white/5 border border-white/10 rounded-xl text-white text-sm placeholder-white/30 focus:outline-none focus:border-violet-500"
+              className="w-full pl-9 pr-4 py-2.5 bg-white border border-gray-300 rounded-xl text-[#0B1D3A] text-sm placeholder-white/30 focus:outline-none focus:border-violet-500"
             />
           </div>
           <button type="submit" className="px-4 py-2.5 rounded-xl gradient-primary text-white text-sm font-medium">
@@ -198,13 +198,13 @@ export default function AdminOrdersPage() {
               className={`px-3 py-1.5 rounded-lg text-xs font-medium whitespace-nowrap transition-all ${
                 statusFilter === f.value
                   ? "bg-amber-500 text-white"
-                  : "glass border border-white/10 text-white/50 hover:text-white"
+                  : "glass border border-gray-300 text-gray-500 hover:text-[#0B1D3A]"
               }`}
             >
               {f.label}
             </button>
           ))}
-          <div className="w-px bg-white/10 mx-1" />
+          <div className="w-px bg-gray-100 mx-1" />
           {["", "PENDING", "PAID"].map((p) => (
             <button
               key={p}
@@ -212,7 +212,7 @@ export default function AdminOrdersPage() {
               className={`px-3 py-1.5 rounded-lg text-xs font-medium whitespace-nowrap transition-all ${
                 paymentFilter === p
                   ? "bg-green-600 text-white"
-                  : "glass border border-white/10 text-white/50 hover:text-white"
+                  : "glass border border-gray-300 text-gray-500 hover:text-[#0B1D3A]"
               }`}
             >
               {p === "" ? "All Payments" : p === "PAID" ? "Paid" : "Unpaid"}
@@ -222,19 +222,19 @@ export default function AdminOrdersPage() {
       </div>
 
       {/* Table */}
-      <div className="glass rounded-3xl border border-white/5 overflow-hidden">
+      <div className="glass rounded-3xl border border-gray-200 overflow-hidden">
         <div className="overflow-x-auto">
           <table className="w-full text-sm">
             <thead>
-              <tr className="border-b border-white/5 bg-white/2">
-                <th className="text-left px-4 py-3 text-xs text-white/30 font-medium uppercase tracking-wider">Order ID</th>
-                <th className="text-left px-4 py-3 text-xs text-white/30 font-medium uppercase tracking-wider">Customer</th>
-                <th className="text-left px-4 py-3 text-xs text-white/30 font-medium uppercase tracking-wider hidden lg:table-cell">File</th>
-                <th className="text-left px-4 py-3 text-xs text-white/30 font-medium uppercase tracking-wider hidden md:table-cell">Details</th>
-                <th className="text-left px-4 py-3 text-xs text-white/30 font-medium uppercase tracking-wider">Status</th>
-                <th className="text-left px-4 py-3 text-xs text-white/30 font-medium uppercase tracking-wider">Payment</th>
-                <th className="text-right px-4 py-3 text-xs text-white/30 font-medium uppercase tracking-wider">Amount</th>
-                <th className="px-4 py-3 text-xs text-white/30 font-medium uppercase tracking-wider">Actions</th>
+              <tr className="border-b border-gray-200 bg-gray-50">
+                <th className="text-left px-4 py-3 text-xs text-gray-400 font-medium uppercase tracking-wider">Order ID</th>
+                <th className="text-left px-4 py-3 text-xs text-gray-400 font-medium uppercase tracking-wider">Customer</th>
+                <th className="text-left px-4 py-3 text-xs text-gray-400 font-medium uppercase tracking-wider hidden lg:table-cell">File</th>
+                <th className="text-left px-4 py-3 text-xs text-gray-400 font-medium uppercase tracking-wider hidden md:table-cell">Details</th>
+                <th className="text-left px-4 py-3 text-xs text-gray-400 font-medium uppercase tracking-wider">Status</th>
+                <th className="text-left px-4 py-3 text-xs text-gray-400 font-medium uppercase tracking-wider">Payment</th>
+                <th className="text-right px-4 py-3 text-xs text-gray-400 font-medium uppercase tracking-wider">Amount</th>
+                <th className="px-4 py-3 text-xs text-gray-400 font-medium uppercase tracking-wider">Actions</th>
               </tr>
             </thead>
             <tbody className="divide-y divide-white/5">
@@ -248,7 +248,7 @@ export default function AdminOrdersPage() {
                 ))
               ) : orders.length === 0 ? (
                 <tr>
-                  <td colSpan={8} className="px-4 py-16 text-center text-white/30">
+                  <td colSpan={8} className="px-4 py-16 text-center text-gray-400">
                     <FileText className="w-8 h-8 mx-auto mb-2" />
                     No orders found
                   </td>
@@ -260,25 +260,25 @@ export default function AdminOrdersPage() {
                     initial={{ opacity: 0 }}
                     animate={{ opacity: 1 }}
                     transition={{ delay: i * 0.04 }}
-                    className="hover:bg-white/3 transition-colors"
+                    className="hover:bg-gray-50 transition-colors"
                   >
                     <td className="px-4 py-3">
-                      <div className="font-mono text-xs text-white/60 truncate max-w-[100px]">{order.orderNumber}</div>
-                      <div className="text-xs text-white/30">{formatDate(order.createdAt)}</div>
+                      <div className="font-mono text-xs text-gray-600 truncate max-w-[100px]">{order.orderNumber}</div>
+                      <div className="text-xs text-gray-400">{formatDate(order.createdAt)}</div>
                     </td>
                     <td className="px-4 py-3">
-                      <div className="font-medium text-white">{order.user.name}</div>
-                      <div className="flex items-center gap-1 text-xs text-white/40">
+                      <div className="font-medium text-[#0B1D3A]">{order.user.name}</div>
+                      <div className="flex items-center gap-1 text-xs text-gray-500">
                         <Phone className="w-3 h-3" /> {order.user.phone}
                       </div>
-                      <div className="flex items-center gap-1 text-xs text-white/30">
+                      <div className="flex items-center gap-1 text-xs text-gray-400">
                         <Mail className="w-3 h-3" /> {order.user.email}
                       </div>
                     </td>
                     <td className="px-4 py-3 hidden lg:table-cell">
-                      <div className="text-white truncate max-w-[150px]">{order.fileName}</div>
+                      <div className="text-[#0B1D3A] truncate max-w-[150px]">{order.fileName}</div>
                     </td>
-                    <td className="px-4 py-3 hidden md:table-cell text-xs text-white/50">
+                    <td className="px-4 py-3 hidden md:table-cell text-xs text-gray-500">
                       <div>{order.totalPages}p • {order.paperSize} • {order.copies}x</div>
                       <div>{order.printColor === "COLOR" ? "Color" : "B&W"} • {order.printSide === "SINGLE" ? "1-sided" : "2-sided"}</div>
                     </td>
@@ -306,42 +306,42 @@ export default function AdminOrdersPage() {
                         ))}
                       </select>
                     </td>
-                    <td className="px-4 py-3 text-right font-semibold text-white">
+                    <td className="px-4 py-3 text-right font-semibold text-[#0B1D3A]">
                       {formatCurrency(order.totalAmount)}
                     </td>
                     <td className="px-4 py-3">
                       <div className="flex items-center gap-1">
                         <button
                           onClick={() => { setSelectedOrder(order); setNewStatus(order.status); setAdminNotes(order.adminNotes || ""); setShowModal(true); }}
-                          className="p-1.5 rounded-lg text-white/40 hover:text-blue-400 hover:bg-blue-500/10 transition-all"
+                          className="p-1.5 rounded-lg text-gray-500 hover:text-blue-400 hover:bg-blue-500/10 transition-all"
                           title="View Details"
                         >
                           <Eye className="w-4 h-4" />
                         </button>
                         <button
                           onClick={() => router.push(`/admin/orders/${order.id}/print`)}
-                          className="p-1.5 rounded-lg text-white/40 hover:text-amber-400 hover:bg-amber-500/10 transition-all"
+                          className="p-1.5 rounded-lg text-gray-500 hover:text-amber-400 hover:bg-amber-500/10 transition-all"
                           title="Print Room (Acrobat View)"
                         >
                           <Printer className="w-4 h-4" />
                         </button>
                         <button
                           onClick={() => updateOrderStatus(order.id, "COMPLETED")}
-                          className="p-1.5 rounded-lg text-white/40 hover:text-emerald-400 hover:bg-emerald-500/10 transition-all"
+                          className="p-1.5 rounded-lg text-gray-500 hover:text-emerald-400 hover:bg-emerald-500/10 transition-all"
                           title="Mark Completed"
                         >
                           <CheckCircle className="w-4 h-4" />
                         </button>
                         <button
                           onClick={() => updateOrderStatus(order.id, "CANCELLED")}
-                          className="p-1.5 rounded-lg text-white/40 hover:text-red-400 hover:bg-red-500/10 transition-all"
+                          className="p-1.5 rounded-lg text-gray-500 hover:text-red-400 hover:bg-red-500/10 transition-all"
                           title="Cancel"
                         >
                           <XCircle className="w-4 h-4" />
                         </button>
                         <button
                           onClick={() => deleteOrder(order.id)}
-                          className="p-1.5 rounded-lg text-white/40 hover:text-red-400 hover:bg-red-500/10 transition-all"
+                          className="p-1.5 rounded-lg text-gray-500 hover:text-red-400 hover:bg-red-500/10 transition-all"
                           title="Delete"
                         >
                           <Trash2 className="w-4 h-4" />
@@ -357,19 +357,19 @@ export default function AdminOrdersPage() {
 
         {/* Pagination */}
         {totalPages > 1 && (
-          <div className="flex items-center justify-between p-4 border-t border-white/5">
+          <div className="flex items-center justify-between p-4 border-t border-gray-200">
             <button
               onClick={() => setPage(Math.max(1, page - 1))}
               disabled={page === 1}
-              className="flex items-center gap-1 px-3 py-2 rounded-lg text-sm text-white/50 hover:text-white disabled:opacity-30"
+              className="flex items-center gap-1 px-3 py-2 rounded-lg text-sm text-gray-500 hover:text-[#0B1D3A] disabled:opacity-30"
             >
               <ChevronLeft className="w-4 h-4" /> Previous
             </button>
-            <span className="text-sm text-white/40">Page {page} of {totalPages}</span>
+            <span className="text-sm text-gray-500">Page {page} of {totalPages}</span>
             <button
               onClick={() => setPage(Math.min(totalPages, page + 1))}
               disabled={page === totalPages}
-              className="flex items-center gap-1 px-3 py-2 rounded-lg text-sm text-white/50 hover:text-white disabled:opacity-30"
+              className="flex items-center gap-1 px-3 py-2 rounded-lg text-sm text-gray-500 hover:text-[#0B1D3A] disabled:opacity-30"
             >
               Next <ChevronRight className="w-4 h-4" />
             </button>
@@ -383,18 +383,18 @@ export default function AdminOrdersPage() {
           <motion.div
             initial={{ scale: 0.9, opacity: 0 }}
             animate={{ scale: 1, opacity: 1 }}
-            className="glass-strong rounded-3xl border border-white/10 p-6 w-full max-w-2xl max-h-[90vh] overflow-y-auto"
+            className="glass-strong rounded-3xl border border-gray-300 p-6 w-full max-w-2xl max-h-[90vh] overflow-y-auto"
           >
             <div className="flex items-center justify-between mb-6">
-              <h2 className="text-xl font-bold text-white">Order Details</h2>
-              <button onClick={() => setShowModal(false)} className="text-white/40 hover:text-white">
+              <h2 className="text-xl font-bold text-[#0B1D3A]">Order Details</h2>
+              <button onClick={() => setShowModal(false)} className="text-gray-500 hover:text-[#0B1D3A]">
                 <XCircle className="w-6 h-6" />
               </button>
             </div>
 
             <div className="space-y-4">
               {/* Customer Info */}
-              <div className="glass rounded-2xl p-4 border border-white/5">
+              <div className="glass rounded-2xl p-4 border border-gray-200">
                 <h3 className="text-sm font-semibold text-amber-400 mb-3">Customer Information</h3>
                 <div className="grid grid-cols-2 gap-3 text-sm">
                   <InfoRow label="Name" value={selectedOrder.user.name} />
@@ -405,7 +405,7 @@ export default function AdminOrdersPage() {
               </div>
 
               {/* Print Details */}
-              <div className="glass rounded-2xl p-4 border border-white/5">
+              <div className="glass rounded-2xl p-4 border border-gray-200">
                 <h3 className="text-sm font-semibold text-amber-400 mb-3">Print Details</h3>
                 <div className="grid grid-cols-2 gap-3 text-sm">
                   <InfoRow label="File" value={selectedOrder.fileName} />
@@ -420,13 +420,13 @@ export default function AdminOrdersPage() {
               </div>
 
               {/* Status Update */}
-              <div className="glass rounded-2xl p-4 border border-white/5">
+              <div className="glass rounded-2xl p-4 border border-gray-200">
                 <h3 className="text-sm font-semibold text-amber-400 mb-3">Update Status</h3>
                 <div className="space-y-3">
                   <select
                     value={newStatus}
                     onChange={(e) => setNewStatus(e.target.value)}
-                    className="w-full px-3 py-2.5 bg-white/5 border border-white/10 rounded-xl text-white text-sm focus:outline-none focus:border-violet-500"
+                    className="w-full px-3 py-2.5 bg-white border border-gray-300 rounded-xl text-[#0B1D3A] text-sm focus:outline-none focus:border-violet-500"
                   >
                     {STATUSES.map((s) => (
                       <option key={s} value={s} className="bg-gray-900">{ORDER_STATUS_LABELS[s]}</option>
@@ -437,7 +437,7 @@ export default function AdminOrdersPage() {
                     onChange={(e) => setAdminNotes(e.target.value)}
                     placeholder="Add admin notes..."
                     rows={3}
-                    className="w-full px-3 py-2.5 bg-white/5 border border-white/10 rounded-xl text-white text-sm placeholder-white/30 focus:outline-none focus:border-violet-500 resize-none"
+                    className="w-full px-3 py-2.5 bg-white border border-gray-300 rounded-xl text-[#0B1D3A] text-sm placeholder-white/30 focus:outline-none focus:border-violet-500 resize-none"
                   />
                   <button
                     onClick={() => updateOrderStatus(selectedOrder.id, newStatus, adminNotes)}
@@ -451,7 +451,7 @@ export default function AdminOrdersPage() {
 
               {/* Amount */}
               <div className="glass rounded-2xl p-4 border border-violet-500/20 flex items-center justify-between">
-                <span className="text-white/60">Total Amount</span>
+                <span className="text-gray-600">Total Amount</span>
                 <span className="text-2xl font-extrabold text-gradient">{formatCurrency(selectedOrder.totalAmount)}</span>
               </div>
             </div>
@@ -465,8 +465,8 @@ export default function AdminOrdersPage() {
 function InfoRow({ label, value }: { label: string; value: string }) {
   return (
     <div>
-      <div className="text-xs text-white/30">{label}</div>
-      <div className="text-white font-medium">{value || "—"}</div>
+      <div className="text-xs text-gray-400">{label}</div>
+      <div className="text-[#0B1D3A] font-medium">{value || "—"}</div>
     </div>
   );
 }

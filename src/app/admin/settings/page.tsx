@@ -102,19 +102,19 @@ export default function AdminSettingsPage() {
   return (
     <div className="space-y-8">
       <div>
-        <h1 className="text-2xl font-bold text-white">Settings</h1>
-        <p className="text-white/40 mt-1">Configure pricing, business info, and services</p>
+        <h1 className="text-2xl font-bold text-[#0B1D3A]">Settings</h1>
+        <p className="text-gray-500 mt-1">Configure pricing, business info, and services</p>
       </div>
 
       {/* Pricing Settings */}
-      <section className="glass rounded-3xl p-6 border border-white/5">
+      <section className="glass rounded-3xl p-6 border border-gray-200">
         <div className="flex items-center gap-3 mb-6">
           <div className="w-10 h-10 rounded-xl bg-gradient-to-br from-amber-500 to-orange-500 flex items-center justify-center">
-            <IndianRupee className="w-5 h-5 text-white" />
+            <IndianRupee className="w-5 h-5 text-[#0B1D3A]" />
           </div>
           <div>
-            <h2 className="font-bold text-white">Pricing Configuration</h2>
-            <p className="text-xs text-white/40">Set print prices per page</p>
+            <h2 className="font-bold text-[#0B1D3A]">Pricing Configuration</h2>
+            <p className="text-xs text-gray-500">Set print prices per page</p>
           </div>
         </div>
 
@@ -158,12 +158,12 @@ export default function AdminSettingsPage() {
             step={0.5}
           />
           <div>
-            <label className="text-xs text-white/50 mb-2 block">Max File Size (MB)</label>
+            <label className="text-xs text-gray-500 mb-2 block">Max File Size (MB)</label>
             <input
               type="number"
               value={Math.round(pricing.maxFileSize / 1048576)}
               onChange={(e) => setPricing({ ...pricing, maxFileSize: parseInt(e.target.value) * 1048576 })}
-              className="w-full px-4 py-2.5 bg-white/5 border border-white/10 rounded-xl text-white text-sm focus:outline-none focus:border-amber-500"
+              className="w-full px-4 py-2.5 bg-white border border-gray-300 rounded-xl text-[#0B1D3A] text-sm focus:outline-none focus:border-amber-500"
             />
           </div>
         </div>
@@ -179,14 +179,14 @@ export default function AdminSettingsPage() {
       </section>
 
       {/* Service Toggles */}
-      <section className="glass rounded-3xl p-6 border border-white/5">
+      <section className="glass rounded-3xl p-6 border border-gray-200">
         <div className="flex items-center gap-3 mb-6">
           <div className="w-10 h-10 rounded-xl bg-gradient-to-br from-blue-500 to-cyan-500 flex items-center justify-center">
-            <Settings className="w-5 h-5 text-white" />
+            <Settings className="w-5 h-5 text-[#0B1D3A]" />
           </div>
           <div>
-            <h2 className="font-bold text-white">Service Toggles</h2>
-            <p className="text-xs text-white/40">Enable or disable services</p>
+            <h2 className="font-bold text-[#0B1D3A]">Service Toggles</h2>
+            <p className="text-xs text-gray-500">Enable or disable services</p>
           </div>
         </div>
 
@@ -203,17 +203,17 @@ export default function AdminSettingsPage() {
               className={`flex items-center justify-between p-4 rounded-2xl border cursor-pointer transition-all ${
                 services[key as keyof typeof services]
                   ? "border-blue-500/30 bg-blue-500/10"
-                  : "border-white/10 bg-white/3 hover:border-white/20"
+                  : "border-gray-300 bg-gray-50 hover:border-gray-400"
               }`}
             >
               <div>
-                <div className="font-medium text-white text-sm">{label}</div>
-                <div className="text-xs text-white/40">{desc}</div>
+                <div className="font-medium text-[#0B1D3A] text-sm">{label}</div>
+                <div className="text-xs text-gray-500">{desc}</div>
               </div>
               {services[key as keyof typeof services] ? (
                 <ToggleRight className="w-8 h-8 text-blue-400" />
               ) : (
-                <ToggleLeft className="w-8 h-8 text-white/20" />
+                <ToggleLeft className="w-8 h-8 text-gray-300" />
               )}
             </div>
           ))}
@@ -221,21 +221,21 @@ export default function AdminSettingsPage() {
       </section>
 
       {/* Business Info */}
-      <section className="glass rounded-3xl p-6 border border-white/5">
+      <section className="glass rounded-3xl p-6 border border-gray-200">
         <div className="flex items-center gap-3 mb-6">
           <div className="w-10 h-10 rounded-xl bg-gradient-to-br from-violet-500 to-purple-600 flex items-center justify-center">
-            <Building2 className="w-5 h-5 text-white" />
+            <Building2 className="w-5 h-5 text-[#0B1D3A]" />
           </div>
           <div>
-            <h2 className="font-bold text-white">Business Information</h2>
-            <p className="text-xs text-white/40">Shown on support page and invoices</p>
+            <h2 className="font-bold text-[#0B1D3A]">Business Information</h2>
+            <p className="text-xs text-gray-500">Shown on support page and invoices</p>
           </div>
         </div>
 
         <div className="grid grid-cols-1 sm:grid-cols-2 gap-5">
           <TextField
             label="Business Name"
-            icon={<Building2 className="w-4 h-4 text-white/30" />}
+            icon={<Building2 className="w-4 h-4 text-gray-400" />}
             value={business.businessName}
             onChange={(v) => setBusiness({ ...business, businessName: v })}
           />
@@ -246,32 +246,32 @@ export default function AdminSettingsPage() {
           />
           <TextField
             label="Phone"
-            icon={<Phone className="w-4 h-4 text-white/30" />}
+            icon={<Phone className="w-4 h-4 text-gray-400" />}
             value={business.phone}
             onChange={(v) => setBusiness({ ...business, phone: v })}
           />
           <TextField
             label="WhatsApp"
-            icon={<Phone className="w-4 h-4 text-white/30" />}
+            icon={<Phone className="w-4 h-4 text-gray-400" />}
             value={business.whatsapp}
             onChange={(v) => setBusiness({ ...business, whatsapp: v })}
           />
           <TextField
             label="Email"
-            icon={<Mail className="w-4 h-4 text-white/30" />}
+            icon={<Mail className="w-4 h-4 text-gray-400" />}
             value={business.email}
             onChange={(v) => setBusiness({ ...business, email: v })}
           />
           <TextField
             label="Working Hours"
-            icon={<Clock className="w-4 h-4 text-white/30" />}
+            icon={<Clock className="w-4 h-4 text-gray-400" />}
             value={business.workingHours}
             onChange={(v) => setBusiness({ ...business, workingHours: v })}
           />
           <div className="sm:col-span-2">
             <TextField
               label="Business Address"
-              icon={<MapPin className="w-4 h-4 text-white/30" />}
+              icon={<MapPin className="w-4 h-4 text-gray-400" />}
               value={business.address}
               onChange={(v) => setBusiness({ ...business, address: v })}
             />
@@ -279,7 +279,7 @@ export default function AdminSettingsPage() {
           <div className="sm:col-span-2">
             <TextField
               label="Pickup Address"
-              icon={<MapPin className="w-4 h-4 text-white/30" />}
+              icon={<MapPin className="w-4 h-4 text-gray-400" />}
               value={business.pickupAddress}
               onChange={(v) => setBusiness({ ...business, pickupAddress: v })}
             />
@@ -321,17 +321,17 @@ function PriceField({
 }) {
   return (
     <div>
-      <label className="text-xs text-white/50 mb-1 block">{label}</label>
-      <div className="text-xs text-white/30 mb-2">{sublabel}</div>
+      <label className="text-xs text-gray-500 mb-1 block">{label}</label>
+      <div className="text-xs text-gray-400 mb-2">{sublabel}</div>
       <div className="relative">
-        <span className="absolute left-3 top-1/2 -translate-y-1/2 text-white/30 text-sm">₹</span>
+        <span className="absolute left-3 top-1/2 -translate-y-1/2 text-gray-400 text-sm">₹</span>
         <input
           type="number"
           step={step}
           min={0}
           value={value}
           onChange={(e) => onChange(parseFloat(e.target.value))}
-          className="w-full pl-7 pr-4 py-2.5 bg-white/5 border border-white/10 rounded-xl text-white text-sm focus:outline-none focus:border-amber-500 transition-colors"
+          className="w-full pl-7 pr-4 py-2.5 bg-white border border-gray-300 rounded-xl text-[#0B1D3A] text-sm focus:outline-none focus:border-amber-500 transition-colors"
         />
       </div>
     </div>
@@ -351,14 +351,14 @@ function TextField({
 }) {
   return (
     <div>
-      <label className="text-xs text-white/50 mb-2 block">{label}</label>
+      <label className="text-xs text-gray-500 mb-2 block">{label}</label>
       <div className="relative">
         {icon && <div className="absolute left-3 top-1/2 -translate-y-1/2">{icon}</div>}
         <input
           type="text"
           value={value}
           onChange={(e) => onChange(e.target.value)}
-          className={`w-full ${icon ? "pl-9" : "pl-4"} pr-4 py-2.5 bg-white/5 border border-white/10 rounded-xl text-white text-sm placeholder-white/20 focus:outline-none focus:border-violet-500 transition-colors`}
+          className={`w-full ${icon ? "pl-9" : "pl-4"} pr-4 py-2.5 bg-white border border-gray-300 rounded-xl text-[#0B1D3A] text-sm placeholder-white/20 focus:outline-none focus:border-violet-500 transition-colors`}
           placeholder={label}
         />
       </div>

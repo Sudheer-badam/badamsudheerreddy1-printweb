@@ -46,8 +46,8 @@ export default function AdminAnalyticsPage() {
   return (
     <div className="space-y-8">
       <div>
-        <h1 className="text-2xl font-bold text-white">Analytics</h1>
-        <p className="text-white/40 mt-1">Business performance overview</p>
+        <h1 className="text-2xl font-bold text-[#0B1D3A]">Analytics</h1>
+        <p className="text-gray-500 mt-1">Business performance overview</p>
       </div>
 
       {/* KPI Cards */}
@@ -63,20 +63,20 @@ export default function AdminAnalyticsPage() {
             initial={{ opacity: 0, y: 20 }}
             animate={{ opacity: 1, y: 0 }}
             transition={{ delay: i * 0.1 }}
-            className="glass rounded-2xl p-5 border border-white/5"
+            className="glass rounded-2xl p-5 border border-gray-200"
           >
             <div className={`w-10 h-10 rounded-xl bg-gradient-to-br ${kpi.color} flex items-center justify-center mb-3`}>
-              <kpi.icon className="w-5 h-5 text-white" />
+              <kpi.icon className="w-5 h-5 text-[#0B1D3A]" />
             </div>
-            <div className="text-2xl font-bold text-white">{kpi.value}</div>
-            <div className="text-xs text-white/40 mt-1">{kpi.label}</div>
+            <div className="text-2xl font-bold text-[#0B1D3A]">{kpi.value}</div>
+            <div className="text-xs text-gray-500 mt-1">{kpi.label}</div>
           </motion.div>
         ))}
       </div>
 
       {/* Weekly Revenue + Orders */}
-      <div className="glass rounded-3xl p-6 border border-white/5">
-        <h2 className="font-bold text-white mb-6">Weekly Performance</h2>
+      <div className="glass rounded-3xl p-6 border border-gray-200">
+        <h2 className="font-bold text-[#0B1D3A] mb-6">Weekly Performance</h2>
         <ResponsiveContainer width="100%" height={250}>
           <AreaChart data={weeklyData}>
             <defs>
@@ -98,8 +98,8 @@ export default function AdminAnalyticsPage() {
       </div>
 
       {/* Color vs B&W Revenue */}
-      <div className="glass rounded-3xl p-6 border border-white/5">
-        <h2 className="font-bold text-white mb-6">Color vs B&W Revenue (Monthly)</h2>
+      <div className="glass rounded-3xl p-6 border border-gray-200">
+        <h2 className="font-bold text-[#0B1D3A] mb-6">Color vs B&W Revenue (Monthly)</h2>
         <ResponsiveContainer width="100%" height={250}>
           <BarChart data={monthlyData}>
             <CartesianGrid strokeDasharray="3 3" stroke="rgba(255,255,255,0.05)" />
