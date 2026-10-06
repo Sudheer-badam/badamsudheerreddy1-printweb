@@ -302,11 +302,73 @@ export default function OrderDetailPage() {
               <p className="text-emerald-100 text-sm">Your transaction was completed securely.</p>
             </div>
           </div>
-          <div className="w-full sm:w-auto bg-black/10 rounded-xl p-3 border border-white/10">
-            <div className="flex justify-between sm:flex-col sm:items-end gap-1 text-sm">
-              <span className="text-emerald-100">Transaction ID</span>
-              <span className="font-mono font-bold tracking-wider">{order.orderNumber}</span>
+          <div className="w-full sm:w-auto flex flex-col gap-3">
+            <div className="bg-black/10 rounded-xl p-3 border border-white/10">
+              <div className="flex justify-between sm:flex-col sm:items-end gap-1 text-sm">
+                <span className="text-emerald-100">Transaction ID</span>
+                <span className="font-mono font-bold tracking-wider">{order.orderNumber}</span>
+              </div>
             </div>
+            <button 
+              onClick={() => {
+                const receiptHtml = `
+                  <html>
+                    <head>
+                      <title>Receipt - ${order.orderNumber}</title>
+                      <style>
+                        body { font-family: 'Inter', sans-serif; padding: 40px; color: #0B1D3A; max-width: 800px; margin: 0 auto; }
+                        .header { border-bottom: 2px solid #f3f4f6; padding-bottom: 20px; margin-bottom: 30px; display: flex; justify-content: space-between; align-items: flex-end; }
+                        .title { font-size: 28px; font-weight: 800; color: #7c3aed; margin-bottom: 5px; }
+                        .subtitle { color: #6b7280; font-size: 14px; }
+                        .row { display: flex; justify-content: space-between; margin-bottom: 12px; padding-bottom: 12px; border-bottom: 1px dashed #f3f4f6; }
+                        .total { font-weight: 800; font-size: 20px; border-top: 2px solid #e5e7eb; border-bottom: none; padding-top: 20px; margin-top: 10px; color: #0B1D3A; }
+                        .badge { background: #10b981; color: white; padding: 4px 10px; border-radius: 20px; font-size: 12px; font-weight: bold; }
+                      </style>
+                    </head>
+                    <body>
+                      <div class="header">
+                        <div>
+                          <div class="title">Sudheer Reddy Print</div>
+                          <div class="subtitle">Official Payment Receipt</div>
+                        </div>
+                        <div style="text-align: right;">
+                          <div style="font-weight: bold; margin-bottom: 5px;">Order #${order.orderNumber}</div>
+                          <div class="badge">PAID SECURELY</div>
+                        </div>
+                      </div>
+                      <div class="row"><span>Date:</span> <strong>${new Date().toLocaleDateString()}</strong></div>
+                      <div class="row"><span>Customer:</span> <strong>${user.displayName || user.email || "Customer"}</strong></div>
+                      <div class="row"><span>Document:</span> <strong>${order.fileName}</strong></div>
+                      <br/>
+                      <h3 style="margin-bottom: 15px; color: #4b5563;">Print Details</h3>
+                      <div class="row"><span>Total Pages:</span> <strong>${order.totalPages}</strong></div>
+                      <div class="row"><span>Copies:</span> <strong>${order.copies}</strong></div>
+                      <div class="row"><span>Color Mode:</span> <strong>${order.printColor}</strong></div>
+                      <div class="row"><span>Paper Size:</span> <strong>${order.paperSize}</strong></div>
+                      <br/>
+                      <div class="row total"><span>Total Amount Paid:</span> <span>₹${order.totalAmount.toFixed(2)}</span></div>
+                      <br/><br/><br/>
+                      <div style="text-align: center; color: #9ca3af; font-size: 14px; margin-top: 50px; border-top: 1px solid #f3f4f6; padding-top: 20px;">
+                        Thank you for choosing Sudheer Reddy Print!<br/>
+                        For support, contact us through the portal.
+                      </div>
+                      <script>
+                        window.onload = function() { window.print(); }
+                      </script>
+                    </body>
+                  </html>
+                `;
+                const printWindow = window.open('', '', 'width=800,height=900');
+                if (printWindow) {
+                  printWindow.document.open();
+                  printWindow.document.write(receiptHtml);
+                  printWindow.document.close();
+                }
+              }}
+              className="bg-white text-emerald-600 font-bold py-2 px-4 rounded-xl shadow hover:bg-emerald-50 transition-colors w-full flex items-center justify-center gap-2"
+            >
+              <Download className="w-4 h-4" /> Download Receipt
+            </button>
           </div>
         </motion.div>
       )}
