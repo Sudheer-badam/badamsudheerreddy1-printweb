@@ -107,6 +107,11 @@ export async function POST(req: NextRequest) {
       gstAmount = 0,
       discount = 0,
       totalAmount,
+      collate = true,
+      pagesToPrint = "ALL",
+      customPageRange = null,
+      pageSizing = "FIT",
+      saveInk = false,
     } = body;
 
     if (!uid || !fileName || !fileUrl) {
@@ -148,6 +153,11 @@ export async function POST(req: NextRequest) {
         gstAmount,
         discount,
         totalAmount,
+        collate,
+        pagesToPrint,
+        customPageRange,
+        pageSizing,
+        saveInk,
         status: "UPLOADED",
         paymentStatus: "PENDING",
       },

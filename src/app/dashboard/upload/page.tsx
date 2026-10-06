@@ -93,6 +93,7 @@ export default function UploadPage() {
     orientation: "AUTO",
     paperSize: "A4",
     paperQuality: "standard",
+    saveInk: false,
     binding: false,
     lamination: false,
     instructions: "",
@@ -491,7 +492,13 @@ export default function UploadPage() {
             </div>
 
             {/* Extras */}
-            <div className="grid grid-cols-2 gap-4">
+            <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-4">
+              <ToggleField
+                label="Save Ink/Toner"
+                sublabel="Eco-friendly draft printing"
+                checked={options.saveInk}
+                onChange={(v) => setOptions({ ...options, saveInk: v })}
+              />
               <ToggleField
                 label="Binding"
                 sublabel={pricing ? `₹${pricing.bindingCost}` : ""}

@@ -58,6 +58,8 @@ enum Orientation {
 enum PrintSide {
   SINGLE
   DOUBLE
+  DOUBLE_LONG_EDGE
+  DOUBLE_SHORT_EDGE
 }
 
 enum PrintColor {
@@ -133,6 +135,11 @@ model Order {
   printSide       PrintSide     @default(SINGLE)
   printColor      PrintColor    @default(BLACK_AND_WHITE)
   copies          Int           @default(1)
+  collate         Boolean       @default(true)
+  pagesToPrint    String        @default("ALL")
+  customPageRange String?
+  pageSizing      String        @default("FIT")
+  saveInk         Boolean       @default(false)
   binding         Boolean       @default(false)
   lamination      Boolean       @default(false)
   paperQuality    String        @default("standard")
