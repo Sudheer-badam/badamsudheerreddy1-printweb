@@ -218,8 +218,8 @@ export default function UploadPage() {
           <div className="w-20 h-20 rounded-full bg-emerald-500/20 flex items-center justify-center mx-auto mb-6">
             <CheckCircle className="w-10 h-10 text-emerald-400" />
           </div>
-          <h2 className="text-2xl font-bold text-white mb-2">Order Submitted!</h2>
-          <p className="text-white/50">Redirecting to your order...</p>
+          <h2 className="text-2xl font-bold text-[#0B1D3A] mb-2">Order Submitted!</h2>
+          <p className="text-gray-500">Redirecting to your order...</p>
         </motion.div>
       </div>
     );
@@ -228,8 +228,8 @@ export default function UploadPage() {
   return (
     <div className="space-y-6">
       <div>
-        <h1 className="text-2xl font-bold text-white">Upload PDF</h1>
-        <p className="text-white/40 mt-1">Upload your PDF and configure print options</p>
+        <h1 className="text-2xl font-bold text-[#0B1D3A]">Upload PDF</h1>
+        <p className="text-gray-500 mt-1">Upload your PDF and configure print options</p>
       </div>
 
       <div className="grid grid-cols-1 xl:grid-cols-3 gap-6">
@@ -246,13 +246,13 @@ export default function UploadPage() {
             {analyzing ? (
               <div className="space-y-3">
                 <Loader2 className="w-12 h-12 text-violet-400 mx-auto animate-spin" />
-                <p className="text-white/60">Analyzing PDF...</p>
+                <p className="text-gray-600">Analyzing PDF...</p>
               </div>
             ) : file ? (
               <div className="space-y-3">
                 <CheckCircle className="w-12 h-12 text-emerald-400 mx-auto" />
-                <div className="font-medium text-white">{file.name}</div>
-                <div className="text-sm text-white/40">{formatFileSize(file.size)}</div>
+                <div className="font-medium text-[#0B1D3A]">{file.name}</div>
+                <div className="text-sm text-gray-500">{formatFileSize(file.size)}</div>
                 <button
                   onClick={(e) => { e.stopPropagation(); setFile(null); setFileAnalysis(null); }}
                   className="inline-flex items-center gap-1.5 text-sm text-red-400 hover:text-red-300"
@@ -262,12 +262,12 @@ export default function UploadPage() {
               </div>
             ) : (
               <div className="space-y-3">
-                <Upload className="w-12 h-12 text-white/30 mx-auto" />
+                <Upload className="w-12 h-12 text-gray-400 mx-auto" />
                 <div>
-                  <p className="font-medium text-white">
+                  <p className="font-medium text-[#0B1D3A]">
                     {isDragActive ? "Drop your PDF here" : "Drag & drop PDF or click to browse"}
                   </p>
-                  <p className="text-sm text-white/40 mt-1">
+                  <p className="text-sm text-gray-500 mt-1">
                     PDF only • Max {pricing ? formatFileSize(pricing.maxFileSize) : "50MB"}
                   </p>
                 </div>
@@ -281,11 +281,11 @@ export default function UploadPage() {
               <motion.div
                 initial={{ opacity: 0, y: -10 }}
                 animate={{ opacity: 1, y: 0 }}
-                className="glass rounded-2xl p-5 border border-white/5"
+                className="glass rounded-2xl p-5 border border-gray-200"
               >
                 <div className="flex items-center gap-2 mb-4">
                   <FileText className="w-4 h-4 text-violet-400" />
-                  <h3 className="font-semibold text-white text-sm">PDF Analysis</h3>
+                  <h3 className="font-semibold text-[#0B1D3A] text-sm">PDF Analysis</h3>
                 </div>
                 <div className="grid grid-cols-2 sm:grid-cols-4 gap-4">
                   <Stat label="Total Pages" value={fileAnalysis.totalPages} />
@@ -298,8 +298,8 @@ export default function UploadPage() {
           </AnimatePresence>
 
           {/* Print Options */}
-          <div className="glass rounded-3xl p-6 border border-white/5 space-y-5">
-            <h3 className="font-bold text-white">Print Options</h3>
+          <div className="glass rounded-3xl p-6 border border-gray-200 space-y-5">
+            <h3 className="font-bold text-[#0B1D3A]">Print Options</h3>
 
             <div className="grid grid-cols-2 sm:grid-cols-3 gap-4">
               <SelectField
@@ -336,18 +336,18 @@ export default function UploadPage() {
                 options={PAPER_QUALITIES.map((q) => ({ value: q, label: q.charAt(0).toUpperCase() + q.slice(1) }))}
               />
               <div>
-                <label className="text-xs text-white/50 mb-2 block">Copies</label>
+                <label className="text-xs text-gray-500 mb-2 block">Copies</label>
                 <div className="flex items-center gap-2">
                   <button
                     onClick={() => setOptions({ ...options, copies: Math.max(1, options.copies - 1) })}
-                    className="w-9 h-9 rounded-lg bg-white/5 border border-white/10 text-white hover:bg-white/10 flex items-center justify-center"
+                    className="w-9 h-9 rounded-lg bg-white border border-gray-300 text-[#0B1D3A] hover:bg-gray-100 flex items-center justify-center"
                   >
                     -
                   </button>
-                  <span className="flex-1 text-center font-bold text-white">{options.copies}</span>
+                  <span className="flex-1 text-center font-bold text-[#0B1D3A]">{options.copies}</span>
                   <button
                     onClick={() => setOptions({ ...options, copies: options.copies + 1 })}
-                    className="w-9 h-9 rounded-lg bg-white/5 border border-white/10 text-white hover:bg-white/10 flex items-center justify-center"
+                    className="w-9 h-9 rounded-lg bg-white border border-gray-300 text-[#0B1D3A] hover:bg-gray-100 flex items-center justify-center"
                   >
                     +
                   </button>
@@ -373,13 +373,13 @@ export default function UploadPage() {
 
             {/* Instructions */}
             <div>
-              <label className="text-xs text-white/50 mb-2 block">Special Instructions (Optional)</label>
+              <label className="text-xs text-gray-500 mb-2 block">Special Instructions (Optional)</label>
               <textarea
                 value={options.instructions}
                 onChange={(e) => setOptions({ ...options, instructions: e.target.value })}
                 placeholder="Any special requirements..."
                 rows={3}
-                className="w-full px-4 py-3 bg-white/5 border border-white/10 rounded-xl text-white text-sm placeholder-white/30 focus:outline-none focus:border-violet-500 transition-colors resize-none"
+                className="w-full px-4 py-3 bg-white border border-gray-300 rounded-xl text-[#0B1D3A] text-sm placeholder-white/30 focus:outline-none focus:border-violet-500 transition-colors resize-none"
               />
             </div>
           </div>
@@ -387,14 +387,14 @@ export default function UploadPage() {
 
         {/* Right: Cost Summary */}
         <div>
-          <div className="glass rounded-3xl p-6 border border-white/5 sticky top-24 space-y-5">
+          <div className="glass rounded-3xl p-6 border border-gray-200 sticky top-24 space-y-5">
             <div className="flex items-center gap-2">
               <IndianRupee className="w-5 h-5 text-violet-400" />
-              <h3 className="font-bold text-white">Cost Estimate</h3>
+              <h3 className="font-bold text-[#0B1D3A]">Cost Estimate</h3>
             </div>
 
             {!fileAnalysis ? (
-              <div className="text-center py-6 text-white/30">
+              <div className="text-center py-6 text-gray-400">
                 <AlertCircle className="w-8 h-8 mx-auto mb-2" />
                 <p className="text-sm">Upload a PDF to see cost estimate</p>
               </div>
@@ -407,7 +407,7 @@ export default function UploadPage() {
                 {options.binding && <CostRow label="Binding" value={cost.bindingCost} />}
                 {options.lamination && <CostRow label="Lamination" value={cost.laminationCost} />}
 
-                <div className="border-t border-white/10 pt-3">
+                <div className="border-t border-gray-300 pt-3">
                   <CostRow label="Subtotal" value={cost.subtotal} />
                   {pricing && pricing.gstRate > 0 && (
                     <CostRow label={`GST (${pricing.gstRate}%)`} value={cost.gstAmount} />
@@ -416,7 +416,7 @@ export default function UploadPage() {
 
                 <div className="glass rounded-xl p-4 border border-violet-500/20">
                   <div className="flex justify-between items-center">
-                    <span className="font-bold text-white">Total Amount</span>
+                    <span className="font-bold text-[#0B1D3A]">Total Amount</span>
                     <span className="text-xl font-extrabold text-gradient">{formatCurrency(cost.total)}</span>
                   </div>
                 </div>
@@ -424,11 +424,11 @@ export default function UploadPage() {
                 {/* Upload Progress */}
                 {uploading && (
                   <div className="space-y-2">
-                    <div className="flex justify-between text-xs text-white/50">
+                    <div className="flex justify-between text-xs text-gray-500">
                       <span>Uploading...</span>
                       <span>{uploadProgress}%</span>
                     </div>
-                    <div className="h-2 bg-white/10 rounded-full overflow-hidden">
+                    <div className="h-2 bg-gray-100 rounded-full overflow-hidden">
                       <motion.div
                         className="h-full gradient-primary rounded-full"
                         initial={{ width: 0 }}
@@ -461,9 +461,9 @@ export default function UploadPage() {
 
 function Stat({ label, value }: { label: string; value: string | number }) {
   return (
-    <div className="bg-white/3 rounded-xl p-3 text-center">
-      <div className="text-lg font-bold text-white">{value}</div>
-      <div className="text-xs text-white/40 mt-0.5">{label}</div>
+    <div className="bg-gray-50 rounded-xl p-3 text-center">
+      <div className="text-lg font-bold text-[#0B1D3A]">{value}</div>
+      <div className="text-xs text-gray-500 mt-0.5">{label}</div>
     </div>
   );
 }
@@ -471,8 +471,8 @@ function Stat({ label, value }: { label: string; value: string | number }) {
 function CostRow({ label, value }: { label: string; value: number }) {
   return (
     <div className="flex justify-between text-sm">
-      <span className="text-white/50">{label}</span>
-      <span className="text-white font-medium">{formatCurrency(value)}</span>
+      <span className="text-gray-500">{label}</span>
+      <span className="text-[#0B1D3A] font-medium">{formatCurrency(value)}</span>
     </div>
   );
 }
@@ -492,12 +492,12 @@ function SelectField({
 }) {
   return (
     <div>
-      <label className="text-xs text-white/50 mb-2 block">{label}</label>
+      <label className="text-xs text-gray-500 mb-2 block">{label}</label>
       <div className="relative">
         <select
           value={value}
           onChange={(e) => onChange(e.target.value)}
-          className="w-full px-3 py-2.5 bg-white/5 border border-white/10 rounded-xl text-white text-sm focus:outline-none focus:border-violet-500 appearance-none cursor-pointer"
+          className="w-full px-3 py-2.5 bg-white border border-gray-300 rounded-xl text-[#0B1D3A] text-sm focus:outline-none focus:border-violet-500 appearance-none cursor-pointer"
         >
           {options.map((opt) => {
             const v = typeof opt === "string" ? opt : opt.value;
@@ -505,7 +505,7 @@ function SelectField({
             return <option key={v} value={v} className="bg-gray-900">{l}</option>;
           })}
         </select>
-        <ChevronDown className="absolute right-3 top-1/2 -translate-y-1/2 w-4 h-4 text-white/30 pointer-events-none" />
+        <ChevronDown className="absolute right-3 top-1/2 -translate-y-1/2 w-4 h-4 text-gray-400 pointer-events-none" />
       </div>
     </div>
   );
@@ -528,16 +528,16 @@ function ToggleField({
       className={`flex items-center justify-between p-3 rounded-xl border cursor-pointer transition-all ${
         checked
           ? "border-violet-500/30 bg-violet-500/10"
-          : "border-white/10 bg-white/3 hover:border-white/20"
+          : "border-gray-300 bg-gray-50 hover:border-gray-400"
       }`}
     >
       <div>
-        <div className="text-sm font-medium text-white">{label}</div>
-        {sublabel && <div className="text-xs text-white/30">{sublabel}</div>}
+        <div className="text-sm font-medium text-[#0B1D3A]">{label}</div>
+        {sublabel && <div className="text-xs text-gray-400">{sublabel}</div>}
       </div>
       <div
         className={`w-10 h-5 rounded-full transition-colors ${
-          checked ? "bg-violet-600" : "bg-white/10"
+          checked ? "bg-violet-600" : "bg-gray-100"
         }`}
       >
         <div
