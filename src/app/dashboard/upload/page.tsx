@@ -128,8 +128,8 @@ export default function UploadPage() {
 
         setFileAnalysis({
           totalPages: actualPageCount,
-          colorPages: Math.floor(actualPageCount * 0.3), // Simulated for now
-          bwPages: Math.ceil(actualPageCount * 0.7), // Simulated for now
+          colorPages: 0,
+          bwPages: actualPageCount,
           paperSize: "A4",
         });
         toast.success("PDF analyzed successfully!");
@@ -163,19 +163,11 @@ export default function UploadPage() {
       
     if (pagesToCharge === 0) return null;
 
-    const ratio = pagesToCharge / totalPages;
-    const estimatedColorPages = Math.round(colorPages * ratio);
-    const estimatedBwPages = pagesToCharge - estimatedColorPages;
+    const estimatedColorPages = printColor === "COLOR" ? pagesToCharge : 0;
+    const estimatedBwPages = printColor === "BLACK_AND_WHITE" ? pagesToCharge : 0;
 
-    let colorCost = 0;
-    let bwCost = 0;
-
-    if (printColor === "COLOR") {
-      colorCost = estimatedColorPages * pricing.colorPrice * sizeMultiplier * copies;
-      bwCost = estimatedBwPages * pricing.bwPrice * sizeMultiplier * copies;
-    } else {
-      bwCost = pagesToCharge * pricing.bwPrice * sizeMultiplier * copies;
-    }
+    let colorCost = estimatedColorPages * pricing.colorPrice * sizeMultiplier * copies;
+    let bwCost = estimatedBwPages * pricing.bwPrice * sizeMultiplier * copies;
 
     const bindingCost = binding ? pricing.bindingCost : 0;
     const laminationCost = lamination ? pagesToCharge * pricing.laminationCost * copies : 0;
@@ -221,6 +213,25 @@ export default function UploadPage() {
       clearInterval(interval);
       setUploadProgress(100);
 
+      const idToken = await user.getIdToken();
+      
+      // Force auth sync to prevent 'User not found' if they haven't refreshed the page
+      await fetch("/api/auth/sync", {
+        method: "POST",
+        headers: {
+          "Content-Type": "application/json",
+          Authorization: `Bearer ${idToken}`,
+        },
+        body: JSON.stringify({
+          uid: user.uid,
+          email: user.email,
+          name: user.displayName,
+          phone: user.phoneNumber,
+          photoURL: user.photoURL,
+          provider: user.providerData?.[0]?.providerId,
+        }),
+      });
+
       const orderRes = await fetch("/api/orders", {
         method: "POST",
         headers: { "Content-Type": "application/json" },
@@ -231,8 +242,8 @@ export default function UploadPage() {
           fileKey: `orders/${user.uid}/${Date.now()}-${file.name}`,
           fileSize: file.size,
           totalPages: fileAnalysis.totalPages,
-          colorPages: fileAnalysis.colorPages,
-          bwPages: fileAnalysis.bwPages,
+          colorPages: cost.estimatedColorPages,
+          bwPages: cost.estimatedBwPages,
           ...options,
           colorPrice: cost.colorPrice,
           bwPrice: cost.bwPrice,
