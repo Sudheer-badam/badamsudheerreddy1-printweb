@@ -74,7 +74,6 @@ export default function ProfilePage() {
       "microsoft.com": "Microsoft",
       "apple.com": "Apple",
       "password": "Email & Password",
-      "phone": "Phone OTP",
     };
     return map[provider] || provider;
   };

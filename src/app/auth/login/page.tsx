@@ -13,12 +13,12 @@ import { RecaptchaVerifier, ConfirmationResult } from "firebase/auth";
 import { auth } from "@/lib/firebase";
 import { toast } from "sonner";
 
-type Tab = "phone" | "email" | "social";
+type Tab = "email" | "social";
 
 export default function LoginPage() {
   const { signInWithGoogle, signInWithMicrosoft, signInWithApple, signInWithEmail, sendOTP, verifyOTP } = useAuth();
   const router = useRouter();
-  const [tab, setTab] = useState<Tab>("phone");
+  const [tab, setTab] = useState<Tab>("email");
   const [loading, setLoading] = useState(false);
   const [showPassword, setShowPassword] = useState(false);
 
@@ -111,9 +111,7 @@ export default function LoginPage() {
     } finally { setLoading(false); }
   };
 
-  const tabs: { id: Tab; label: string }[] = [
-    { id: "phone", label: "Phone OTP" },
-    { id: "email", label: "Email" },
+  const tabs: { id: Tab; label: string }[] = [    { id: "email", label: "Email" },
     { id: "social", label: "Social" },
   ];
 
@@ -205,86 +203,6 @@ export default function LoginPage() {
             </div>
 
             <AnimatePresence mode="wait">
-              {/* Phone OTP */}
-              {tab === "phone" && (
-                <motion.div key="phone" initial={{ opacity: 0, x: -20 }} animate={{ opacity: 1, x: 0 }} exit={{ opacity: 0, x: 20 }}>
-                  {!otpSent ? (
-                    <div className="space-y-4">
-                      <div>
-                        <label className="text-sm font-semibold mb-2 block" style={{ color: "#444B54" }}>Phone Number</label>
-                        <div className="relative">
-                          <div className="absolute left-4 top-1/2 -translate-y-1/2 flex items-center gap-2" style={{ color: "#6B7280" }}>
-                            <Phone className="w-4 h-4" />
-                            <span className="text-sm font-medium">+91</span>
-                            <span className="text-sm" style={{ color: "#E2E6EF" }}>|</span>
-                          </div>
-                          <input
-                            type="tel"
-                            value={phone}
-                            onChange={(e) => setPhone(e.target.value.replace(/\D/g, "").slice(0, 10))}
-                            placeholder="10-digit mobile number"
-                            className={`${inputCls} pl-24`}
-                            style={inputStyle}
-                            onFocus={inputFocus} onBlur={inputBlur}
-                          />
-                        </div>
-                      </div>
-                      <button
-                        onClick={handleSendOTP}
-                        disabled={loading}
-                        className="btn-primary w-full py-3 flex items-center justify-center gap-2 disabled:opacity-60"
-                      >
-                        {loading ? <Loader2 className="w-4 h-4 animate-spin" /> : <Phone className="w-4 h-4" />}
-                        Send OTP
-                      </button>
-                    </div>
-                  ) : (
-                    <div className="space-y-5">
-                      <div className="text-center p-4 rounded-xl" style={{ background: "#F0FDF4", border: "1px solid rgba(0,200,81,0.2)" }}>
-                        <p className="text-sm font-medium" style={{ color: "#444B54" }}>
-                          OTP sent to <span className="font-bold" style={{ color: "#00C851" }}>+91 {phone}</span>
-                        </p>
-                        <button
-                          onClick={() => { setOtpSent(false); setOtp(["", "", "", "", "", ""]); }}
-                          className="text-xs font-medium flex items-center gap-1 mx-auto mt-2 hover:opacity-70 transition-opacity"
-                          style={{ color: "#6B7280" }}
-                        >
-                          <ArrowLeft className="w-3 h-3" /> Change number
-                        </button>
-                      </div>
-                      <div className="flex gap-2 justify-center">
-                        {otp.map((digit, i) => (
-                          <input
-                            key={i}
-                            ref={(el) => { otpRefs.current[i] = el; }}
-                            type="text"
-                            inputMode="numeric"
-                            maxLength={1}
-                            value={digit}
-                            onChange={(e) => handleOtpChange(i, e.target.value.replace(/\D/g, ""))}
-                            onKeyDown={(e) => handleOtpKeyDown(i, e)}
-                            className="w-11 h-12 text-center text-xl font-bold rounded-xl outline-none transition-all"
-                            style={{
-                              background: "#F5F7FA",
-                              border: digit ? "2px solid #2D63FF" : "1.5px solid #E2E6EF",
-                              color: "#0B1D3A",
-                            }}
-                          />
-                        ))}
-                      </div>
-                      <button
-                        onClick={handleVerifyOTP}
-                        disabled={loading}
-                        className="btn-primary w-full py-3 flex items-center justify-center gap-2 disabled:opacity-60"
-                      >
-                        {loading ? <Loader2 className="w-4 h-4 animate-spin" /> : null}
-                        Verify & Login
-                      </button>
-                    </div>
-                  )}
-                </motion.div>
-              )}
-
               {/* Email */}
               {tab === "email" && (
                 <motion.div key="email" initial={{ opacity: 0, x: -20 }} animate={{ opacity: 1, x: 0 }} exit={{ opacity: 0, x: 20 }}>
