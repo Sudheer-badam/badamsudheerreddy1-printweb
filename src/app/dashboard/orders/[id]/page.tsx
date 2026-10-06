@@ -16,12 +16,18 @@ import {
   CreditCard,
   Download,
   Phone,
-  Mail,
-  Copy,
+  Building,
+  Smartphone,
+  Wallet,
+  ShieldCheck,
+  RefreshCw,
+  Search,
 } from "lucide-react";
 import { useAuth } from "@/contexts/AuthContext";
 import { formatCurrency, formatDate, ORDER_STATUS_LABELS, PAYMENT_STATUS_COLORS } from "@/lib/utils";
 import { toast } from "sonner";
+import Script from "next/script";
+import Image from "next/image";
 
 interface OrderDetail {
   id: string;
@@ -88,6 +94,89 @@ export default function OrderDetailPage() {
   const [order, setOrder] = useState<OrderDetail | null>(null);
   const [loading, setLoading] = useState(true);
   const [paying, setPaying] = useState(false);
+  
+  // Payment Modal States
+  const [showPaymentModal, setShowPaymentModal] = useState(false);
+  const [paymentMethod, setPaymentMethod] = useState<"UPI" | "CARD" | "NETBANKING" | "RAZORPAY">("UPI");
+  const [transactionId, setTransactionId] = useState("");
+  const [isPolling, setIsPolling] = useState(false);
+  const [timeLeft, setTimeLeft] = useState(240);
+  
+  const adminUpiId = "8688509699-1@okbizaxis";
+  const adminName = "Sudheer Reddy Printing Shop";
+
+  // Simulate real-time fetching (like a vending machine)
+  useEffect(() => {
+    let interval: NodeJS.Timeout;
+    if (isPolling && timeLeft > 0) {
+      interval = setInterval(() => {
+        setTimeLeft(prev => prev - 1);
+      }, 1000);
+    } else if (isPolling && timeLeft === 0) {
+      setIsPolling(false);
+      toast.error("Auto-fetch timed out. Please enter the UTR manually.");
+    }
+    return () => clearInterval(interval);
+  }, [isPolling, timeLeft]);
+
+  const handleRazorpay = async () => {
+    if (!order || !user) return;
+    try {
+      // In a real scenario, you'd fetch the Razorpay order ID from your backend here.
+      // For now, we open the Razorpay modal directly if they have keys in AdminSettings
+      const res = await fetch("/api/admin/settings");
+      const settings = await res.json();
+      
+      if (!settings?.razorpayKey) {
+        toast.error("Payment Gateway is not configured. Please use manual UPI.");
+        setPaymentMethod("UPI");
+        return;
+      }
+
+      const options = {
+        key: settings.razorpayKey,
+        amount: Math.round(order.totalAmount * 100),
+        currency: "INR",
+        name: adminName,
+        description: `Order ${order.orderNumber}`,
+        handler: async function (response: any) {
+          setTransactionId(response.razorpay_payment_id);
+          toast.success("Payment detected successfully! Verifying...");
+          
+          // Submit the successful payment
+          const paymentRes = await fetch("/api/payments", {
+            method: "POST",
+            headers: { "Content-Type": "application/json" },
+            body: JSON.stringify({
+              uid: user.uid,
+              orderId: order.id,
+              amount: order.totalAmount,
+              method: "RAZORPAY",
+              transactionId: response.razorpay_payment_id,
+              razorpayId: response.razorpay_payment_id
+            }),
+          });
+          
+          if (paymentRes.ok) {
+            toast.success("Payment verified successfully!");
+            setShowPaymentModal(false);
+            fetchOrder();
+          }
+        },
+        prefill: {
+          name: user.displayName || user.email?.split('@')[0],
+          email: user.email,
+        },
+        theme: { color: "#7c3aed" }
+      };
+
+      const rzp = new (window as any).Razorpay(options);
+      rzp.open();
+    } catch (error) {
+      console.error(error);
+      toast.error("Failed to initialize Payment Gateway.");
+    }
+  };
 
   useEffect(() => {
     if (user && params.id) fetchOrder();
@@ -108,13 +197,16 @@ export default function OrderDetailPage() {
     toast.success("Order ID copied!");
   };
 
-  const handlePayment = async () => {
+  const handlePayment = async (e?: React.FormEvent) => {
+    if (e) e.preventDefault();
     if (!order || !user) return;
+    if (!transactionId.trim() || transactionId.trim().length < 6) {
+      toast.error("Please enter a valid Transaction / UTR Number");
+      return;
+    }
+    
     setPaying(true);
     try {
-      // Simulate payment delay
-      await new Promise(resolve => setTimeout(resolve, 1500));
-      
       const res = await fetch("/api/payments", {
         method: "POST",
         headers: { "Content-Type": "application/json" },
@@ -122,13 +214,14 @@ export default function OrderDetailPage() {
           uid: user.uid,
           orderId: order.id,
           amount: order.totalAmount,
-          method: "UPI",
-          transactionId: `TXN${Date.now()}`,
+          method: paymentMethod,
+          transactionId: transactionId.trim(),
         }),
       });
 
       if (res.ok) {
-        toast.success("Payment successful!");
+        toast.success("Payment details submitted successfully! Awaiting verification.");
+        setShowPaymentModal(false);
         fetchOrder();
       } else {
         toast.error("Payment failed. Please try again.");
@@ -156,6 +249,8 @@ export default function OrderDetailPage() {
 
   return (
     <div className="space-y-6 max-w-3xl">
+      <Script src="https://checkout.razorpay.com/v1/checkout.js" strategy="lazyOnload" />
+      
       {/* Back */}
       <div>
         <Link href="/dashboard/orders" className="inline-flex items-center gap-2 text-gray-500 hover:text-[#0B1D3A] text-sm transition-colors mb-4">
@@ -178,17 +273,58 @@ export default function OrderDetailPage() {
             </div>
             {order.paymentStatus === "PENDING" && !isCancelled && (
               <button
-                onClick={handlePayment}
-                disabled={paying}
-                className="px-4 py-2 bg-violet-600 text-white rounded-xl text-sm font-medium hover:bg-violet-700 transition-colors disabled:opacity-50 flex items-center gap-2"
+                onClick={() => setShowPaymentModal(true)}
+                className="px-4 py-2 bg-violet-600 text-white rounded-xl text-sm font-medium hover:bg-violet-700 transition-colors flex items-center gap-2 shadow-lg shadow-violet-500/30"
               >
-                {paying ? <Clock className="w-4 h-4 animate-spin" /> : <CreditCard className="w-4 h-4" />}
-                {paying ? "Processing..." : "Pay Now"}
+                <CreditCard className="w-4 h-4" />
+                Pay Now
               </button>
             )}
           </div>
         </div>
       </div>
+
+      {/* Payment Receipt */}
+      {order.paymentStatus === "PAID" && (
+        <motion.div 
+          initial={{ opacity: 0, y: -10 }}
+          animate={{ opacity: 1, y: 0 }}
+          className="bg-gradient-to-r from-emerald-500 to-emerald-400 rounded-3xl p-6 text-white flex flex-col sm:flex-row items-start sm:items-center justify-between gap-4 shadow-lg shadow-emerald-500/20"
+        >
+          <div className="flex items-center gap-4">
+            <div className="w-12 h-12 bg-white/20 rounded-full flex items-center justify-center shrink-0">
+              <CheckCircle className="w-6 h-6 text-white" />
+            </div>
+            <div>
+              <h2 className="text-xl font-bold">Payment Successful</h2>
+              <p className="text-emerald-100 text-sm">Your transaction was completed securely.</p>
+            </div>
+          </div>
+          <div className="w-full sm:w-auto bg-black/10 rounded-xl p-3 border border-white/10">
+            <div className="flex justify-between sm:flex-col sm:items-end gap-1 text-sm">
+              <span className="text-emerald-100">Transaction ID</span>
+              <span className="font-mono font-bold tracking-wider">{order.orderNumber}</span>
+            </div>
+          </div>
+        </motion.div>
+      )}
+      {order.paymentStatus === "FAILED" && (
+        <motion.div 
+          initial={{ opacity: 0, y: -10 }}
+          animate={{ opacity: 1, y: 0 }}
+          className="bg-gradient-to-r from-red-500 to-red-400 rounded-3xl p-6 text-white flex flex-col sm:flex-row items-start sm:items-center justify-between gap-4 shadow-lg shadow-red-500/20"
+        >
+          <div className="flex items-center gap-4">
+            <div className="w-12 h-12 bg-white/20 rounded-full flex items-center justify-center shrink-0">
+              <XCircle className="w-6 h-6 text-white" />
+            </div>
+            <div>
+              <h2 className="text-xl font-bold">Payment Failed</h2>
+              <p className="text-red-100 text-sm">There was an issue processing your transaction.</p>
+            </div>
+          </div>
+        </motion.div>
+      )}
 
       {/* Status Timeline */}
       {!isCancelled ? (
@@ -329,6 +465,157 @@ export default function OrderDetailPage() {
           )}
         </div>
       </div>
+    </div>
+      
+      {/* Payment Gateway Modal */}
+      {showPaymentModal && (
+        <div className="fixed inset-0 z-50 flex items-center justify-center p-4 bg-[#0B1D3A]/60 backdrop-blur-sm">
+          <motion.div
+            initial={{ opacity: 0, scale: 0.95 }}
+            animate={{ opacity: 1, scale: 1 }}
+            className="bg-white rounded-3xl w-full max-w-2xl overflow-hidden shadow-2xl flex flex-col md:flex-row"
+          >
+            {/* Left side: Payment Methods */}
+            <div className="w-full md:w-1/3 bg-gray-50 border-r border-gray-100 p-6">
+              <h3 className="text-lg font-bold text-[#0B1D3A] mb-6">Payment Method</h3>
+              <div className="space-y-3">
+                <button
+                  onClick={() => {
+                    setPaymentMethod("UPI");
+                    setIsPolling(true);
+                    setTimeLeft(240);
+                  }}
+                  className={`w-full flex items-center gap-3 p-3 rounded-xl transition-all ${
+                    paymentMethod === "UPI"
+                      ? "bg-violet-100 text-violet-700 font-semibold border-violet-200 border"
+                      : "text-gray-600 hover:bg-gray-100 border border-transparent"
+                  }`}
+                >
+                  <Smartphone className="w-5 h-5" />
+                  UPI Payment (Auto-Fetch)
+                </button>
+                <button
+                  onClick={() => { setPaymentMethod("RAZORPAY"); handleRazorpay(); }}
+                  className={`w-full flex items-center gap-3 p-3 rounded-xl transition-all ${
+                    paymentMethod === "RAZORPAY"
+                      ? "bg-violet-100 text-violet-700 font-semibold border-violet-200 border"
+                      : "text-gray-600 hover:bg-gray-100 border border-transparent"
+                  }`}
+                >
+                  <CreditCard className="w-5 h-5" />
+                  Cards & Net Banking
+                </button>
+              </div>
+
+              <div className="mt-auto pt-10 flex items-center gap-2 text-xs text-gray-400">
+                <ShieldCheck className="w-4 h-4 text-emerald-500" />
+                <span>100% Secure Real-Time Payments</span>
+              </div>
+            </div>
+
+            {/* Right side: Payment Details */}
+            <div className="w-full md:w-2/3 p-6 md:p-8 flex flex-col">
+              <div className="flex justify-between items-start mb-6">
+                <div>
+                  <h3 className="text-xl font-bold text-[#0B1D3A]">
+                    {paymentMethod === "UPI" && "Real-Time UPI Payment"}
+                    {paymentMethod === "RAZORPAY" && "Secure Gateway"}
+                  </h3>
+                  <p className="text-sm text-gray-500">Amount to pay: <span className="font-bold text-[#0B1D3A]">{formatCurrency(order.totalAmount)}</span></p>
+                </div>
+                <button
+                  onClick={() => { setShowPaymentModal(false); setIsPolling(false); }}
+                  className="p-2 bg-gray-100 hover:bg-gray-200 rounded-full transition-colors text-gray-500"
+                >
+                  <XCircle className="w-5 h-5" />
+                </button>
+              </div>
+
+              <div className="flex-1">
+                {paymentMethod === "UPI" && (
+                  <div className="flex flex-col items-center">
+                    <div className="bg-white p-3 rounded-2xl border-2 border-violet-100 shadow-sm mb-4 inline-block relative">
+                      {/* Dynamic QR Code based on UPI ID and Order Reference */}
+                      <img 
+                        src={`https://api.qrserver.com/v1/create-qr-code/?size=200x200&data=upi://pay?pa=${encodeURIComponent(adminUpiId)}&pn=${encodeURIComponent(adminName)}&am=${order.totalAmount}&cu=INR&tr=${encodeURIComponent(order.orderNumber)}`} 
+                        alt="UPI QR Code" 
+                        className={`w-40 h-40 object-contain transition-opacity ${isPolling ? 'opacity-50' : 'opacity-100'}`}
+                      />
+                      {isPolling && (
+                        <div className="absolute inset-0 flex flex-col items-center justify-center">
+                           <div className="relative">
+                             <div className="w-16 h-16 border-4 border-violet-200 rounded-full animate-spin border-t-violet-600"></div>
+                             <Search className="w-6 h-6 text-violet-600 absolute top-1/2 left-1/2 -translate-x-1/2 -translate-y-1/2" />
+                           </div>
+                        </div>
+                      )}
+                    </div>
+                    
+                    {isPolling ? (
+                      <div className="text-center mb-6">
+                        <p className="text-sm font-bold text-violet-600 mb-1 animate-pulse">Scanning for Payment...</p>
+                        <p className="text-2xl font-mono text-[#0B1D3A] mb-2">
+                          {Math.floor(timeLeft / 60).toString().padStart(2, '0')}:{(timeLeft % 60).toString().padStart(2, '0')}
+                        </p>
+                        <p className="text-xs text-gray-500">Keep this screen open while you pay on your phone.</p>
+                      </div>
+                    ) : (
+                      <p className="text-sm font-medium text-[#0B1D3A] mb-6">Scan with any UPI App</p>
+                    )}
+                  </div>
+                )}
+
+                {paymentMethod === "RAZORPAY" && (
+                  <div className="flex flex-col items-center justify-center py-6 text-center text-gray-500">
+                    <RefreshCw className="w-12 h-12 text-violet-300 mb-3 animate-spin" />
+                    <p className="text-sm mb-2 font-semibold text-[#0B1D3A]">Connecting to Payment Gateway...</p>
+                    <p className="text-xs">A secure window should open to process your payment.</p>
+                  </div>
+                )}
+              </div>
+
+              {/* Transaction Input Form (Fallback) */}
+              {paymentMethod === "UPI" && !isPolling && (
+                <motion.div 
+                  initial={{ opacity: 0, y: 10 }}
+                  animate={{ opacity: 1, y: 0 }}
+                  className="mt-2 pt-6 border-t border-gray-100"
+                >
+                  <form onSubmit={handlePayment} className="space-y-4">
+                    <div className="bg-amber-50 border border-amber-200 rounded-xl p-3 mb-4">
+                       <p className="text-xs text-amber-800">
+                         ⚠️ Auto-fetch timed out. Please enter the 12-digit UTR/Transaction Number manually from your UPI app.
+                       </p>
+                    </div>
+                    <div>
+                      <label className="block text-sm font-medium text-[#0B1D3A] mb-1">
+                        Transaction / UTR Number
+                      </label>
+                      <input
+                        type="text"
+                        required
+                        value={transactionId}
+                        onChange={(e) => setTransactionId(e.target.value)}
+                        placeholder="e.g. 3145XXXXXXXX"
+                        className="w-full px-4 py-3 rounded-xl border border-gray-300 bg-white text-[#0B1D3A] text-sm focus:outline-none focus:border-violet-500 focus:ring-1 focus:ring-violet-500 transition-shadow"
+                      />
+                    </div>
+                    
+                    <button
+                      type="submit"
+                      disabled={paying || !transactionId.trim()}
+                      className="w-full py-3.5 bg-violet-600 text-white rounded-xl font-bold hover:bg-violet-700 transition-colors disabled:opacity-50 disabled:cursor-not-allowed flex items-center justify-center gap-2 shadow-lg shadow-violet-500/25"
+                    >
+                      {paying ? <RefreshCw className="w-5 h-5 animate-spin" /> : <CheckCircle className="w-5 h-5" />}
+                      {paying ? "Verifying..." : "Verify Payment"}
+                    </button>
+                  </form>
+                </motion.div>
+              )}
+            </div>
+          </motion.div>
+        </div>
+      )}
     </div>
   );
 }

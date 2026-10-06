@@ -173,7 +173,7 @@ export async function POST(req: NextRequest) {
       },
     });
 
-    // Create in-app notification
+    // Create in-app notification for user
     await prisma.notification.create({
       data: {
         userId: user.id,
@@ -184,6 +184,20 @@ export async function POST(req: NextRequest) {
         status: "SENT",
       },
     });
+
+    // Create in-app notification for all admins
+    const admins = await prisma.user.findMany({ where: { role: "ADMIN" } });
+    if (admins.length > 0) {
+      const adminNotifications = admins.map(admin => ({
+        userId: admin.id,
+        orderId: order.id,
+        title: "New Order Received",
+        message: `New order ${orderNumber} uploaded by ${user.name || user.email || 'Customer'}.`,
+        channel: "IN_APP" as const,
+        status: "SENT" as const,
+      }));
+      await prisma.notification.createMany({ data: adminNotifications });
+    }
 
     return NextResponse.json(order, { status: 201 });
   } catch (error) {
