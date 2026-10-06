@@ -3,6 +3,7 @@
 import { useState, useCallback, useEffect } from "react";
 import { motion, AnimatePresence } from "framer-motion";
 import { useDropzone } from "react-dropzone";
+import { PDFDocument } from "pdf-lib";
 import {
   Upload,
   FileText,
@@ -119,18 +120,25 @@ export default function UploadPage() {
       setFile(uploadedFile);
       setAnalyzing(true);
 
-      // Simulate PDF analysis (in production, use pdf-lib or server-side)
-      setTimeout(() => {
-        const estimatedPages = Math.ceil(uploadedFile.size / 50000);
+      try {
+        const arrayBuffer = await uploadedFile.arrayBuffer();
+        const pdfDoc = await PDFDocument.load(arrayBuffer);
+        const actualPageCount = pdfDoc.getPageCount();
+
         setFileAnalysis({
-          totalPages: estimatedPages,
-          colorPages: Math.floor(estimatedPages * 0.3),
-          bwPages: Math.ceil(estimatedPages * 0.7),
+          totalPages: actualPageCount,
+          colorPages: Math.floor(actualPageCount * 0.3), // Simulated for now
+          bwPages: Math.ceil(actualPageCount * 0.7), // Simulated for now
           paperSize: "A4",
         });
-        setAnalyzing(false);
         toast.success("PDF analyzed successfully!");
-      }, 1500);
+      } catch (error) {
+        console.error("PDF analysis error:", error);
+        toast.error("Failed to read PDF file.");
+        setFile(null);
+      } finally {
+        setAnalyzing(false);
+      }
     },
     [pricing]
   );
