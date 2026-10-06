@@ -256,10 +256,6 @@ export default function LoginPage() {
                       label: "Continue with Microsoft", action: () => handleSocialLogin("microsoft"),
                       icon: <svg className="w-5 h-5" viewBox="0 0 24 24" fill="none"><path d="M11 3H3v8h8V3z" fill="#F25022"/><path d="M21 3h-8v8h8V3z" fill="#7FBA00"/><path d="M11 13H3v8h8v-8z" fill="#00A4EF"/><path d="M21 13h-8v8h8v-8z" fill="#FFB900"/></svg>,
                     },
-                    {
-                      label: "Continue with Apple", action: () => handleSocialLogin("apple"),
-                      icon: <Monitor className="w-5 h-5" style={{ color: "#444B54" }} />,
-                    },
                   ].map(({ label, action, icon }) => (
                     <button key={label} onClick={action} disabled={loading}
                       className="w-full py-3 px-4 rounded-xl flex items-center gap-3 text-sm font-semibold transition-all hover:shadow-md"
