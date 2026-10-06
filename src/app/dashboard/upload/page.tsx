@@ -234,11 +234,21 @@ export default function UploadPage() {
       setUploadProgress(30);
 
       try {
-        const snapshot = await uploadBytes(storageRef, file);
+        toast.loading("Uploading to secure storage...", { id: "upload-toast" });
+        
+        const uploadPromise = uploadBytes(storageRef, file);
+        const timeoutPromise = new Promise((_, reject) => 
+          setTimeout(() => reject(new Error("Firebase upload timed out. This is usually caused by missing CORS configuration in your Firebase Storage bucket.")), 15000)
+        );
+        
+        const snapshot = await Promise.race([uploadPromise, timeoutPromise]) as any;
+        
         setUploadProgress(80);
         downloadURL = await getDownloadURL(snapshot.ref);
         setUploadProgress(100);
+        toast.loading("Syncing authentication...", { id: "upload-toast" });
       } catch (error: any) {
+        toast.dismiss("upload-toast");
         console.error("Firebase Upload failed:", error);
         if (error.code === 'storage/unauthorized') {
           throw new Error("Storage permission denied. Please check Firebase rules.");
@@ -266,6 +276,8 @@ export default function UploadPage() {
         }),
       });
 
+      toast.loading("Creating your order...", { id: "upload-toast" });
+
       const orderRes = await fetch("/api/orders", {
         method: "POST",
         headers: { "Content-Type": "application/json" },
@@ -292,14 +304,17 @@ export default function UploadPage() {
       });
 
       if (orderRes.ok) {
+        toast.dismiss("upload-toast");
         const order = await orderRes.json();
         setSubmitted(true);
         toast.success("Order placed successfully!");
         setTimeout(() => router.push(`/dashboard/orders/${order.id}`), 2000);
       } else {
+        toast.dismiss("upload-toast");
         throw new Error("Failed to create order");
       }
     } catch (error: any) {
+      toast.dismiss("upload-toast");
       toast.error(error.message || "Failed to submit order. Please try again.");
       console.error(error);
     } finally {
