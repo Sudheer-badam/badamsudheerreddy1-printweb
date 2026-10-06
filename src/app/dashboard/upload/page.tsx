@@ -168,8 +168,8 @@ export default function UploadPage() {
     const estimatedColorPages = printColor === "COLOR" ? pagesToCharge : 0;
     const estimatedBwPages = printColor === "BLACK_AND_WHITE" ? pagesToCharge : 0;
 
-    let colorCost = estimatedColorPages * pricing.colorPrice * sizeMultiplier * copies;
-    let bwCost = estimatedBwPages * pricing.bwPrice * sizeMultiplier * copies;
+    const colorCost = estimatedColorPages * pricing.colorPrice * sizeMultiplier * copies;
+    const bwCost = estimatedBwPages * pricing.bwPrice * sizeMultiplier * copies;
 
     const bindingCost = binding ? pricing.bindingCost : 0;
     const laminationCost = lamination ? pagesToCharge * pricing.laminationCost * copies : 0;
@@ -202,7 +202,7 @@ export default function UploadPage() {
 
     try {
       let downloadURL = "";
-      let storageKey = `orders/${user.uid}/${Date.now()}-${file.name}`;
+      const storageKey = `orders/${user.uid}/${Date.now()}-${file.name}`;
 
       // Upload to Firebase Storage
       const storageRef = ref(storage, storageKey);
