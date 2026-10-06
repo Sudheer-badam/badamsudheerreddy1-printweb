@@ -19,7 +19,7 @@ import { useRouter } from "next/navigation";
 import { toast } from "sonner";
 import { formatCurrency, formatFileSize } from "@/lib/utils";
 import { storage } from "@/lib/firebase";
-import { ref, uploadBytesResumable, getDownloadURL } from "firebase/storage";
+import { ref, uploadBytes, getDownloadURL } from "firebase/storage";
 
 interface Pricing {
   colorPrice: number;
@@ -229,34 +229,23 @@ export default function UploadPage() {
 
       // Upload to Firebase Storage
       const storageRef = ref(storage, storageKey);
-      const uploadTask = uploadBytesResumable(storageRef, file);
+      
+      // Simulate progress for UI since uploadBytes doesn't have on-progress
+      setUploadProgress(30);
 
-      await new Promise<void>((resolve, reject) => {
-        uploadTask.on(
-          "state_changed",
-          (snapshot) => {
-            const progress = (snapshot.bytesTransferred / snapshot.totalBytes) * 100;
-            setUploadProgress(progress);
-          },
-          (error) => {
-            console.error("Firebase Upload failed:", error);
-            if (error.code === 'storage/unauthorized') {
-              reject(new Error("Storage permission denied. Please check Firebase rules."));
-            } else {
-              reject(error);
-            }
-          },
-          async () => {
-            try {
-              downloadURL = await getDownloadURL(uploadTask.snapshot.ref);
-              resolve();
-            } catch (err) {
-              reject(err);
-            }
-          }
-        );
-      });
-      setUploadProgress(100);
+      try {
+        const snapshot = await uploadBytes(storageRef, file);
+        setUploadProgress(80);
+        downloadURL = await getDownloadURL(snapshot.ref);
+        setUploadProgress(100);
+      } catch (error: any) {
+        console.error("Firebase Upload failed:", error);
+        if (error.code === 'storage/unauthorized') {
+          throw new Error("Storage permission denied. Please check Firebase rules.");
+        } else {
+          throw new Error(error.message || "File upload failed.");
+        }
+      }
 
       const idToken = await user.getIdToken();
       
