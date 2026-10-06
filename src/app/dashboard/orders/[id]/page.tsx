@@ -22,6 +22,7 @@ import {
   ShieldCheck,
   RefreshCw,
   Search,
+  Copy,
 } from "lucide-react";
 import { useAuth } from "@/contexts/AuthContext";
 import { formatCurrency, formatDate, ORDER_STATUS_LABELS, PAYMENT_STATUS_COLORS } from "@/lib/utils";
