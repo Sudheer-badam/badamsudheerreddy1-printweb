@@ -47,6 +47,24 @@ export default function ProfilePage() {
     setSaving(true);
     try {
       const idToken = await user?.getIdToken();
+      
+      // Force sync first in case they missed the onAuthStateChanged trigger
+      await fetch("/api/auth/sync", {
+        method: "POST",
+        headers: {
+          "Content-Type": "application/json",
+          Authorization: `Bearer ${idToken}`,
+        },
+        body: JSON.stringify({
+          uid: user?.uid,
+          email: user?.email,
+          name: profile.name || user?.displayName,
+          phone: profile.phone || user?.phoneNumber,
+          photoURL: profile.profilePhoto || user?.photoURL,
+          provider: user?.providerData[0]?.providerId,
+        }),
+      });
+
       const res = await fetch("/api/users", {
         method: "PATCH",
         headers: {
