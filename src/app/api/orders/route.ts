@@ -136,7 +136,7 @@ export async function POST(req: NextRequest) {
         colorPages,
         bwPages,
         paperSize,
-        orientation,
+        orientation: orientation === "AUTO" ? "PORTRAIT" : orientation,
         printSide,
         printColor,
         copies,
