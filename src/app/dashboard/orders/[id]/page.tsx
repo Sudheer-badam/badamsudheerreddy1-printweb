@@ -248,8 +248,9 @@ export default function OrderDetailPage() {
   const isCancelled = order.status === "CANCELLED";
 
   return (
-    <div className="space-y-6 max-w-3xl">
-      <Script src="https://checkout.razorpay.com/v1/checkout.js" strategy="lazyOnload" />
+    <>
+      <div className="space-y-6 max-w-3xl">
+        <Script src="https://checkout.razorpay.com/v1/checkout.js" strategy="lazyOnload" />
       
       {/* Back */}
       <div>
@@ -616,7 +617,7 @@ export default function OrderDetailPage() {
           </motion.div>
         </div>
       )}
-    </div>
+    </>
   );
 }
 
