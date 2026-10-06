@@ -30,7 +30,7 @@ interface PricingData {
 }
 
 export default function AdminSettingsPage() {
-  const { user } = useAuth();
+  const { user, logout } = useAuth();
   const [pricing, setPricing] = useState<PricingData>({
     colorPrice: 10,
     bwPrice: 2,
@@ -300,6 +300,20 @@ export default function AdminSettingsPage() {
         >
           {savingBusiness ? <Loader2 className="w-4 h-4 animate-spin" /> : <Save className="w-4 h-4" />}
           Save Business Info
+        </button>
+      </section>
+
+      {/* Danger Zone */}
+      <section className="glass rounded-3xl p-6 border border-red-500/20 bg-red-500/5">
+        <h3 className="font-bold text-red-600 mb-2">Account Actions</h3>
+        <p className="text-gray-500 text-sm mb-4">
+          You can safely sign out of your admin account here.
+        </p>
+        <button
+          onClick={logout}
+          className="flex items-center gap-2 px-6 py-2.5 rounded-xl bg-red-50 text-red-600 text-sm font-semibold hover:bg-red-100 transition-colors border border-red-200 w-fit"
+        >
+          Sign Out
         </button>
       </section>
     </div>
