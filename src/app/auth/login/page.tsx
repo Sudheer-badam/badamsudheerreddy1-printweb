@@ -13,7 +13,7 @@ import { RecaptchaVerifier, ConfirmationResult } from "firebase/auth";
 import { auth } from "@/lib/firebase";
 import { toast } from "sonner";
 
-type Tab = "email" | "social";
+type Tab = "email" | "phone" | "social";
 
 export default function LoginPage() {
   const { signInWithGoogle, signInWithMicrosoft, signInWithApple, signInWithEmail, sendOTP, verifyOTP } = useAuth();
@@ -111,7 +111,9 @@ export default function LoginPage() {
     } finally { setLoading(false); }
   };
 
-  const tabs: { id: Tab; label: string }[] = [    { id: "email", label: "Email" },
+  const tabs: { id: Tab; label: string }[] = [
+    { id: "email", label: "Email" },
+    { id: "phone", label: "Phone" },
     { id: "social", label: "Social" },
   ];
 
@@ -241,6 +243,68 @@ export default function LoginPage() {
                       Sign In with Email
                     </button>
                   </form>
+                </motion.div>
+              )}
+
+              {/* Phone (OTP) */}
+              {tab === "phone" && (
+                <motion.div key="phone" initial={{ opacity: 0, x: -20 }} animate={{ opacity: 1, x: 0 }} exit={{ opacity: 0, x: 20 }}>
+                  {!otpSent ? (
+                    <div className="space-y-4">
+                      <div>
+                        <label className="text-sm font-semibold mb-2 block" style={{ color: "#444B54" }}>Phone Number</label>
+                        <div className="relative">
+                          <div className="absolute left-4 top-1/2 -translate-y-1/2 flex items-center gap-1.5" style={{ color: "#6B7280" }}>
+                            <Phone className="w-4 h-4" />
+                            <span className="text-sm font-medium">+91</span>
+                            <span style={{ color: "#E2E6EF" }}>|</span>
+                          </div>
+                          <input
+                            type="tel" value={phone} onChange={(e) => setPhone(e.target.value.replace(/\D/g, "").slice(0, 10))}
+                            placeholder="10-digit number"
+                            className={`${inputCls} pl-24`} style={inputStyle}
+                            onFocus={inputFocus} onBlur={inputBlur}
+                          />
+                        </div>
+                      </div>
+                      <button onClick={handleSendOTP} disabled={loading || phone.length < 10}
+                        className="btn-primary w-full py-3 flex items-center justify-center gap-2 disabled:opacity-60">
+                        {loading ? <Loader2 className="w-4 h-4 animate-spin" /> : null}
+                        Send OTP
+                      </button>
+                    </div>
+                  ) : (
+                    <div className="space-y-4">
+                      <div className="text-center mb-6">
+                        <p className="text-sm font-medium" style={{ color: "#444B54" }}>Enter the 6-digit code sent to</p>
+                        <p className="font-bold text-lg mt-1" style={{ color: "#0B1D3A" }}>+91 {phone}</p>
+                      </div>
+                      <div className="flex gap-2 justify-center mb-6">
+                        {otp.map((digit, i) => (
+                          <input
+                            key={i}
+                            ref={(el) => { otpRefs.current[i] = el; }}
+                            type="text"
+                            inputMode="numeric"
+                            value={digit}
+                            onChange={(e) => handleOtpChange(i, e.target.value.replace(/\D/g, ""))}
+                            onKeyDown={(e) => handleOtpKeyDown(i, e)}
+                            className="w-12 h-14 text-center text-xl font-bold rounded-xl outline-none transition-all"
+                            style={inputStyle}
+                            onFocus={inputFocus} onBlur={inputBlur}
+                          />
+                        ))}
+                      </div>
+                      <button onClick={handleVerifyOTP} disabled={loading || otp.join("").length < 6}
+                        className="btn-primary w-full py-3 flex items-center justify-center gap-2 disabled:opacity-60">
+                        {loading ? <Loader2 className="w-4 h-4 animate-spin" /> : null}
+                        Verify OTP
+                      </button>
+                      <button onClick={() => setOtpSent(false)} className="w-full text-center text-sm font-semibold mt-3 hover:underline" style={{ color: "#6B7280" }}>
+                        Wrong number?
+                      </button>
+                    </div>
+                  )}
                 </motion.div>
               )}
 
