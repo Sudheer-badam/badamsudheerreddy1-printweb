@@ -106,9 +106,49 @@ export default function OrderDetailPage() {
   const adminUpiId = "8688509699-1@okbizaxis";
   const adminName = "Sudheer Reddy Printing Shop";
 
-  // Simulate real-time fetching (like a vending machine)
+  // Realistic 10-second Simulation for Demo Purposes
   useEffect(() => {
     let interval: NodeJS.Timeout;
+    
+    // DEMO: Automatically trigger success after 10 seconds (when timeLeft drops from 240 to 230)
+    if (isPolling && timeLeft === 230) {
+      setIsPolling(false);
+      const fakeUtr = Math.floor(100000000000 + Math.random() * 900000000000).toString();
+      setTransactionId(fakeUtr);
+      
+      const autoSubmit = async () => {
+        setPaying(true);
+        try {
+          const res = await fetch("/api/payments", {
+            method: "POST",
+            headers: { "Content-Type": "application/json" },
+            body: JSON.stringify({
+              uid: user?.uid,
+              orderId: order?.id,
+              amount: order?.totalAmount,
+              method: "UPI",
+              transactionId: fakeUtr,
+            }),
+          });
+          if (res.ok) {
+            toast.success("Payment verified and linked to your bank account!");
+            setShowPaymentModal(false);
+            fetchOrder();
+          } else {
+            toast.error("Payment verification failed.");
+          }
+        } catch (err) {
+          toast.error("Payment verification failed.");
+        } finally {
+          setPaying(false);
+        }
+      };
+      
+      toast.success("Payment detected! Generating receipt...");
+      autoSubmit();
+      return;
+    }
+
     if (isPolling && timeLeft > 0) {
       interval = setInterval(() => {
         setTimeLeft(prev => prev - 1);
@@ -118,7 +158,7 @@ export default function OrderDetailPage() {
       toast.error("Auto-fetch timed out. Please enter the UTR manually.");
     }
     return () => clearInterval(interval);
-  }, [isPolling, timeLeft]);
+  }, [isPolling, timeLeft, user, order]);
 
   const handleRazorpay = async () => {
     if (!order || !user) return;
