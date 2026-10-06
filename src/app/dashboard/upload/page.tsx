@@ -497,14 +497,14 @@ export default function UploadPage() {
                 label="Paper Size"
                 value={options.paperSize}
                 onChange={(v) => setOptions({ ...options, paperSize: v })}
-                options={PAPER_SIZES}
+                options={(adminSettings?.paperSizes?.filter(s => s.isActive) || [{id:"A4", label:"A4 Size", multiplier: 1, isActive: true}]).map(s => ({ value: s.id, label: s.label }))}
               />
 
               <SelectField
                 label="Paper Quality"
                 value={options.paperQuality}
                 onChange={(v) => setOptions({ ...options, paperQuality: v })}
-                options={PAPER_QUALITIES.map((q) => ({ value: q, label: q.charAt(0).toUpperCase() + q.slice(1) }))}
+                options={(adminSettings?.paperQualities?.filter(q => q.isActive) || [{id:"standard", label:"Standard", price:0, isActive:true}]).map(q => ({ value: q.id, label: `${q.label} ${q.price > 0 ? `(+₹${q.price})` : ''}` }))}
               />
 
               <div>
