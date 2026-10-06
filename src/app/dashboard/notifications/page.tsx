@@ -69,22 +69,22 @@ export default function NotificationsPage() {
     <div className="max-w-2xl space-y-6">
       <div className="flex items-center justify-between">
         <div>
-          <h1 className="text-2xl font-bold text-white">Notifications</h1>
-          <p className="text-white/40 mt-1">
+          <h1 className="text-2xl font-bold text-[#0B1D3A]">Notifications</h1>
+          <p className="text-gray-500 mt-1">
             {unreadCount > 0 ? `${unreadCount} unread` : "All caught up!"}
           </p>
         </div>
         {unreadCount > 0 && (
           <button
             onClick={markAllRead}
-            className="flex items-center gap-2 px-4 py-2 rounded-xl glass border border-white/10 text-white/60 text-sm hover:text-white transition-colors"
+            className="flex items-center gap-2 px-4 py-2 rounded-xl glass border border-gray-300 text-gray-600 text-sm hover:text-[#0B1D3A] transition-colors"
           >
             <CheckCheck className="w-4 h-4" /> Mark all read
           </button>
         )}
       </div>
 
-      <div className="glass rounded-3xl border border-white/5 overflow-hidden">
+      <div className="glass rounded-3xl border border-gray-200 overflow-hidden">
         {loading ? (
           <div className="p-6 space-y-3">
             {[1, 2, 3].map((i) => (
@@ -93,8 +93,8 @@ export default function NotificationsPage() {
           </div>
         ) : notifications.length === 0 ? (
           <div className="p-12 text-center">
-            <Bell className="w-10 h-10 text-white/20 mx-auto mb-3" />
-            <p className="text-white/40">No notifications yet</p>
+            <Bell className="w-10 h-10 text-gray-300 mx-auto mb-3" />
+            <p className="text-gray-500">No notifications yet</p>
           </div>
         ) : (
           <div className="divide-y divide-white/5">
@@ -105,27 +105,27 @@ export default function NotificationsPage() {
                 animate={{ opacity: 1, x: 0 }}
                 transition={{ delay: i * 0.05 }}
                 onClick={() => !notif.isRead && markRead(notif.id)}
-                className={`flex items-start gap-4 p-5 cursor-pointer transition-all hover:bg-white/3 ${
+                className={`flex items-start gap-4 p-5 cursor-pointer transition-all hover:bg-gray-50 ${
                   !notif.isRead ? "border-l-2 border-violet-500" : ""
                 }`}
               >
                 <div
                   className={`w-10 h-10 rounded-xl flex items-center justify-center flex-shrink-0 ${
-                    !notif.isRead ? "bg-violet-500/20" : "bg-white/5"
+                    !notif.isRead ? "bg-violet-500/20" : "bg-white"
                   }`}
                 >
                   {getNotifIcon(notif.title)}
                 </div>
                 <div className="flex-1 min-w-0">
                   <div className="flex items-start justify-between gap-2">
-                    <p className={`font-medium text-sm ${notif.isRead ? "text-white/60" : "text-white"}`}>
+                    <p className={`font-medium text-sm ${notif.isRead ? "text-gray-600" : "text-[#0B1D3A]"}`}>
                       {notif.title}
                     </p>
                     {!notif.isRead && (
                       <div className="w-2 h-2 rounded-full bg-violet-400 flex-shrink-0 mt-1" />
                     )}
                   </div>
-                  <p className="text-sm text-white/40 mt-0.5 leading-relaxed">{notif.message}</p>
+                  <p className="text-sm text-gray-500 mt-0.5 leading-relaxed">{notif.message}</p>
                   <p className="text-xs text-white/25 mt-2">{formatDate(notif.createdAt)}</p>
                 </div>
               </motion.div>

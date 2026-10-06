@@ -48,36 +48,36 @@ export default function CustomerPaymentsPage() {
   return (
     <div className="space-y-6">
       <div>
-        <h1 className="text-2xl font-bold text-white">Payments</h1>
-        <p className="text-white/40 mt-1">Your payment history</p>
+        <h1 className="text-2xl font-bold text-[#0B1D3A]">Payments</h1>
+        <p className="text-gray-500 mt-1">Your payment history</p>
       </div>
 
       {/* Summary */}
       <div className="grid grid-cols-2 gap-4">
-        <div className="glass rounded-2xl p-5 border border-white/5">
+        <div className="glass rounded-2xl p-5 border border-gray-200">
           <div className="flex items-center gap-2 mb-2">
             <TrendingUp className="w-4 h-4 text-emerald-400" />
-            <span className="text-xs text-white/40">Total Paid</span>
+            <span className="text-xs text-gray-500">Total Paid</span>
           </div>
           <div className="text-2xl font-bold text-gradient">{formatCurrency(totalPaid)}</div>
         </div>
-        <div className="glass rounded-2xl p-5 border border-white/5">
+        <div className="glass rounded-2xl p-5 border border-gray-200">
           <div className="flex items-center gap-2 mb-2">
             <CreditCard className="w-4 h-4 text-violet-400" />
-            <span className="text-xs text-white/40">Transactions</span>
+            <span className="text-xs text-gray-500">Transactions</span>
           </div>
-          <div className="text-2xl font-bold text-white">{payments.length}</div>
+          <div className="text-2xl font-bold text-[#0B1D3A]">{payments.length}</div>
         </div>
       </div>
 
       {/* Payments List */}
-      <div className="glass rounded-3xl border border-white/5 overflow-hidden">
+      <div className="glass rounded-3xl border border-gray-200 overflow-hidden">
         {loading ? (
           <div className="p-6 space-y-3">
             {[1, 2, 3].map((i) => <div key={i} className="h-16 skeleton rounded-xl" />)}
           </div>
         ) : payments.length === 0 ? (
-          <div className="p-12 text-center text-white/30">
+          <div className="p-12 text-center text-gray-400">
             <CreditCard className="w-10 h-10 mx-auto mb-3" />
             <p>No payment records yet</p>
           </div>
@@ -91,22 +91,22 @@ export default function CustomerPaymentsPage() {
                 transition={{ delay: i * 0.05 }}
                 className="flex items-center gap-4 p-5"
               >
-                <div className="w-10 h-10 rounded-xl bg-white/5 flex items-center justify-center flex-shrink-0">
+                <div className="w-10 h-10 rounded-xl bg-white flex items-center justify-center flex-shrink-0">
                   {statusIcon(payment.status)}
                 </div>
                 <div className="flex-1 min-w-0">
-                  <div className="font-medium text-white text-sm truncate">
+                  <div className="font-medium text-[#0B1D3A] text-sm truncate">
                     {payment.order?.fileName || "Unknown order"}
                   </div>
-                  <div className="text-xs text-white/30">
+                  <div className="text-xs text-gray-400">
                     {payment.order?.orderNumber} • {formatDate(payment.createdAt)}
                   </div>
                   {payment.transactionId && (
-                    <div className="text-xs text-white/20 font-mono mt-0.5">TXN: {payment.transactionId}</div>
+                    <div className="text-xs text-gray-300 font-mono mt-0.5">TXN: {payment.transactionId}</div>
                   )}
                 </div>
                 <div className="text-right">
-                  <div className="font-bold text-white">{formatCurrency(payment.amount)}</div>
+                  <div className="font-bold text-[#0B1D3A]">{formatCurrency(payment.amount)}</div>
                   <span className={`text-xs px-2 py-0.5 rounded-full border ${PAYMENT_STATUS_COLORS[payment.status]}`}>
                     {payment.status}
                   </span>

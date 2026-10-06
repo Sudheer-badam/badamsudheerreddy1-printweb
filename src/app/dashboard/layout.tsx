@@ -125,7 +125,7 @@ export default function DashboardLayout({ children }: { children: React.ReactNod
         <div className="p-4" style={{ borderTop: "1px solid #E2E6EF" }}>
           <div className="flex items-center gap-3 mb-3 px-2">
             <div
-              className="w-8 h-8 rounded-full flex items-center justify-center text-sm font-bold text-white"
+              className="w-8 h-8 rounded-full flex items-center justify-center text-sm font-bold text-[#0B1D3A]"
               style={{ background: "#2D63FF" }}
             >
               {user.displayName?.charAt(0) || user.email?.charAt(0) || "U"}
@@ -180,7 +180,7 @@ export default function DashboardLayout({ children }: { children: React.ReactNod
           </Link>
           <Link href="/dashboard/profile">
             <div
-              className="w-9 h-9 rounded-full flex items-center justify-center text-sm font-bold text-white cursor-pointer"
+              className="w-9 h-9 rounded-full flex items-center justify-center text-sm font-bold text-[#0B1D3A] cursor-pointer"
               style={{ background: "#2D63FF" }}
             >
               {user.displayName?.charAt(0) || user.email?.charAt(0) || "U"}

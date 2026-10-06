@@ -116,8 +116,8 @@ export default function SupportPage() {
   return (
     <div className="space-y-8">
       <div>
-        <h1 className="text-2xl font-bold text-white">Support Center</h1>
-        <p className="text-white/40 mt-1">Get help from our team</p>
+        <h1 className="text-2xl font-bold text-[#0B1D3A]">Support Center</h1>
+        <p className="text-gray-500 mt-1">Get help from our team</p>
       </div>
 
       {/* Business Card */}
@@ -128,14 +128,14 @@ export default function SupportPage() {
       >
         <div className="flex items-center gap-3 mb-6">
           <div className="w-12 h-12 rounded-2xl gradient-primary flex items-center justify-center glow-purple">
-            <Printer className="w-6 h-6 text-white" />
+            <Printer className="w-6 h-6 text-[#0B1D3A]" />
           </div>
           <div>
-            <h2 className="text-xl font-bold text-white">
+            <h2 className="text-xl font-bold text-[#0B1D3A]">
               {settings?.businessName || "Antigravity"}
             </h2>
             {settings?.ownerName && (
-              <p className="text-white/50 text-sm">Owner: {settings.ownerName}</p>
+              <p className="text-gray-500 text-sm">Owner: {settings.ownerName}</p>
             )}
           </div>
         </div>
@@ -150,12 +150,12 @@ export default function SupportPage() {
               rel="noopener noreferrer"
               className={`flex items-center gap-3 p-4 rounded-2xl border ${item.bg} hover:opacity-80 transition-opacity`}
             >
-              <div className="w-9 h-9 rounded-xl bg-white/5 flex items-center justify-center">
+              <div className="w-9 h-9 rounded-xl bg-white flex items-center justify-center">
                 {item.icon}
               </div>
               <div>
-                <div className="text-xs text-white/40">{item.label}</div>
-                <div className="text-sm font-medium text-white">{item.value}</div>
+                <div className="text-xs text-gray-500">{item.label}</div>
+                <div className="text-sm font-medium text-[#0B1D3A]">{item.value}</div>
               </div>
             </a>
           ))}
@@ -163,20 +163,20 @@ export default function SupportPage() {
 
         {/* Address & Hours */}
         <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
-          <div className="flex items-start gap-3 p-4 rounded-2xl bg-white/3 border border-white/5">
+          <div className="flex items-start gap-3 p-4 rounded-2xl bg-gray-50 border border-gray-200">
             <MapPin className="w-5 h-5 text-amber-400 mt-0.5 flex-shrink-0" />
             <div>
-              <div className="text-xs text-white/40">Pickup Address</div>
-              <div className="text-sm text-white mt-1">
+              <div className="text-xs text-gray-500">Pickup Address</div>
+              <div className="text-sm text-[#0B1D3A] mt-1">
                 {settings?.pickupAddress || settings?.address || "Address will be updated soon"}
               </div>
             </div>
           </div>
-          <div className="flex items-start gap-3 p-4 rounded-2xl bg-white/3 border border-white/5">
+          <div className="flex items-start gap-3 p-4 rounded-2xl bg-gray-50 border border-gray-200">
             <Clock className="w-5 h-5 text-violet-400 mt-0.5 flex-shrink-0" />
             <div>
-              <div className="text-xs text-white/40">Working Hours</div>
-              <div className="text-sm text-white mt-1">
+              <div className="text-xs text-gray-500">Working Hours</div>
+              <div className="text-sm text-[#0B1D3A] mt-1">
                 {settings?.workingHours || "Mon–Sat: 9AM–7PM"}
               </div>
             </div>
@@ -189,7 +189,7 @@ export default function SupportPage() {
             href={settings.googleMapsUrl}
             target="_blank"
             rel="noopener noreferrer"
-            className="mt-4 flex items-center gap-2 px-4 py-2.5 rounded-xl bg-white/5 border border-white/10 text-white/60 text-sm hover:text-white hover:border-white/20 transition-all w-fit"
+            className="mt-4 flex items-center gap-2 px-4 py-2.5 rounded-xl bg-white border border-gray-300 text-gray-600 text-sm hover:text-[#0B1D3A] hover:border-gray-400 transition-all w-fit"
           >
             <MapPin className="w-4 h-4" /> View on Google Maps
           </a>
@@ -201,22 +201,22 @@ export default function SupportPage() {
         initial={{ opacity: 0, y: 20 }}
         animate={{ opacity: 1, y: 0 }}
         transition={{ delay: 0.1 }}
-        className="glass rounded-3xl border border-white/5 overflow-hidden"
+        className="glass rounded-3xl border border-gray-200 overflow-hidden"
       >
-        <div className="flex items-center gap-2 p-6 border-b border-white/5">
+        <div className="flex items-center gap-2 p-6 border-b border-gray-200">
           <HelpCircle className="w-5 h-5 text-violet-400" />
-          <h2 className="font-bold text-white">Frequently Asked Questions</h2>
+          <h2 className="font-bold text-[#0B1D3A]">Frequently Asked Questions</h2>
         </div>
         <div className="divide-y divide-white/5">
           {faqs.map((faq, i) => (
             <div key={i}>
               <button
                 onClick={() => setOpenFaq(openFaq === i ? null : i)}
-                className="w-full flex items-center justify-between p-5 text-left hover:bg-white/3 transition-colors"
+                className="w-full flex items-center justify-between p-5 text-left hover:bg-gray-50 transition-colors"
               >
-                <span className="font-medium text-white text-sm">{faq.q}</span>
+                <span className="font-medium text-[#0B1D3A] text-sm">{faq.q}</span>
                 <ChevronDown
-                  className={`w-4 h-4 text-white/30 transition-transform flex-shrink-0 ${openFaq === i ? "rotate-180" : ""}`}
+                  className={`w-4 h-4 text-gray-400 transition-transform flex-shrink-0 ${openFaq === i ? "rotate-180" : ""}`}
                 />
               </button>
               {openFaq === i && (
@@ -226,7 +226,7 @@ export default function SupportPage() {
                   exit={{ height: 0, opacity: 0 }}
                   className="px-5 pb-5"
                 >
-                  <p className="text-sm text-white/50 leading-relaxed">{faq.a}</p>
+                  <p className="text-sm text-gray-500 leading-relaxed">{faq.a}</p>
                 </motion.div>
               )}
             </div>
@@ -239,33 +239,33 @@ export default function SupportPage() {
         initial={{ opacity: 0, y: 20 }}
         animate={{ opacity: 1, y: 0 }}
         transition={{ delay: 0.2 }}
-        className="glass rounded-3xl p-6 border border-white/5"
+        className="glass rounded-3xl p-6 border border-gray-200"
       >
         <div className="flex items-center gap-2 mb-5">
           <MessageSquare className="w-5 h-5 text-violet-400" />
-          <h2 className="font-bold text-white">Send a Support Request</h2>
+          <h2 className="font-bold text-[#0B1D3A]">Send a Support Request</h2>
         </div>
         <form onSubmit={handleSubmit} className="space-y-4">
           <div>
-            <label className="text-xs text-white/50 mb-2 block">Subject</label>
+            <label className="text-xs text-gray-500 mb-2 block">Subject</label>
             <input
               type="text"
               value={form.subject}
               onChange={(e) => setForm({ ...form, subject: e.target.value })}
               placeholder="What is your issue about?"
               required
-              className="w-full px-4 py-3 bg-white/5 border border-white/10 rounded-xl text-white text-sm placeholder-white/30 focus:outline-none focus:border-violet-500"
+              className="w-full px-4 py-3 bg-white border border-gray-300 rounded-xl text-[#0B1D3A] text-sm placeholder-white/30 focus:outline-none focus:border-violet-500"
             />
           </div>
           <div>
-            <label className="text-xs text-white/50 mb-2 block">Message</label>
+            <label className="text-xs text-gray-500 mb-2 block">Message</label>
             <textarea
               value={form.message}
               onChange={(e) => setForm({ ...form, message: e.target.value })}
               placeholder="Describe your issue in detail..."
               rows={5}
               required
-              className="w-full px-4 py-3 bg-white/5 border border-white/10 rounded-xl text-white text-sm placeholder-white/30 focus:outline-none focus:border-violet-500 resize-none"
+              className="w-full px-4 py-3 bg-white border border-gray-300 rounded-xl text-[#0B1D3A] text-sm placeholder-white/30 focus:outline-none focus:border-violet-500 resize-none"
             />
           </div>
           <button

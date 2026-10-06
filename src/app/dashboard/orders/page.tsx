@@ -89,20 +89,20 @@ export default function OrdersPage() {
   return (
     <div className="space-y-6">
       <div>
-        <h1 className="text-2xl font-bold text-white">My Orders</h1>
-        <p className="text-white/40 mt-1">Track all your print orders</p>
+        <h1 className="text-2xl font-bold text-[#0B1D3A]">My Orders</h1>
+        <p className="text-gray-500 mt-1">Track all your print orders</p>
       </div>
 
       {/* Filters */}
       <div className="flex flex-col sm:flex-row gap-3">
         <div className="relative flex-1">
-          <Search className="absolute left-3 top-1/2 -translate-y-1/2 w-4 h-4 text-white/30" />
+          <Search className="absolute left-3 top-1/2 -translate-y-1/2 w-4 h-4 text-gray-400" />
           <input
             type="text"
             value={search}
             onChange={(e) => setSearch(e.target.value)}
             placeholder="Search orders..."
-            className="w-full pl-9 pr-4 py-2.5 bg-white/5 border border-white/10 rounded-xl text-white text-sm placeholder-white/30 focus:outline-none focus:border-violet-500"
+            className="w-full pl-9 pr-4 py-2.5 bg-white border border-gray-300 rounded-xl text-[#0B1D3A] text-sm placeholder-white/30 focus:outline-none focus:border-violet-500"
           />
         </div>
         <div className="flex gap-2 overflow-x-auto pb-1">
@@ -113,7 +113,7 @@ export default function OrdersPage() {
               className={`px-3 py-2 rounded-xl text-xs font-medium whitespace-nowrap transition-all ${
                 statusFilter === f.value
                   ? "bg-violet-600 text-white"
-                  : "glass border border-white/10 text-white/50 hover:text-white"
+                  : "glass border border-gray-300 text-gray-500 hover:text-[#0B1D3A]"
               }`}
             >
               {f.label}
@@ -123,7 +123,7 @@ export default function OrdersPage() {
       </div>
 
       {/* Orders Table */}
-      <div className="glass rounded-3xl border border-white/5 overflow-hidden">
+      <div className="glass rounded-3xl border border-gray-200 overflow-hidden">
         {loading ? (
           <div className="p-6 space-y-3">
             {[1, 2, 3, 4].map((i) => (
@@ -132,20 +132,20 @@ export default function OrdersPage() {
           </div>
         ) : filteredOrders.length === 0 ? (
           <div className="p-12 text-center">
-            <FileText className="w-10 h-10 text-white/20 mx-auto mb-3" />
-            <p className="text-white/40">No orders found</p>
+            <FileText className="w-10 h-10 text-gray-300 mx-auto mb-3" />
+            <p className="text-gray-500">No orders found</p>
           </div>
         ) : (
           <>
             <div className="overflow-x-auto">
               <table className="w-full">
                 <thead>
-                  <tr className="border-b border-white/5">
-                    <th className="text-left px-6 py-4 text-xs text-white/30 font-medium uppercase tracking-wider">Order</th>
-                    <th className="text-left px-4 py-4 text-xs text-white/30 font-medium uppercase tracking-wider hidden md:table-cell">Details</th>
-                    <th className="text-left px-4 py-4 text-xs text-white/30 font-medium uppercase tracking-wider">Status</th>
-                    <th className="text-left px-4 py-4 text-xs text-white/30 font-medium uppercase tracking-wider hidden sm:table-cell">Payment</th>
-                    <th className="text-right px-6 py-4 text-xs text-white/30 font-medium uppercase tracking-wider">Amount</th>
+                  <tr className="border-b border-gray-200">
+                    <th className="text-left px-6 py-4 text-xs text-gray-400 font-medium uppercase tracking-wider">Order</th>
+                    <th className="text-left px-4 py-4 text-xs text-gray-400 font-medium uppercase tracking-wider hidden md:table-cell">Details</th>
+                    <th className="text-left px-4 py-4 text-xs text-gray-400 font-medium uppercase tracking-wider">Status</th>
+                    <th className="text-left px-4 py-4 text-xs text-gray-400 font-medium uppercase tracking-wider hidden sm:table-cell">Payment</th>
+                    <th className="text-right px-6 py-4 text-xs text-gray-400 font-medium uppercase tracking-wider">Amount</th>
                     <th className="px-4 py-4" />
                   </tr>
                 </thead>
@@ -156,7 +156,7 @@ export default function OrdersPage() {
                       initial={{ opacity: 0, y: 10 }}
                       animate={{ opacity: 1, y: 0 }}
                       transition={{ delay: i * 0.05 }}
-                      className="hover:bg-white/3 transition-colors"
+                      className="hover:bg-gray-50 transition-colors"
                     >
                       <td className="px-6 py-4">
                         <div className="flex items-center gap-3">
@@ -164,16 +164,16 @@ export default function OrdersPage() {
                             <FileText className="w-4 h-4 text-violet-400" />
                           </div>
                           <div>
-                            <div className="text-sm font-medium text-white truncate max-w-[150px]">{order.fileName}</div>
-                            <div className="text-xs text-white/30">{order.orderNumber}</div>
+                            <div className="text-sm font-medium text-[#0B1D3A] truncate max-w-[150px]">{order.fileName}</div>
+                            <div className="text-xs text-gray-400">{order.orderNumber}</div>
                           </div>
                         </div>
                       </td>
                       <td className="px-4 py-4 hidden md:table-cell">
-                        <div className="text-xs text-white/50">
+                        <div className="text-xs text-gray-500">
                           {order.totalPages} pages • {order.paperSize} • {order.copies}x
                         </div>
-                        <div className="text-xs text-white/30">{formatDate(order.createdAt)}</div>
+                        <div className="text-xs text-gray-400">{formatDate(order.createdAt)}</div>
                       </td>
                       <td className="px-4 py-4">
                         <span className={`px-2 py-1 rounded-lg text-xs border ${ORDER_STATUS_COLORS[order.status]}`}>
@@ -186,11 +186,11 @@ export default function OrdersPage() {
                         </span>
                       </td>
                       <td className="px-6 py-4 text-right">
-                        <span className="font-semibold text-white text-sm">{formatCurrency(order.totalAmount)}</span>
+                        <span className="font-semibold text-[#0B1D3A] text-sm">{formatCurrency(order.totalAmount)}</span>
                       </td>
                       <td className="px-4 py-4">
                         <Link href={`/dashboard/orders/${order.id}`}>
-                          <button className="p-2 rounded-lg text-white/40 hover:text-white hover:bg-white/10 transition-all">
+                          <button className="p-2 rounded-lg text-gray-500 hover:text-[#0B1D3A] hover:bg-gray-100 transition-all">
                             <Eye className="w-4 h-4" />
                           </button>
                         </Link>
@@ -203,21 +203,21 @@ export default function OrdersPage() {
 
             {/* Pagination */}
             {totalPages > 1 && (
-              <div className="flex items-center justify-between p-4 border-t border-white/5">
+              <div className="flex items-center justify-between p-4 border-t border-gray-200">
                 <button
                   onClick={() => setPage(Math.max(1, page - 1))}
                   disabled={page === 1}
-                  className="flex items-center gap-1 px-3 py-2 rounded-lg text-sm text-white/50 hover:text-white disabled:opacity-30 transition-colors"
+                  className="flex items-center gap-1 px-3 py-2 rounded-lg text-sm text-gray-500 hover:text-[#0B1D3A] disabled:opacity-30 transition-colors"
                 >
                   <ChevronLeft className="w-4 h-4" /> Previous
                 </button>
-                <span className="text-sm text-white/40">
+                <span className="text-sm text-gray-500">
                   Page {page} of {totalPages}
                 </span>
                 <button
                   onClick={() => setPage(Math.min(totalPages, page + 1))}
                   disabled={page === totalPages}
-                  className="flex items-center gap-1 px-3 py-2 rounded-lg text-sm text-white/50 hover:text-white disabled:opacity-30 transition-colors"
+                  className="flex items-center gap-1 px-3 py-2 rounded-lg text-sm text-gray-500 hover:text-[#0B1D3A] disabled:opacity-30 transition-colors"
                 >
                   Next <ChevronRight className="w-4 h-4" />
                 </button>
