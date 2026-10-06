@@ -231,7 +231,7 @@ export default function UploadPage() {
       setUploadProgress(10);
       
       try {
-        const newBlob = await upload(file.name, file, {
+        const newBlob = await upload(storageKey, file, {
           access: 'public',
           handleUploadUrl: '/api/upload',
           onUploadProgress: (progressEvent) => {
@@ -304,7 +304,8 @@ export default function UploadPage() {
         setTimeout(() => router.push(`/dashboard/orders/${order.id}`), 2000);
       } else {
         toast.dismiss("upload-toast");
-        throw new Error("Failed to create order");
+        const errorData = await orderRes.json().catch(() => ({}));
+        throw new Error(errorData.error || `Failed to create order: ${orderRes.statusText}`);
       }
     } catch (error: any) {
       toast.dismiss("upload-toast");
