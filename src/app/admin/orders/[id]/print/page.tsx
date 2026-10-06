@@ -213,9 +213,9 @@ export default function AdminPrintRoomPage() {
                 {order.binding && <div className="text-sm text-white/70 flex items-center gap-2"><CheckCircle2 className="w-4 h-4 text-violet-400"/> Binding Required</div>}
                 {order.lamination && <div className="text-sm text-white/70 flex items-center gap-2"><CheckCircle2 className="w-4 h-4 text-violet-400"/> Lamination Required</div>}
                 {order.instructions && (
-                  <div className="mt-4 p-3 bg-white/5 rounded-xl border border-white/10 text-sm text-white/80">
+                  <div className="mt-4 p-3 bg-white/5 rounded-xl border border-gray-300 text-sm text-gray-700">
                     <span className="font-semibold block mb-1">Customer Notes:</span>
-                    "{order.instructions}"
+                    &quot;{order.instructions}&quot;
                   </div>
                 )}
               </div>
