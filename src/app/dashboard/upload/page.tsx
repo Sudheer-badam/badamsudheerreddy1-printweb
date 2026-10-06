@@ -31,6 +31,14 @@ interface Pricing {
   maxFileSize: number;
 }
 
+interface AdminSettings {
+  enableBinding: boolean;
+  enableLamination: boolean;
+  enableGST: boolean;
+  paperSizes: { id: string; label: string; multiplier: number; isActive: boolean }[];
+  paperQualities: { id: string; label: string; price: number; isActive: boolean }[];
+}
+
 interface FileAnalysis {
   totalPages: number;
   colorPages: number;
@@ -38,8 +46,7 @@ interface FileAnalysis {
   paperSize: string;
 }
 
-const PAPER_SIZES = ["A4", "A3", "LETTER", "LEGAL"];
-const PAPER_QUALITIES = ["standard", "premium", "glossy"];
+
 
 const getPrintablePageCount = (rangeStr: string, totalPages: number): number => {
   if (!rangeStr.trim()) return 0;
@@ -66,6 +73,7 @@ export default function UploadPage() {
   const { user } = useAuth();
   const router = useRouter();
   const [pricing, setPricing] = useState<Pricing | null>(null);
+  const [adminSettings, setAdminSettings] = useState<AdminSettings | null>(null);
   const [file, setFile] = useState<File | null>(null);
   const [fileAnalysis, setFileAnalysis] = useState<FileAnalysis | null>(null);
   const [uploading, setUploading] = useState(false);
@@ -103,6 +111,7 @@ export default function UploadPage() {
 
   useEffect(() => {
     fetch("/api/pricing").then((r) => r.json()).then(setPricing);
+    fetch("/api/admin/settings").then((r) => r.json()).then(setAdminSettings);
   }, []);
 
   const onDrop = useCallback(
@@ -157,7 +166,21 @@ export default function UploadPage() {
 
     const { colorPages, bwPages, totalPages } = fileAnalysis;
     const { copies, binding, lamination, paperSize, printColor, pagesToPrint, customPageRange } = options;
-    const sizeMultiplier = paperSize === "A3" ? pricing.a3Multiplier : 1;
+    // Get dynamic size multiplier
+    let sizeMultiplier = 1;
+    if (adminSettings?.paperSizes) {
+      const pSize = adminSettings.paperSizes.find(s => s.id === paperSize);
+      if (pSize) sizeMultiplier = pSize.multiplier;
+    } else {
+      sizeMultiplier = paperSize === "A3" ? pricing.a3Multiplier : 1;
+    }
+
+    // Get dynamic quality cost per page
+    let qualityCost = 0;
+    if (adminSettings?.paperQualities) {
+      const pQual = adminSettings.paperQualities.find(q => q.id === options.paperQuality);
+      if (pQual) qualityCost = pQual.price;
+    }
 
     const pagesToCharge = pagesToPrint === "ALL" 
       ? totalPages 
@@ -168,13 +191,13 @@ export default function UploadPage() {
     const estimatedColorPages = printColor === "COLOR" ? pagesToCharge : 0;
     const estimatedBwPages = printColor === "BLACK_AND_WHITE" ? pagesToCharge : 0;
 
-    const colorCost = estimatedColorPages * pricing.colorPrice * sizeMultiplier * copies;
-    const bwCost = estimatedBwPages * pricing.bwPrice * sizeMultiplier * copies;
+    const colorCost = estimatedColorPages * (pricing.colorPrice + qualityCost) * sizeMultiplier * copies;
+    const bwCost = estimatedBwPages * (pricing.bwPrice + qualityCost) * sizeMultiplier * copies;
 
     const bindingCost = binding ? pricing.bindingCost : 0;
     const laminationCost = lamination ? pagesToCharge * pricing.laminationCost * copies : 0;
     const subtotal = colorCost + bwCost + bindingCost + laminationCost;
-    const gstAmount = (subtotal * pricing.gstRate) / 100;
+    const gstAmount = adminSettings?.enableGST ? (subtotal * pricing.gstRate) / 100 : 0;
     const total = subtotal + gstAmount;
 
     return {
