@@ -18,6 +18,8 @@ import { useAuth } from "@/contexts/AuthContext";
 import { useRouter } from "next/navigation";
 import { toast } from "sonner";
 import { formatCurrency, formatFileSize } from "@/lib/utils";
+import { storage } from "@/lib/firebase";
+import { ref, uploadBytesResumable, getDownloadURL } from "firebase/storage";
 
 interface Pricing {
   colorPrice: number;
@@ -199,18 +201,30 @@ export default function UploadPage() {
     setUploadProgress(0);
 
     try {
-      // Simulate upload progress
-      const interval = setInterval(() => {
-        setUploadProgress((prev) => {
-          if (prev >= 90) { clearInterval(interval); return 90; }
-          return prev + 10;
-        });
-      }, 200);
+      let downloadURL = "";
+      let storageKey = `orders/${user.uid}/${Date.now()}-${file.name}`;
 
-      // In production: upload to Cloudinary/Firebase Storage, then create order
-      // For now, simulate upload and create order with placeholder URL
-      await new Promise((resolve) => setTimeout(resolve, 2000));
-      clearInterval(interval);
+      // Upload to Firebase Storage
+      const storageRef = ref(storage, storageKey);
+      const uploadTask = uploadBytesResumable(storageRef, file);
+
+      await new Promise<void>((resolve, reject) => {
+        uploadTask.on(
+          "state_changed",
+          (snapshot) => {
+            const progress = (snapshot.bytesTransferred / snapshot.totalBytes) * 100;
+            setUploadProgress(progress);
+          },
+          (error) => {
+            console.error("Upload failed", error);
+            reject(error);
+          },
+          async () => {
+            downloadURL = await getDownloadURL(uploadTask.snapshot.ref);
+            resolve();
+          }
+        );
+      });
       setUploadProgress(100);
 
       const idToken = await user.getIdToken();
@@ -238,8 +252,8 @@ export default function UploadPage() {
         body: JSON.stringify({
           uid: user.uid,
           fileName: file.name,
-          fileUrl: `https://storage.example.com/${Date.now()}-${file.name}`,
-          fileKey: `orders/${user.uid}/${Date.now()}-${file.name}`,
+          fileUrl: downloadURL,
+          fileKey: storageKey,
           fileSize: file.size,
           totalPages: fileAnalysis.totalPages,
           colorPages: cost.estimatedColorPages,

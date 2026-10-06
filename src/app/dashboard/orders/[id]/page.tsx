@@ -87,6 +87,7 @@ export default function OrderDetailPage() {
   const router = useRouter();
   const [order, setOrder] = useState<OrderDetail | null>(null);
   const [loading, setLoading] = useState(true);
+  const [paying, setPaying] = useState(false);
 
   useEffect(() => {
     if (user && params.id) fetchOrder();
@@ -105,6 +106,39 @@ export default function OrderDetailPage() {
   const copyOrderId = () => {
     navigator.clipboard.writeText(order?.orderNumber || "");
     toast.success("Order ID copied!");
+  };
+
+  const handlePayment = async () => {
+    if (!order || !user) return;
+    setPaying(true);
+    try {
+      // Simulate payment delay
+      await new Promise(resolve => setTimeout(resolve, 1500));
+      
+      const res = await fetch("/api/payments", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({
+          uid: user.uid,
+          orderId: order.id,
+          amount: order.totalAmount,
+          method: "UPI",
+          transactionId: `TXN${Date.now()}`,
+        }),
+      });
+
+      if (res.ok) {
+        toast.success("Payment successful!");
+        fetchOrder();
+      } else {
+        toast.error("Payment failed. Please try again.");
+      }
+    } catch (error) {
+      console.error(error);
+      toast.error("Payment failed.");
+    } finally {
+      setPaying(false);
+    }
   };
 
   if (loading) {
@@ -138,8 +172,20 @@ export default function OrderDetailPage() {
               <Copy className="w-3.5 h-3.5" />
             </button>
           </div>
-          <div className={`px-3 py-1.5 rounded-xl text-sm border ${PAYMENT_STATUS_COLORS[order.paymentStatus]}`}>
-            {order.paymentStatus}
+          <div className="flex flex-col items-end gap-2">
+            <div className={`px-3 py-1.5 rounded-xl text-sm border ${PAYMENT_STATUS_COLORS[order.paymentStatus]}`}>
+              {order.paymentStatus}
+            </div>
+            {order.paymentStatus === "PENDING" && !isCancelled && (
+              <button
+                onClick={handlePayment}
+                disabled={paying}
+                className="px-4 py-2 bg-violet-600 text-white rounded-xl text-sm font-medium hover:bg-violet-700 transition-colors disabled:opacity-50 flex items-center gap-2"
+              >
+                {paying ? <Clock className="w-4 h-4 animate-spin" /> : <CreditCard className="w-4 h-4" />}
+                {paying ? "Processing..." : "Pay Now"}
+              </button>
+            )}
           </div>
         </div>
       </div>
