@@ -30,8 +30,13 @@ export default function RegisterPage() {
       await signUpWithEmail(form.email, form.password, form.name);
       toast.success("Account created successfully!");
       router.push("/dashboard");
-    } catch (error: unknown) {
-      toast.error((error as Error).message || "Registration failed");
+    } catch (error: any) {
+      const msg = error?.message || "";
+      if (msg.includes("auth/email-already-in-use")) {
+        toast.error("This email is already registered. Please sign in instead.");
+      } else {
+        toast.error(msg || "Registration failed");
+      }
     } finally { setLoading(false); }
   };
 
