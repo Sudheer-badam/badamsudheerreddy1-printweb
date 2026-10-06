@@ -73,16 +73,15 @@ export default function DashboardLayout({ children }: { children: React.ReactNod
       </AnimatePresence>
 
       {/* ── Sidebar ── */}
-      <motion.aside
-        initial={false}
-        animate={{ x: sidebarOpen ? 0 : -280 }}
-        className="fixed left-0 top-0 bottom-0 w-64 z-50 lg:relative lg:translate-x-0 lg:z-auto flex flex-col"
+      <aside
+        className={`fixed left-0 top-0 bottom-0 w-64 z-50 lg:relative lg:translate-x-0 lg:z-auto flex flex-col transition-transform duration-300 ease-in-out ${
+          sidebarOpen ? "translate-x-0" : "-translate-x-full"
+        }`}
         style={{
           background: "#ffffff",
           borderRight: "1px solid #E2E6EF",
           boxShadow: "2px 0 16px rgba(0,0,0,0.04)",
         }}
-        transition={{ type: "spring", damping: 30, stiffness: 300 }}
       >
         {/* Logo */}
         <div className="p-6" style={{ borderBottom: "1px solid #E2E6EF" }}>
@@ -150,7 +149,7 @@ export default function DashboardLayout({ children }: { children: React.ReactNod
             Sign Out
           </button>
         </div>
-      </motion.aside>
+      </aside>
 
       {/* ── Main content ── */}
       <div className="flex-1 flex flex-col min-w-0">

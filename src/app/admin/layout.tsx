@@ -74,16 +74,15 @@ export default function AdminLayout({ children }: { children: React.ReactNode })
       </AnimatePresence>
 
       {/* ── Sidebar ── */}
-      <motion.aside
-        initial={false}
-        animate={{ x: sidebarOpen ? 0 : -280 }}
-        className="fixed left-0 top-0 bottom-0 w-64 z-50 lg:relative lg:translate-x-0 lg:z-auto flex flex-col"
+      <aside
+        className={`fixed left-0 top-0 bottom-0 w-64 z-50 lg:relative lg:translate-x-0 lg:z-auto flex flex-col transition-transform duration-300 ease-in-out ${
+          sidebarOpen ? "translate-x-0" : "-translate-x-full"
+        }`}
         style={{
           background: "#0B1D3A",
           borderRight: "1px solid rgba(255,255,255,0.08)",
           boxShadow: "2px 0 20px rgba(0,0,0,0.12)",
         }}
-        transition={{ type: "spring", damping: 30, stiffness: 300 }}
       >
         {/* Logo */}
         <div className="p-6" style={{ borderBottom: "1px solid rgba(255,255,255,0.08)" }}>
@@ -167,7 +166,7 @@ export default function AdminLayout({ children }: { children: React.ReactNode })
             Sign Out
           </button>
         </div>
-      </motion.aside>
+      </aside>
 
       {/* ── Main ── */}
       <div className="flex-1 flex flex-col min-w-0">
