@@ -81,7 +81,7 @@ export default function HomePage() {
   }, [user, userRole, loading, router]);
 
   return (
-    <div className="min-h-screen" style={{ background: "#f5f7fa", color: "#1A1F2E" }}>
+    <div className="min-h-screen overflow-x-hidden" style={{ background: "#f5f7fa", color: "#1A1F2E" }}>
 
       {/* ── NAVBAR ── */}
       <nav className="fixed top-0 left-0 right-0 z-50" style={{ background: "rgba(255,255,255,0.97)", borderBottom: "1px solid #E2E6EF", backdropFilter: "blur(16px)" }}>
