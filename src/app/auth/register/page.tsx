@@ -120,7 +120,7 @@ export default function RegisterPage() {
             className="w-full max-w-[420px] py-6"
           >
             <div className="mb-8 text-center lg:text-left">
-              <h2 className="text-3xl font-black text-[#1B254B] mb-2">Create Account 🚀</h2>
+              <h2 className="text-4xl font-extrabold text-[#1B254B] mb-2 tracking-tight">Create Account</h2>
               <p className="text-[#A3AED0] font-medium text-base">Join thousands of happy customers.</p>
             </div>
 
