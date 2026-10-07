@@ -27,7 +27,7 @@ const nextConfig: NextConfig = {
               "font-src 'self' https://fonts.gstatic.com",
               "img-src 'self' data: blob: https:",
               "connect-src 'self' https: wss:",
-              "frame-src https://accounts.google.com https://*.firebaseapp.com",
+              "frame-src 'self' blob: https://accounts.google.com https://*.firebaseapp.com https://*.public.blob.vercel-storage.com",
             ].join("; "),
           },
           { key: "X-XSS-Protection", value: "1; mode=block" },
