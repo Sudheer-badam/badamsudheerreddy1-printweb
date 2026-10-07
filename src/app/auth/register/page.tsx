@@ -120,6 +120,14 @@ export default function RegisterPage() {
             className="w-full max-w-[420px] py-6"
           >
             <div className="mb-8 text-center lg:text-left">
+              <div className="flex justify-center lg:justify-start mb-8">
+                <Link href="/" className="flex flex-col items-center lg:items-start gap-3 group">
+                  <div className="w-14 h-14 rounded-full overflow-hidden flex-shrink-0" style={{ border: "2.5px solid #2D63FF", boxShadow: "0 4px 14px rgba(45,99,255,0.25)" }}>
+                    <Image src="/logo.png" alt="PRINT DOCKER" width={56} height={56} className="w-full h-full object-cover group-hover:scale-110 transition-transform duration-300" />
+                  </div>
+                  <span className="font-extrabold text-xl tracking-tight" style={{ color: "#0B1D3A" }}>PRINT DOCKER</span>
+                </Link>
+              </div>
               <h2 className="text-4xl font-extrabold text-[#1B254B] mb-2 tracking-tight">Create Account</h2>
               <p className="text-[#A3AED0] font-medium text-base">Join thousands of happy customers.</p>
             </div>
