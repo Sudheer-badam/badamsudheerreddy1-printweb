@@ -9,14 +9,14 @@ import {
 } from "lucide-react";
 import { useAuth } from "@/contexts/AuthContext";
 import { useRouter } from "next/navigation";
-import { useEffect } from "react";
+import { useEffect, useState } from "react";
 
 const features = [
   { icon: Upload, title: "Easy PDF Upload", description: "Upload your PDF files securely. Real-time progress tracking and instant confirmation.", iconBg: "#EEF2FF", iconColor: "#2D63FF" },
   { icon: Zap, title: "Instant Cost Calculation", description: "Auto-pricing based on pages, color, paper size and finishing options — no surprises.", iconBg: "#FFF7ED", iconColor: "#F39C12" },
   { icon: Bell, title: "Real-time Notifications", description: "SMS, Email & WhatsApp updates at every step — from upload to ready for pickup.", iconBg: "#F0FDF4", iconColor: "#00C851" },
   { icon: Shield, title: "Enterprise Security", description: "Files encrypted end-to-end. Only you and our admin can access your documents.", iconBg: "#EEF2FF", iconColor: "#2D63FF" },
-  { icon: CreditCard, title: "Multiple Payments", description: "UPI, PhonePe, Google Pay, Paytm, Razorpay, or Cash. Instant payment confirmation.", iconBg: "#FFF7ED", iconColor: "#F39C12" },
+  { icon: CreditCard, title: "Multiple Payments", description: "UPI, PhonePe, Google Pay, Paytm, or Cash. Instant payment confirmation.", iconBg: "#FFF7ED", iconColor: "#F39C12" },
   { icon: Clock, title: "Live Order Tracking", description: "Track your print from upload to completion with a beautiful visual status timeline.", iconBg: "#F0FDF4", iconColor: "#00C851" },
 ];
 
@@ -34,15 +34,19 @@ const stats = [
   { label: "Uptime", value: "99.9%", color: "#2D63FF" },
 ];
 
-const testimonials = [
-  { name: "Ravi Kumar", role: "Engineering Student", text: "Got my project report printed in minutes! The tracking feature is incredible.", avatar: "R" },
-  { name: "Priya Sharma", role: "MBA Student", text: "Super easy to use. Uploaded from my phone and collected prints same day.", avatar: "P" },
-  { name: "Arjun Reddy", role: "Research Scholar", text: "Best printing service in the city. Fast, affordable, and always on time.", avatar: "A" },
-];
+
 
 export default function HomePage() {
   const { user, userRole, loading } = useAuth();
   const router = useRouter();
+  const [reviews, setReviews] = useState<any[]>([]);
+
+  useEffect(() => {
+    fetch('/api/reviews?limit=3')
+      .then(res => res.json())
+      .then(data => setReviews(Array.isArray(data) ? data : []))
+      .catch(console.error);
+  }, []);
 
   useEffect(() => {
     if (!loading && user) {
@@ -68,6 +72,7 @@ export default function HomePage() {
               <a href="#videos" className="hover:text-[#2D63FF] transition-colors">Videos</a>
               <a href="#how-it-works" className="hover:text-[#2D63FF] transition-colors">How It Works</a>
               <a href="#testimonials" className="hover:text-[#2D63FF] transition-colors">Reviews</a>
+
             </div>
             <div className="flex items-center gap-3">
               <Link href="/auth/login" className="px-4 py-2 text-sm font-semibold transition-colors" style={{ color: "#444B54" }}>Sign In</Link>
@@ -221,7 +226,7 @@ export default function HomePage() {
           >
             <div className="relative w-full" style={{ paddingBottom: "45%", minHeight: 280 }}>
               <iframe
-                src="https://www.youtube-nocookie.com/embed/q6yPj6oXJ_8?rel=0&modestbranding=1&color=white"
+                src="https://www.youtube.com/embed/q6yPj6oXJ_8?rel=0&modestbranding=1&color=white"
                 title="Canon Inkjet Printer Technology — Official CG Demo"
                 allow="accelerometer; autoplay; clipboard-write; encrypted-media; gyroscope; picture-in-picture"
                 allowFullScreen
@@ -273,7 +278,7 @@ export default function HomePage() {
               >
                 <div className="relative w-full" style={{ paddingBottom: "56.25%" }}>
                   <iframe
-                    src={`https://www.youtube-nocookie.com/embed/${v.id}?rel=0&modestbranding=1`}
+                    src={`https://www.youtube.com/embed/${v.id}?rel=0&modestbranding=1`}
                     title={v.title}
                     allow="accelerometer; autoplay; clipboard-write; encrypted-media; gyroscope; picture-in-picture"
                     allowFullScreen
@@ -303,7 +308,7 @@ export default function HomePage() {
             <div className="grid md:grid-cols-2 gap-0">
               <div className="relative" style={{ paddingBottom: "56.25%", minHeight: 260 }}>
                 <iframe
-                  src="https://www.youtube-nocookie.com/embed/J32RkG2259E?rel=0&modestbranding=1"
+                  src="https://www.youtube.com/embed/J32RkG2259E?rel=0&modestbranding=1"
                   title="Inkjet Printers — The Interesting Engineering Behind Them"
                   allow="accelerometer; autoplay; clipboard-write; encrypted-media; gyroscope; picture-in-picture"
                   allowFullScreen
@@ -373,74 +378,54 @@ export default function HomePage() {
       </section>
 
       {/* ── TESTIMONIALS ── */}
-      <section id="testimonials" className="py-24 px-4" style={{ background: "#ffffff" }}>
-        <div className="max-w-7xl mx-auto">
-          <div className="text-center mb-16">
-            <div className="inline-block px-4 py-1 rounded-full text-xs font-bold uppercase tracking-widest mb-4"
-              style={{ background: "rgba(0,200,81,0.08)", color: "#00C851" }}>Reviews</div>
-            <h2 className="text-4xl md:text-5xl font-extrabold mb-4" style={{ color: "#0B1D3A" }}>
-              Loved by <span style={{ color: "#2D63FF" }}>Thousands</span>
-            </h2>
-            <p className="text-lg font-medium" style={{ color: "#444B54" }}>Real students and professionals, real results.</p>
-          </div>
-
-          <div className="grid md:grid-cols-3 gap-6 mb-16">
-            {testimonials.map((t, i) => (
-              <motion.div key={t.name} initial={{ opacity: 0, y: 20 }} whileInView={{ opacity: 1, y: 0 }}
-                viewport={{ once: true }} transition={{ delay: i * 0.1 }} className="iom-card p-7">
-                <div className="flex mb-3 gap-0.5">
-                  {[...Array(5)].map((_, j) => <Star key={j} className="w-4 h-4 fill-[#F39C12] text-[#F39C12]" />)}
-                </div>
-                <p
-                  className="text-base font-medium mb-5"
-                  style={{ color: "#444B54", lineHeight: "1.7" }}
-                >
-                  &ldquo;{t.text}&rdquo;
-                </p>
-                <div className="flex items-center gap-3">
-                  <div className="w-10 h-10 rounded-full flex items-center justify-center text-sm font-bold text-white"
-                    style={{ background: "#2D63FF" }}>{t.avatar}</div>
-                  <div>
-                    <div className="text-sm font-bold" style={{ color: "#0B1D3A" }}>{t.name}</div>
-                    <div className="text-xs font-medium" style={{ color: "#6B7280" }}>{t.role}</div>
-                  </div>
-                </div>
-              </motion.div>
-            ))}
-          </div>
-
-          {/* Customer photo */}
-          <div className="grid lg:grid-cols-2 gap-12 items-center">
-            <div className="rounded-3xl overflow-hidden" style={{ boxShadow: "0 20px 60px rgba(45,99,255,0.12)" }}>
-              <Image src="/happy_customer.png" alt="Happy customer with prints" width={600} height={450} className="w-full object-cover" />
-            </div>
-            <div>
+      {reviews.length > 0 && (
+        <section id="testimonials" className="py-24 px-4" style={{ background: "#ffffff" }}>
+          <div className="max-w-7xl mx-auto">
+            <div className="text-center mb-16">
               <div className="inline-block px-4 py-1 rounded-full text-xs font-bold uppercase tracking-widest mb-4"
-                style={{ background: "rgba(45,99,255,0.08)", color: "#2D63FF" }}>Why Choose Us</div>
-              <h2 className="text-4xl font-extrabold mb-5" style={{ color: "#0B1D3A" }}>
-                Your Prints,<br /><span style={{ color: "#2D63FF" }}>Delivered Perfectly</span>
+                style={{ background: "rgba(0,200,81,0.08)", color: "#00C851" }}>Reviews</div>
+              <h2 className="text-4xl md:text-5xl font-extrabold mb-4" style={{ color: "#0B1D3A" }}>
+                Loved by <span style={{ color: "#2D63FF" }}>Thousands</span>
               </h2>
-              <div className="space-y-4">
-                {[
-                  "Upload any PDF from phone or laptop",
-                  "B&W from ₹1 | Color from ₹5 per page",
-                  "WhatsApp notification when ready",
-                  "Pay after pickup or pay online",
-                  "Secure file deletion after 24 hours",
-                ].map(pt => (
-                  <div key={pt} className="flex items-center gap-3">
-                    <CheckCircle className="w-5 h-5 flex-shrink-0" style={{ color: "#00C851" }} />
-                    <span className="text-base font-semibold" style={{ color: "#444B54" }}>{pt}</span>
+              <p className="text-lg font-medium" style={{ color: "#444B54" }}>Real customers, real results.</p>
+            </div>
+
+            <div className="grid md:grid-cols-3 gap-6 mb-16">
+              {reviews.map((r, i) => (
+                <motion.div key={r.id} initial={{ opacity: 0, y: 20 }} whileInView={{ opacity: 1, y: 0 }}
+                  viewport={{ once: true }} transition={{ delay: i * 0.1 }} className="iom-card p-7 flex flex-col h-full">
+                  <div className="flex mb-3 gap-0.5">
+                    {[...Array(5)].map((_, j) => <Star key={j} className={`w-4 h-4 ${j < r.rating ? "fill-[#F39C12] text-[#F39C12]" : "fill-gray-200 text-gray-200"}`} />)}
                   </div>
-                ))}
-              </div>
-              <Link href="/auth/register" className="btn-primary inline-flex items-center gap-2 px-8 py-4 text-base font-bold mt-8">
-                Get Started Free <ArrowRight className="w-5 h-5" />
-              </Link>
+                  <p
+                    className="text-base font-medium mb-5 flex-1"
+                    style={{ color: "#444B54", lineHeight: "1.7" }}
+                  >
+                    &ldquo;{r.comment ? r.comment : "Excellent service!"}&rdquo;
+                  </p>
+                  <div className="flex items-center gap-3 mt-auto">
+                    {r.user?.profilePhoto ? (
+                      <div className="w-10 h-10 rounded-full overflow-hidden flex-shrink-0">
+                        <Image src={r.user.profilePhoto} alt={r.user.name || "User"} width={40} height={40} className="w-full h-full object-cover" />
+                      </div>
+                    ) : (
+                      <div className="w-10 h-10 rounded-full flex items-center justify-center text-sm font-bold text-white flex-shrink-0"
+                        style={{ background: "#2D63FF" }}>
+                        {(r.user?.name || "Customer").charAt(0).toUpperCase()}
+                      </div>
+                    )}
+                    <div>
+                      <div className="text-sm font-bold" style={{ color: "#0B1D3A" }}>{r.user?.name || "Verified Customer"}</div>
+                      <div className="text-xs font-medium" style={{ color: "#6B7280" }}>Customer</div>
+                    </div>
+                  </div>
+                </motion.div>
+              ))}
             </div>
           </div>
-        </div>
-      </section>
+        </section>
+      )}
+
 
       {/* ── CTA BAND ── */}
       <section className="py-24 px-4" style={{ background: "linear-gradient(160deg,#0B1D3A 0%,#1C3CB3 60%,#2D63FF 100%)" }}>
@@ -493,6 +478,7 @@ export default function HomePage() {
                   <a href="#features" className="hover:text-white transition-colors">Features</a>
                   <a href="#how-it-works" className="hover:text-white transition-colors">How It Works</a>
                   <a href="#testimonials" className="hover:text-white transition-colors">Reviews</a>
+
                 </div>
               </div>
               <div>

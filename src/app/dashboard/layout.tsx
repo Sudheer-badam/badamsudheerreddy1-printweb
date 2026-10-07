@@ -162,13 +162,12 @@ export default function DashboardLayout({ children }: { children: React.ReactNod
             backdropFilter: "blur(12px)",
           }}
         >
-          <button
-            className="lg:hidden p-2 rounded-lg transition-colors"
-            style={{ color: "#444B54" }}
-            onClick={() => setSidebarOpen(!sidebarOpen)}
-          >
-            {sidebarOpen ? <X className="w-5 h-5" /> : <Menu className="w-5 h-5" />}
-          </button>
+          <div className="lg:hidden flex items-center gap-2">
+            <div className="w-8 h-8 rounded-full overflow-hidden flex-shrink-0" style={{ border: "2px solid #2D63FF" }}>
+              <Image src="/logo.png" alt="Logo" width={32} height={32} className="w-full h-full object-cover" />
+            </div>
+            <span className="font-bold text-sm text-[#0B1D3A]">PRINT DOCKER</span>
+          </div>
           <div className="flex-1" />
           <Link
             href="/dashboard/notifications"
@@ -188,10 +187,38 @@ export default function DashboardLayout({ children }: { children: React.ReactNod
         </header>
 
         {/* Page Content */}
-        <main className="flex-1 p-4 lg:p-8 overflow-auto">
+        <main className="flex-1 p-4 pb-24 lg:p-8 overflow-auto">
           {children}
         </main>
       </div>
+
+      {/* ── Bottom Navigation (Mobile Only) ── */}
+      <nav className="lg:hidden fixed bottom-0 left-0 right-0 bg-white border-t border-gray-200 flex items-center justify-around z-40 pb-safe shadow-[0_-4px_12px_rgba(0,0,0,0.05)] h-16">
+        <Link href="/dashboard" className={`flex flex-col items-center justify-center w-full h-full space-y-1 ${pathname === "/dashboard" ? "text-[#2D63FF]" : "text-gray-500 hover:text-gray-900"}`}>
+          <LayoutDashboard className="w-5 h-5" />
+          <span className="text-[10px] font-medium">Home</span>
+        </Link>
+        <Link href="/dashboard/orders" className={`flex flex-col items-center justify-center w-full h-full space-y-1 ${pathname === "/dashboard/orders" ? "text-[#2D63FF]" : "text-gray-500 hover:text-gray-900"}`}>
+          <FileText className="w-5 h-5" />
+          <span className="text-[10px] font-medium">Orders</span>
+        </Link>
+        
+        {/* Floating Action Button (Upload) */}
+        <div className="relative w-full h-full flex justify-center">
+          <Link href="/dashboard/upload" className="absolute -top-6 w-14 h-14 bg-[#2D63FF] text-white rounded-full flex items-center justify-center shadow-lg shadow-blue-500/40 border-4 border-[#f5f7fa] hover:bg-blue-600 transition-colors">
+            <Upload className="w-6 h-6" />
+          </Link>
+        </div>
+
+        <Link href="/dashboard/payments" className={`flex flex-col items-center justify-center w-full h-full space-y-1 ${pathname === "/dashboard/payments" ? "text-[#2D63FF]" : "text-gray-500 hover:text-gray-900"}`}>
+          <CreditCard className="w-5 h-5" />
+          <span className="text-[10px] font-medium">Payments</span>
+        </Link>
+        <button onClick={() => setSidebarOpen(true)} className="flex flex-col items-center justify-center w-full h-full space-y-1 text-gray-500 hover:text-gray-900">
+          <Menu className="w-5 h-5" />
+          <span className="text-[10px] font-medium">Menu</span>
+        </button>
+      </nav>
     </div>
   );
 }

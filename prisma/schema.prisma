@@ -108,6 +108,7 @@ model User {
   invoices          Invoice[]
   supportTickets    SupportTicket[]
   auditLogs         AuditLog[]
+  reviews           Review[]
 
   @@index([email])
   @@index([phone])
@@ -173,6 +174,7 @@ model Order {
   payments        Payment[]
   notifications   Notification[]
   invoice         Invoice?
+  review          Review?
   statusHistory   OrderStatusHistory[]
 
   @@index([userId])
@@ -346,4 +348,19 @@ model SupportTicket {
 
   @@index([userId])
   @@index([status])
+}
+
+model Review {
+  id        String   @id @default(cuid())
+  userId    String
+  user      User     @relation(fields: [userId], references: [id], onDelete: Cascade)
+  orderId   String?  @unique
+  order     Order?   @relation(fields: [orderId], references: [id], onDelete: SetNull)
+  rating    Int      @default(5)
+  comment   String?
+  isPublic  Boolean  @default(true)
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+
+  @@index([userId])
 }

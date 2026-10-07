@@ -181,13 +181,11 @@ export default function AdminLayout({ children }: { children: React.ReactNode })
             backdropFilter: "blur(12px)",
           }}
         >
-          <button
-            className="lg:hidden p-2 rounded-lg transition-colors"
-            style={{ color: "#444B54" }}
-            onClick={() => setSidebarOpen(!sidebarOpen)}
-          >
-            {sidebarOpen ? <X className="w-5 h-5" /> : <Menu className="w-5 h-5" />}
-          </button>
+          <div className="lg:hidden flex items-center gap-2">
+            <div className="w-8 h-8 rounded-full overflow-hidden flex-shrink-0" style={{ border: "2px solid #F39C12" }}>
+              <Image src="/logo.png" alt="Logo" width={32} height={32} className="w-full h-full object-cover" />
+            </div>
+          </div>
           {/* Admin badge */}
           <div
             className="px-3 py-1 rounded-lg text-xs font-bold"
@@ -209,10 +207,38 @@ export default function AdminLayout({ children }: { children: React.ReactNode })
           </Link>
         </header>
 
-        <main className="flex-1 p-4 lg:p-8 overflow-auto">
+        <main className="flex-1 p-4 pb-24 lg:p-8 overflow-auto">
           {children}
         </main>
       </div>
+
+      {/* ── Bottom Navigation (Mobile Only) ── */}
+      <nav className="lg:hidden fixed bottom-0 left-0 right-0 bg-white border-t border-gray-200 flex items-center justify-around z-40 pb-safe shadow-[0_-4px_12px_rgba(0,0,0,0.05)] h-16">
+        <Link href="/admin" className={`flex flex-col items-center justify-center w-full h-full space-y-1 ${pathname === "/admin" ? "text-[#F39C12]" : "text-gray-500 hover:text-gray-900"}`}>
+          <LayoutDashboard className="w-5 h-5" />
+          <span className="text-[10px] font-medium">Home</span>
+        </Link>
+        <Link href="/admin/orders" className={`flex flex-col items-center justify-center w-full h-full space-y-1 ${pathname === "/admin/orders" ? "text-[#F39C12]" : "text-gray-500 hover:text-gray-900"}`}>
+          <FileText className="w-5 h-5" />
+          <span className="text-[10px] font-medium">Orders</span>
+        </Link>
+        
+        {/* Accent FAB style for Analytics or Customers */}
+        <div className="relative w-full h-full flex justify-center">
+          <Link href="/admin/customers" className="absolute -top-6 w-14 h-14 bg-[#F39C12] text-white rounded-full flex items-center justify-center shadow-lg shadow-amber-500/40 border-4 border-[#f5f7fa] hover:bg-amber-500 transition-colors">
+            <Users className="w-6 h-6" />
+          </Link>
+        </div>
+
+        <Link href="/admin/settings" className={`flex flex-col items-center justify-center w-full h-full space-y-1 ${pathname === "/admin/settings" ? "text-[#F39C12]" : "text-gray-500 hover:text-gray-900"}`}>
+          <Settings className="w-5 h-5" />
+          <span className="text-[10px] font-medium">Settings</span>
+        </Link>
+        <button onClick={() => setSidebarOpen(true)} className="flex flex-col items-center justify-center w-full h-full space-y-1 text-gray-500 hover:text-gray-900">
+          <Menu className="w-5 h-5" />
+          <span className="text-[10px] font-medium">Menu</span>
+        </button>
+      </nav>
     </div>
   );
 }

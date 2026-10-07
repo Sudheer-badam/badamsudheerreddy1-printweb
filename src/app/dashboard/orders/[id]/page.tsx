@@ -72,6 +72,7 @@ interface OrderDetail {
     createdAt: string;
   }[];
   user: { name: string; email: string; phone: string };
+  review?: { id: string; rating: number; comment: string | null };
 }
 
 const STATUS_STEPS = [
@@ -108,8 +109,13 @@ export default function OrderDetailPage() {
   const [screenshotPreview, setScreenshotPreview] = useState<string | null>(null);
   const [uploadingScreenshot, setUploadingScreenshot] = useState(false);
   
+  // Review States
+  const [rating, setRating] = useState(5);
+  const [comment, setComment] = useState("");
+  const [submittingReview, setSubmittingReview] = useState(false);
+  
   const adminUpiId = "8688509699-1@okbizaxis";
-  const adminName = "PRINT DOCKER | BADAM SUDHEER REDDYing Shop";
+  const adminName = "SUDHEER REDDY PRINTING SHOP";
 
   // Realistic 10-second Simulation for Demo Purposes
   useEffect(() => {
@@ -335,6 +341,34 @@ export default function OrderDetailPage() {
       }
     } catch {
       toast.error("Failed to delete order");
+    }
+  };
+
+  const submitReview = async (e: React.FormEvent) => {
+    e.preventDefault();
+    if (!order || !user) return;
+    setSubmittingReview(true);
+    try {
+      const res = await fetch("/api/reviews", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({
+          userId: user.uid,
+          orderId: order.id,
+          rating,
+          comment
+        })
+      });
+      if (res.ok) {
+        toast.success("Thank you for your feedback!");
+        fetchOrder();
+      } else {
+        toast.error("Failed to submit feedback");
+      }
+    } catch {
+      toast.error("Failed to submit feedback");
+    } finally {
+      setSubmittingReview(false);
     }
   };
 
@@ -830,6 +864,60 @@ export default function OrderDetailPage() {
               )}
             </div>
           </motion.div>
+        </div>
+      )}
+
+
+      {/* Feedback Section */}
+      {order.status === "COMPLETED" && (
+        <div className="glass rounded-3xl p-6 border border-gray-200 mt-6">
+          <h2 className="font-bold text-[#0B1D3A] mb-4">Rate Your Experience</h2>
+          {order.review ? (
+            <div className="bg-emerald-50 border border-emerald-100 rounded-2xl p-5 text-center">
+              <div className="flex justify-center mb-2 text-[#F39C12]">
+                {[...Array(5)].map((_, i) => (
+                  <span key={i} className={i < order.review!.rating ? "opacity-100" : "opacity-30"}>★</span>
+                ))}
+              </div>
+              <p className="text-sm font-medium text-emerald-800">Thank you for your feedback!</p>
+              {order.review.comment && <p className="text-sm text-gray-600 mt-2 italic">&ldquo;{order.review.comment}&rdquo;</p>}
+            </div>
+          ) : (
+            <form onSubmit={submitReview} className="space-y-4">
+              <div>
+                <label className="block text-sm font-medium text-gray-700 mb-2">Rating</label>
+                <div className="flex gap-2">
+                  {[1, 2, 3, 4, 5].map((star) => (
+                    <button
+                      key={star}
+                      type="button"
+                      onClick={() => setRating(star)}
+                      className={`text-2xl transition-colors ${rating >= star ? "text-[#F39C12]" : "text-gray-300"}`}
+                    >
+                      ★
+                    </button>
+                  ))}
+                </div>
+              </div>
+              <div>
+                <label className="block text-sm font-medium text-gray-700 mb-2">Comment (Optional)</label>
+                <textarea
+                  value={comment}
+                  onChange={(e) => setComment(e.target.value)}
+                  className="w-full px-4 py-3 rounded-xl border border-gray-300 focus:outline-none focus:border-violet-500 bg-white text-sm"
+                  rows={3}
+                  placeholder="How was the print quality?"
+                />
+              </div>
+              <button
+                type="submit"
+                disabled={submittingReview}
+                className="px-6 py-2.5 bg-violet-600 text-white rounded-xl text-sm font-bold hover:bg-violet-700 transition-colors disabled:opacity-50"
+              >
+                {submittingReview ? "Submitting..." : "Submit Feedback"}
+              </button>
+            </form>
+          )}
         </div>
       )}
     </>

@@ -40,7 +40,7 @@ const faqs = [
   },
   {
     q: "What payment methods do you accept?",
-    a: "We accept UPI (PhonePe, Google Pay, Paytm), Razorpay, and Cash. Payment can be made online or at the time of pickup.",
+    a: "We accept UPI (PhonePe, Google Pay, Paytm) and Cash. Payment can be made online or at the time of pickup.",
   },
   {
     q: "Can I cancel my order?",
