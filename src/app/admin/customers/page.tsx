@@ -94,9 +94,9 @@ export default function AdminCustomersPage() {
               {/* Avatar */}
               <div className="flex items-start gap-3 mb-4">
                 {customer.profilePhoto ? (
-                  <img src={customer.profilePhoto} alt="" className="w-11 h-11 rounded-xl object-cover" />
+                  <img src={customer.profilePhoto} alt="" className="w-11 h-11 rounded-xl object-cover flex-shrink-0" />
                 ) : (
-                  <div className="w-11 h-11 rounded-xl bg-amber-500/20 flex items-center justify-center text-lg font-bold text-amber-300">
+                  <div className="w-11 h-11 rounded-xl bg-amber-500/20 flex items-center justify-center text-lg font-bold text-amber-300 flex-shrink-0">
                     {customer.name?.charAt(0) || "?"}
                   </div>
                 )}
