@@ -67,9 +67,9 @@ export default function AdminSettingsPage() {
     { id: "LEGAL", label: "Legal", multiplier: 1.2, isActive: true },
   ]);
   const [paperQualities, setPaperQualities] = useState([
-    { id: "standard", label: "Standard 70 GSM", price: 0, isActive: true },
-    { id: "premium", label: "Premium 75 GSM", price: 0.5, isActive: true },
-    { id: "executive", label: "Executive 80 GSM", price: 1, isActive: true },
+    { id: "standard", label: "Standard 70 GSM", colorPrice: 0, bwPrice: 0, isActive: true },
+    { id: "premium", label: "Premium 75 GSM", colorPrice: 0.5, bwPrice: 0.5, isActive: true },
+    { id: "executive", label: "Executive 80 GSM", colorPrice: 1, bwPrice: 1, isActive: true },
   ]);
   const [savingPricing, setSavingPricing] = useState(false);
   const [savingBusiness, setSavingBusiness] = useState(false);
@@ -298,6 +298,15 @@ export default function AdminSettingsPage() {
             </div>
           ))}
         </div>
+
+        <button
+          onClick={saveBusiness}
+          disabled={savingBusiness}
+          className="mt-6 flex items-center gap-2 px-6 py-2.5 rounded-xl bg-indigo-500 text-white text-sm font-semibold hover:bg-indigo-600 transition-colors disabled:opacity-50"
+        >
+          {savingBusiness ? <Loader2 className="w-4 h-4 animate-spin" /> : <Save className="w-4 h-4" />}
+          Save Paper Sizes
+        </button>
       </section>
 
       {/* Paper Qualities Configuration */}
@@ -313,7 +322,7 @@ export default function AdminSettingsPage() {
             </div>
           </div>
           <button 
-            onClick={() => setPaperQualities([...paperQualities, { id: "new", label: "New Quality", price: 0, isActive: true }])}
+            onClick={() => setPaperQualities([...paperQualities, { id: "new", label: "New Quality", colorPrice: 0, bwPrice: 0, isActive: true }])}
             className="px-4 py-2 bg-emerald-50 text-emerald-600 rounded-xl text-sm font-medium hover:bg-emerald-100"
           >
             + Add Quality
@@ -341,16 +350,30 @@ export default function AdminSettingsPage() {
                 }}
                 className="w-full sm:w-1/3 px-3 py-2 border border-gray-200 rounded-lg text-sm" placeholder="Display Name" 
               />
-              <div className="w-full sm:w-1/4 relative">
+              <div className="w-full sm:w-[15%] relative">
                 <span className="absolute left-3 top-1/2 -translate-y-1/2 text-gray-400 text-xs">+₹</span>
                 <input 
-                  type="number" step="0.5" value={quality.price} 
+                  type="number" step="0.5" value={quality.colorPrice ?? quality.price ?? 0} 
                   onChange={e => {
                     const newQ = [...paperQualities];
-                    newQ[index].price = parseFloat(e.target.value) || 0;
+                    newQ[index].colorPrice = parseFloat(e.target.value) || 0;
                     setPaperQualities(newQ);
                   }}
-                  className="w-full pl-8 pr-3 py-2 border border-gray-200 rounded-lg text-sm" placeholder="Extra Cost" 
+                  className="w-full pl-8 pr-3 py-2 border border-gray-200 rounded-lg text-sm" placeholder="Color Cost" 
+                  title="Extra cost for Color print"
+                />
+              </div>
+              <div className="w-full sm:w-[15%] relative">
+                <span className="absolute left-3 top-1/2 -translate-y-1/2 text-gray-400 text-xs">+₹</span>
+                <input 
+                  type="number" step="0.5" value={quality.bwPrice ?? quality.price ?? 0} 
+                  onChange={e => {
+                    const newQ = [...paperQualities];
+                    newQ[index].bwPrice = parseFloat(e.target.value) || 0;
+                    setPaperQualities(newQ);
+                  }}
+                  className="w-full pl-8 pr-3 py-2 border border-gray-200 rounded-lg text-sm" placeholder="B&W Cost" 
+                  title="Extra cost for B&W print"
                 />
               </div>
               <div className="flex items-center gap-2">
@@ -385,7 +408,7 @@ export default function AdminSettingsPage() {
           className="mt-6 flex items-center gap-2 px-6 py-2.5 rounded-xl bg-emerald-500 text-white text-sm font-semibold hover:bg-emerald-600 transition-colors disabled:opacity-50"
         >
           {savingBusiness ? <Loader2 className="w-4 h-4 animate-spin" /> : <Save className="w-4 h-4" />}
-          Save Paper Settings
+          Save Paper Qualities
         </button>
       </section>
 
@@ -430,6 +453,15 @@ export default function AdminSettingsPage() {
             </div>
           ))}
         </div>
+
+        <button
+          onClick={saveBusiness}
+          disabled={savingBusiness}
+          className="mt-6 flex items-center gap-2 px-6 py-2.5 rounded-xl bg-blue-500 text-white text-sm font-semibold hover:bg-blue-600 transition-colors disabled:opacity-50"
+        >
+          {savingBusiness ? <Loader2 className="w-4 h-4 animate-spin" /> : <Save className="w-4 h-4" />}
+          Save Services
+        </button>
       </section>
 
       {/* Business Info */}

@@ -35,7 +35,7 @@ interface AdminSettings {
   enableLamination: boolean;
   enableGST: boolean;
   paperSizes: { id: string; label: string; multiplier: number; isActive: boolean }[];
-  paperQualities: { id: string; label: string; price: number; isActive: boolean }[];
+  paperQualities: { id: string; label: string; colorPrice?: number; bwPrice?: number; price?: number; isActive: boolean }[];
 }
 
 interface FileAnalysis {
@@ -115,49 +115,70 @@ export default function UploadPage() {
 
   const onDrop = useCallback(
     async (acceptedFiles: File[]) => {
-      const uploadedFile = acceptedFiles[0];
-      if (!uploadedFile) return;
+      if (!acceptedFiles.length) return;
 
-      if (uploadedFile.type !== "application/pdf") {
+      const validFiles = acceptedFiles.filter(f => f.type === "application/pdf");
+      if (validFiles.length !== acceptedFiles.length) {
         toast.error("Only PDF files are allowed");
+        if (!validFiles.length) return;
+      }
+
+      let totalSize = validFiles.reduce((acc, f) => acc + f.size, 0);
+      if (file) totalSize += file.size;
+
+      if (pricing && totalSize > pricing.maxFileSize) {
+        toast.error(`Total file size too large. Maximum ${formatFileSize(pricing.maxFileSize)}`);
         return;
       }
 
-      if (pricing && uploadedFile.size > pricing.maxFileSize) {
-        toast.error(`File too large. Maximum ${formatFileSize(pricing.maxFileSize)}`);
-        return;
-      }
-
-      setFile(uploadedFile);
       setAnalyzing(true);
-
       try {
-        const arrayBuffer = await uploadedFile.arrayBuffer();
-        const pdfDoc = await PDFDocument.load(arrayBuffer);
-        const actualPageCount = pdfDoc.getPageCount();
+        let mergedPdf: PDFDocument;
+        let baseName = validFiles[0].name;
 
+        if (file) {
+          mergedPdf = await PDFDocument.load(await file.arrayBuffer());
+          baseName = "Merged_Document.pdf";
+        } else {
+          mergedPdf = await PDFDocument.create();
+        }
+
+        for (const newFile of validFiles) {
+          if (!file && newFile === validFiles[0]) {
+             mergedPdf = await PDFDocument.load(await newFile.arrayBuffer());
+             continue;
+          }
+          const pdfToMerge = await PDFDocument.load(await newFile.arrayBuffer());
+          const copiedPages = await mergedPdf.copyPages(pdfToMerge, pdfToMerge.getPageIndices());
+          copiedPages.forEach((page) => mergedPdf.addPage(page));
+          baseName = "Merged_Document.pdf";
+        }
+
+        const mergedPdfBytes = await mergedPdf.save();
+        const newFile = new File([mergedPdfBytes], baseName, { type: "application/pdf" });
+        const actualPageCount = mergedPdf.getPageCount();
+
+        setFile(newFile);
         setFileAnalysis({
           totalPages: actualPageCount,
           colorPages: 0,
           bwPages: actualPageCount,
           paperSize: "A4",
         });
-        toast.success("PDF analyzed successfully!");
+        toast.success("PDFs analyzed and ready!");
       } catch (error) {
         console.error("PDF analysis error:", error);
-        toast.error("Failed to read PDF file.");
-        setFile(null);
+        toast.error("Failed to read PDF file(s).");
       } finally {
         setAnalyzing(false);
       }
     },
-    [pricing]
+    [pricing, file]
   );
 
   const { getRootProps, getInputProps, isDragActive } = useDropzone({
     onDrop,
     accept: { "application/pdf": [".pdf"] },
-    maxFiles: 1,
   });
 
   const calculateCost = () => {
@@ -175,10 +196,14 @@ export default function UploadPage() {
     }
 
     // Get dynamic quality cost per page
-    let qualityCost = 0;
+    let colorQualityCost = 0;
+    let bwQualityCost = 0;
     if (adminSettings?.paperQualities) {
       const pQual = adminSettings.paperQualities.find(q => q.id === options.paperQuality);
-      if (pQual) qualityCost = pQual.price;
+      if (pQual) {
+        colorQualityCost = pQual.colorPrice ?? pQual.price ?? 0;
+        bwQualityCost = pQual.bwPrice ?? pQual.price ?? 0;
+      }
     }
 
     const pagesToCharge = pagesToPrint === "ALL" 
@@ -190,8 +215,8 @@ export default function UploadPage() {
     const estimatedColorPages = printColor === "COLOR" ? pagesToCharge : 0;
     const estimatedBwPages = printColor === "BLACK_AND_WHITE" ? pagesToCharge : 0;
 
-    const colorCost = estimatedColorPages * (pricing.colorPrice + qualityCost) * sizeMultiplier * copies;
-    const bwCost = estimatedBwPages * (pricing.bwPrice + qualityCost) * sizeMultiplier * copies;
+    const colorCost = estimatedColorPages * (pricing.colorPrice + colorQualityCost) * sizeMultiplier * copies;
+    const bwCost = estimatedBwPages * (pricing.bwPrice + bwQualityCost) * sizeMultiplier * copies;
 
     const bindingCost = binding ? pricing.bindingCost : 0;
     const laminationCost = lamination ? pagesToCharge * pricing.laminationCost * copies : 0;
@@ -357,10 +382,10 @@ export default function UploadPage() {
                 <Upload className="w-12 h-12 text-gray-400 mx-auto" />
                 <div>
                   <p className="font-medium text-[#0B1D3A]">
-                    {isDragActive ? "Drop your PDF here" : "Drag & drop PDF or click to browse"}
+                    {isDragActive ? "Drop your PDFs here" : "Drag & drop PDFs or click to browse"}
                   </p>
                   <p className="text-sm text-gray-500 mt-1">
-                    PDF only • Max {pricing ? formatFileSize(pricing.maxFileSize) : "50MB"}
+                    PDFs only • Max {pricing ? formatFileSize(pricing.maxFileSize) : "50MB"}
                   </p>
                 </div>
               </div>
@@ -380,13 +405,32 @@ export default function UploadPage() {
                     <div className="text-xs text-gray-500">{formatFileSize(file.size)}</div>
                   </div>
                 </div>
-                <button
-                  onClick={() => { setFile(null); setFileAnalysis(null); }}
-                  className="p-2 rounded-xl text-red-500 hover:bg-red-50 transition-colors"
-                  title="Remove File"
-                >
-                  <X className="w-5 h-5" />
-                </button>
+                <div className="flex items-center gap-2">
+                  <button
+                    onClick={() => {
+                      const input = document.createElement("input");
+                      input.type = "file";
+                      input.accept = "application/pdf";
+                      input.multiple = true;
+                      input.onchange = (e) => {
+                        const files = Array.from((e.target as HTMLInputElement).files || []);
+                        if (files.length > 0) onDrop(files);
+                      };
+                      input.click();
+                    }}
+                    className="px-3 py-1.5 rounded-xl bg-violet-50 text-violet-600 hover:bg-violet-100 transition-colors text-xs font-semibold"
+                    title="Add More PDF"
+                  >
+                    + Add More PDF
+                  </button>
+                  <button
+                    onClick={() => { setFile(null); setFileAnalysis(null); }}
+                    className="p-2 rounded-xl text-red-500 hover:bg-red-50 transition-colors"
+                    title="Remove File"
+                  >
+                    <X className="w-5 h-5" />
+                  </button>
+                </div>
               </div>
 
               {analyzing ? (
@@ -510,7 +554,16 @@ export default function UploadPage() {
                 label="Paper Quality"
                 value={options.paperQuality}
                 onChange={(v) => setOptions({ ...options, paperQuality: v })}
-                options={(adminSettings?.paperQualities?.filter(q => q.isActive) || [{id:"standard", label:"Standard", price:0, isActive:true}]).map(q => ({ value: q.id, label: `${q.label} ${q.price > 0 ? `(+₹${q.price})` : ''}` }))}
+                options={(adminSettings?.paperQualities?.filter(q => q.isActive) || [{id:"standard", label:"Standard", colorPrice:0, bwPrice:0, price:0, isActive:true}]).map(q => {
+                  const cp = q.colorPrice ?? q.price ?? 0;
+                  const bp = q.bwPrice ?? q.price ?? 0;
+                  let extraText = '';
+                  if (options.printColor === 'COLOR' && cp > 0) extraText = `(+₹${cp})`;
+                  else if (options.printColor === 'BLACK_AND_WHITE' && bp > 0) extraText = `(+₹${bp})`;
+                  else if (options.printColor !== 'COLOR' && options.printColor !== 'BLACK_AND_WHITE' && (q.price || 0) > 0) extraText = `(+₹${q.price})`;
+                  
+                  return { value: q.id, label: `${q.label} ${extraText}`.trim() };
+                })}
               />
 
               <div>
@@ -553,18 +606,22 @@ export default function UploadPage() {
                 checked={options.saveInk}
                 onChange={(v) => setOptions({ ...options, saveInk: v })}
               />
-              <ToggleField
-                label="Binding"
-                sublabel={pricing ? `₹${pricing.bindingCost}` : ""}
-                checked={options.binding}
-                onChange={(v) => setOptions({ ...options, binding: v })}
-              />
-              <ToggleField
-                label="Lamination"
-                sublabel={pricing ? `₹${pricing.laminationCost}/page` : ""}
-                checked={options.lamination}
-                onChange={(v) => setOptions({ ...options, lamination: v })}
-              />
+              {adminSettings?.enableBinding !== false && (
+                <ToggleField
+                  label="Binding"
+                  sublabel={pricing ? `₹${pricing.bindingCost}` : ""}
+                  checked={options.binding}
+                  onChange={(v) => setOptions({ ...options, binding: v })}
+                />
+              )}
+              {adminSettings?.enableLamination !== false && (
+                <ToggleField
+                  label="Lamination"
+                  sublabel={pricing ? `₹${pricing.laminationCost}/page` : ""}
+                  checked={options.lamination}
+                  onChange={(v) => setOptions({ ...options, lamination: v })}
+                />
+              )}
             </div>
 
             {/* Instructions */}

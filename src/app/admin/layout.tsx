@@ -18,6 +18,7 @@ import {
   TrendingUp,
   CreditCard,
   Shield,
+  Database,
 } from "lucide-react";
 import { useAuth } from "@/contexts/AuthContext";
 
@@ -28,6 +29,7 @@ const navItems = [
   { href: "/admin/analytics", icon: TrendingUp, label: "Analytics" },
   { href: "/admin/payments", icon: CreditCard, label: "Payments" },
   { href: "/admin/notifications", icon: Bell, label: "Notifications" },
+  { href: "/admin/storage", icon: Database, label: "Storage" },
   { href: "/admin/settings", icon: Settings, label: "Settings" },
 ];
 
@@ -101,7 +103,7 @@ export default function AdminLayout({ children }: { children: React.ReactNode })
         </div>
 
         {/* Nav */}
-        <nav className="flex-1 p-4 space-y-1 overflow-y-auto">
+        <nav className="p-4 space-y-1 overflow-y-auto">
           {navItems.map((item) => {
             const isActive = pathname === item.href;
             return (
@@ -149,7 +151,7 @@ export default function AdminLayout({ children }: { children: React.ReactNode })
               A
             </div>
             <div className="flex-1 min-w-0">
-              <div className="text-sm font-semibold text-[#0B1D3A]">Admin</div>
+              <div className="text-sm font-semibold text-white">Admin</div>
               <div className="text-xs truncate" style={{ color: "rgba(255,255,255,0.4)" }}>
                 {user.email}
               </div>
