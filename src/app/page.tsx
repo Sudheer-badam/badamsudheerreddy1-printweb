@@ -225,12 +225,13 @@ export default function HomePage() {
             style={{ borderRadius: 24 }}
           >
             <div className="relative w-full" style={{ paddingBottom: "45%", minHeight: 280 }}>
-              <iframe
-                src="https://www.youtube.com/embed/q6yPj6oXJ_8?rel=0&modestbranding=1&color=white"
-                title="Canon Inkjet Printer Technology — Official CG Demo"
-                allow="accelerometer; autoplay; clipboard-write; encrypted-media; gyroscope; picture-in-picture"
-                allowFullScreen
-                className="absolute inset-0 w-full h-full"
+              <video
+                src="/13418263_3840_2160_50fps.mp4"
+                autoPlay
+                loop
+                muted
+                playsInline
+                className="absolute inset-0 w-full h-full object-cover"
                 style={{ border: "none" }}
               />
             </div>
@@ -249,19 +250,22 @@ export default function HomePage() {
           <div className="grid grid-cols-1 md:grid-cols-3 gap-6">
             {[
               {
-                id: "kKhX1A143E4", // Valid video ID
+                id: "vid1",
+                src: "/13867728_3840_2160_30fps.mp4",
                 title: "How Does an Inkjet Printer Actually Work?",
                 desc: "Detailed breakdown of inkjet technology & printhead mechanics",
                 icon: "🖨️",
               },
               {
-                id: "aqz-KE-bpKQ", // Big Buck Bunny (Safe placeholder)
+                id: "vid2",
+                src: "/istockphoto-1345178846-640_adpp_is.mp4",
                 title: "Amazing Engineering — 3D Animation",
                 desc: "3D animation explaining nozzle mechanics and CMYK color mixing",
                 icon: "🎨",
               },
               {
-                id: "jfKfPfyJRdk", // Lofi Girl (Safe placeholder)
+                id: "vid3",
+                src: "/istockphoto-1355208991-640_adpp_is.mp4",
                 title: "Industrial Inkjet Printing Process",
                 desc: "High-speed industrial printing — on-the-fly & rotational methods",
                 icon: "⚙️",
@@ -277,12 +281,13 @@ export default function HomePage() {
                 style={{ borderRadius: 20 }}
               >
                 <div className="relative w-full" style={{ paddingBottom: "56.25%" }}>
-                  <iframe
-                    src={`https://www.youtube.com/embed/${v.id}?rel=0&modestbranding=1`}
-                    title={v.title}
-                    allow="accelerometer; autoplay; clipboard-write; encrypted-media; gyroscope; picture-in-picture"
-                    allowFullScreen
-                    className="absolute inset-0 w-full h-full"
+                  <video
+                    src={v.src}
+                    autoPlay
+                    loop
+                    muted
+                    playsInline
+                    className="absolute inset-0 w-full h-full object-cover"
                     style={{ border: "none" }}
                   />
                 </div>
@@ -307,12 +312,13 @@ export default function HomePage() {
           >
             <div className="grid md:grid-cols-2 gap-0">
               <div className="relative" style={{ paddingBottom: "56.25%", minHeight: 260 }}>
-                <iframe
-                  src="https://www.youtube.com/embed/kKhX1A143E4?rel=0&modestbranding=1"
-                  title="Inkjet Printers — The Interesting Engineering Behind Them"
-                  allow="accelerometer; autoplay; clipboard-write; encrypted-media; gyroscope; picture-in-picture"
-                  allowFullScreen
-                  className="absolute inset-0 w-full h-full"
+                <video
+                  src="/19897022-uhd_3840_2160_25fps.mp4"
+                  autoPlay
+                  loop
+                  muted
+                  playsInline
+                  className="absolute inset-0 w-full h-full object-cover"
                   style={{ border: "none", borderRadius: "20px 0 0 20px" }}
                 />
               </div>
