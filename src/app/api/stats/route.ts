@@ -19,7 +19,7 @@ export async function GET() {
       where: { status: "COMPLETED" },
     });
 
-    let totalPages = pagesPrintedResult._sum.totalPages || 0;
+    const totalPages = pagesPrintedResult._sum.totalPages || 0;
     
     return NextResponse.json({
       ordersCompleted: ordersCompleted,
