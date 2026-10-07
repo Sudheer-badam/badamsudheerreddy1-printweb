@@ -103,7 +103,6 @@ export default function HomePage() {
 
             </div>
             <div className="flex items-center gap-3">
-              <Link href="/auth/login" className="px-4 py-2 text-sm font-semibold transition-colors" style={{ color: "#444B54" }}>Sign In</Link>
               <Link href="/auth/register" className="btn-primary px-5 py-2 text-sm inline-flex items-center gap-1.5">
                 Get Started <ChevronRight className="w-4 h-4" />
               </Link>
@@ -133,9 +132,6 @@ export default function HomePage() {
               <div className="flex flex-col sm:flex-row gap-4">
                 <Link href="/auth/register" className="btn-primary w-full sm:w-auto inline-flex items-center justify-center gap-2 px-8 py-4 text-base font-bold shadow-lg shadow-blue-500/30">
                   Start Printing Now <ArrowRight className="w-5 h-5" />
-                </Link>
-                <Link href="/auth/login" className="w-full sm:w-auto inline-flex items-center justify-center gap-2 px-8 py-4 text-base font-bold rounded-xl transition-all" style={{ background: "rgba(255,255,255,0.8)", border: "1px solid #E2E6EF", color: "#0B1D3A" }}>
-                  Sign In <ChevronRight className="w-5 h-5" />
                 </Link>
               </div>
               <div className="flex items-center justify-center sm:justify-start gap-x-5 gap-y-3 mt-8 flex-wrap">
@@ -479,11 +475,6 @@ export default function HomePage() {
                 className="inline-flex items-center justify-center gap-2 px-10 py-4 text-base font-bold rounded-full text-[#2D63FF] bg-white hover:bg-blue-50 transition-all"
                 style={{ boxShadow: "0 8px 32px rgba(0,0,0,0.2)" }}>
                 Create Free Account <ArrowRight className="w-5 h-5" />
-              </Link>
-              <Link href="/auth/login"
-                className="inline-flex items-center justify-center gap-2 px-10 py-4 text-base font-bold rounded-full text-white transition-all"
-                style={{ border: "2px solid rgba(255,255,255,0.4)" }}>
-                Sign In <ChevronRight className="w-5 h-5" />
               </Link>
             </div>
           </motion.div>
