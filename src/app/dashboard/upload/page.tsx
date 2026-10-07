@@ -704,7 +704,7 @@ function SelectField({
           {options.map((opt) => {
             const v = typeof opt === "string" ? opt : opt.value;
             const l = typeof opt === "string" ? opt : opt.label;
-            return <option key={v} value={v} className="bg-gray-900">{l}</option>;
+            return <option key={v} value={v} className="bg-white text-[#0B1D3A]">{l}</option>;
           })}
         </select>
         <ChevronDown className="absolute right-3 top-1/2 -translate-y-1/2 w-4 h-4 text-gray-400 pointer-events-none" />

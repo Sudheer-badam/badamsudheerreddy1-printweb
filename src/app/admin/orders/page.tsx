@@ -290,7 +290,7 @@ export default function AdminOrdersPage() {
                         className={`text-xs px-2 py-1 rounded-lg border cursor-pointer bg-transparent focus:outline-none ${ORDER_STATUS_COLORS[order.status]}`}
                       >
                         {STATUSES.map((s) => (
-                          <option key={s} value={s} className="bg-gray-900 text-white">{ORDER_STATUS_LABELS[s]}</option>
+                          <option key={s} value={s} className="bg-white text-[#0B1D3A]">{ORDER_STATUS_LABELS[s]}</option>
                         ))}
                       </select>
                     </td>
@@ -302,7 +302,7 @@ export default function AdminOrdersPage() {
                         className={`text-xs px-2 py-1 rounded-lg border cursor-pointer bg-transparent focus:outline-none ${PAYMENT_STATUS_COLORS[order.paymentStatus]}`}
                       >
                         {["PENDING", "PAID", "FAILED", "REFUNDED"].map((s) => (
-                          <option key={s} value={s} className="bg-gray-900 text-white">{s}</option>
+                          <option key={s} value={s} className="bg-white text-[#0B1D3A]">{s}</option>
                         ))}
                       </select>
                     </td>
@@ -429,7 +429,7 @@ export default function AdminOrdersPage() {
                     className="w-full px-3 py-2.5 bg-white border border-gray-300 rounded-xl text-[#0B1D3A] text-sm focus:outline-none focus:border-violet-500"
                   >
                     {STATUSES.map((s) => (
-                      <option key={s} value={s} className="bg-gray-900">{ORDER_STATUS_LABELS[s]}</option>
+                      <option key={s} value={s} className="bg-white text-[#0B1D3A]">{ORDER_STATUS_LABELS[s]}</option>
                     ))}
                   </select>
                   <textarea
