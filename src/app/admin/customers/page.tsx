@@ -2,6 +2,7 @@
 
 import { useState, useEffect } from "react";
 import { motion } from "framer-motion";
+import Link from "next/link";
 import { Search, Users, Phone, Mail, Calendar, FileText, ChevronRight } from "lucide-react";
 import { useAuth } from "@/contexts/AuthContext";
 import { formatDate } from "@/lib/utils";
@@ -103,10 +104,12 @@ export default function AdminCustomersPage() {
                   <div className="font-semibold text-[#0B1D3A] truncate">{customer.name || "Unknown"}</div>
                   <div className="text-xs text-gray-400">{customer.authProvider}</div>
                 </div>
-                <div className="flex items-center gap-1 text-xs text-amber-400 bg-amber-500/10 px-2 py-1 rounded-lg">
-                  <FileText className="w-3 h-3" />
-                  {customer._count?.orders || 0}
-                </div>
+                <Link href={`/admin/orders?search=${encodeURIComponent(customer.email || customer.phone || customer.name || "")}`}>
+                  <div className="flex items-center gap-1 text-xs text-amber-500 bg-amber-500/10 hover:bg-amber-500/20 px-3 py-1.5 rounded-lg transition-colors cursor-pointer" title="View Customer Orders">
+                    <FileText className="w-3.5 h-3.5" />
+                    <span className="font-bold">{customer._count?.orders || 0}</span>
+                  </div>
+                </Link>
               </div>
 
               <div className="space-y-2">
