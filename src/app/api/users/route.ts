@@ -44,7 +44,7 @@ export async function PATCH(req: NextRequest) {
     }
 
     const body = await req.json();
-    const { uid, name, phone } = body;
+    const { uid, name, phone, profilePhoto } = body;
 
     if (!uid) {
       return NextResponse.json({ error: "Missing uid" }, { status: 400 });
@@ -55,6 +55,7 @@ export async function PATCH(req: NextRequest) {
       data: {
         ...(name && { name }),
         ...(phone && { phone }),
+        ...(profilePhoto && { profilePhoto }),
         updatedAt: new Date(),
       },
     });

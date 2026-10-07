@@ -158,7 +158,12 @@ export async function DELETE(
     if (!uid) return NextResponse.json({ error: "Unauthorized" }, { status: 401 });
 
     const user = await prisma.user.findUnique({ where: { firebaseUid: uid } });
-    if (!user || user.role !== "ADMIN") {
+    if (!user) return NextResponse.json({ error: "Unauthorized" }, { status: 401 });
+
+    const order = await prisma.order.findUnique({ where: { id } });
+    if (!order) return NextResponse.json({ error: "Order not found" }, { status: 404 });
+
+    if (user.role !== "ADMIN" && order.userId !== user.id) {
       return NextResponse.json({ error: "Forbidden" }, { status: 403 });
     }
 

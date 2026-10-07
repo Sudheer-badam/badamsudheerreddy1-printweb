@@ -11,7 +11,9 @@ import {
   ChevronRight,
   ChevronLeft,
   Eye,
+  Trash2,
 } from "lucide-react";
+import { toast } from "sonner";
 import { useAuth } from "@/contexts/AuthContext";
 import {
   formatCurrency,
@@ -113,6 +115,23 @@ export default function OrdersPage() {
       o.fileName.toLowerCase().includes(search.toLowerCase()) ||
       o.orderNumber.toLowerCase().includes(search.toLowerCase())
   );
+
+  const deleteOrder = async (orderId: string) => {
+    if (!confirm("Are you sure you want to permanently delete this order?")) return;
+    try {
+      const res = await fetch(`/api/orders/${orderId}?uid=${user!.uid}`, { method: "DELETE" });
+      if (res.ok) {
+        toast.success("Order deleted successfully");
+        fetchOrders(); // Refresh table
+      } else {
+        toast.error("Failed to delete order");
+      }
+    } catch {
+      toast.error("Failed to delete order");
+    }
+  };
+
+
 
   return (
     <div className="space-y-6">
@@ -217,11 +236,18 @@ export default function OrdersPage() {
                         <span className="font-semibold text-[#0B1D3A] text-sm">{formatCurrency(order.totalAmount)}</span>
                       </td>
                       <td className="px-4 py-4">
-                        <Link href={`/dashboard/orders/${order.id}`}>
-                          <button className="p-2 rounded-lg text-gray-500 hover:text-[#0B1D3A] hover:bg-gray-100 transition-all">
-                            <Eye className="w-4 h-4" />
+                        <div className="flex items-center gap-1">
+                          <Link href={`/dashboard/orders/${order.id}`}>
+                            <button className="p-2 rounded-lg text-gray-500 hover:text-[#0B1D3A] hover:bg-gray-100 transition-all" title="View Details">
+                              <Eye className="w-4 h-4" />
+                            </button>
+                          </Link>
+                          <button 
+                            onClick={() => deleteOrder(order.id)}
+                            className="p-2 rounded-lg text-gray-500 hover:text-red-500 hover:bg-red-50 transition-all" title="Delete Order">
+                            <Trash2 className="w-4 h-4" />
                           </button>
-                        </Link>
+                        </div>
                       </td>
                     </motion.tr>
                   ))}

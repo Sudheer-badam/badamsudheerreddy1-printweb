@@ -23,6 +23,7 @@ import {
   RefreshCw,
   Search,
   Copy,
+  Trash2,
 } from "lucide-react";
 import { useAuth } from "@/contexts/AuthContext";
 import { formatCurrency, formatDate, ORDER_STATUS_LABELS, PAYMENT_STATUS_COLORS } from "@/lib/utils";
@@ -322,6 +323,21 @@ export default function OrderDetailPage() {
     }
   };
 
+  const deleteOrder = async () => {
+    if (!confirm("Are you sure you want to permanently delete this order?")) return;
+    try {
+      const res = await fetch(`/api/orders/${order!.id}?uid=${user!.uid}`, { method: "DELETE" });
+      if (res.ok) {
+        toast.success("Order deleted successfully");
+        router.push("/dashboard/orders");
+      } else {
+        toast.error("Failed to delete order");
+      }
+    } catch {
+      toast.error("Failed to delete order");
+    }
+  };
+
   if (loading) {
     return (
       <div className="space-y-4">
@@ -357,8 +373,17 @@ export default function OrderDetailPage() {
             </button>
           </div>
           <div className="flex flex-col items-end gap-2">
-            <div className={`px-3 py-1.5 rounded-xl text-sm border ${PAYMENT_STATUS_COLORS[order.paymentStatus]}`}>
-              {order.paymentStatus}
+            <div className="flex items-center gap-2">
+              <button
+                onClick={deleteOrder}
+                className="p-1.5 rounded-lg text-gray-500 hover:text-red-500 hover:bg-red-50 border border-gray-200 transition-all"
+                title="Delete Order"
+              >
+                <Trash2 className="w-4 h-4" />
+              </button>
+              <div className={`px-3 py-1.5 rounded-xl text-sm border ${PAYMENT_STATUS_COLORS[order.paymentStatus]}`}>
+                {order.paymentStatus}
+              </div>
             </div>
             {order.paymentStatus === "PENDING" && !isCancelled && (
               <button
@@ -425,7 +450,7 @@ export default function OrderDetailPage() {
                             <div class="badge">PAID SECURELY</div>
                           </div>
                         </div>
-                      <div class="row"><span>Date:</span> <strong>${new Date().toLocaleDateString()}</strong></div>
+                      <div class="row"><span>Date & Time:</span> <strong>${new Date().toLocaleString('en-IN', { dateStyle: 'medium', timeStyle: 'short' })}</strong></div>
                       <div class="row"><span>Customer:</span> <strong>${user?.displayName || user?.email || "Customer"}</strong></div>
                       <div class="row"><span>Document:</span> <strong>${order.fileName}</strong></div>
                       <br/>

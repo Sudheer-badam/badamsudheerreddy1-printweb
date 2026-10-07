@@ -89,8 +89,8 @@ export default function SupportPage() {
     {
       icon: <Phone className="w-5 h-5 text-emerald-400" />,
       label: "Call Us",
-      value: settings?.phone || "+91 XXXXXXXXXX",
-      href: `tel:${settings?.phone}`,
+      value: settings?.phone || "+91 8688509699",
+      href: `tel:${settings?.phone || "+918688509699"}`,
       bg: "bg-emerald-500/10 border-emerald-500/20",
     },
     {
@@ -100,15 +100,15 @@ export default function SupportPage() {
         </svg>
       ),
       label: "WhatsApp",
-      value: settings?.whatsapp || "+91 XXXXXXXXXX",
-      href: `https://wa.me/${settings?.whatsapp?.replace(/\D/g, "")}`,
+      value: settings?.whatsapp || "+91 8688509699",
+      href: `https://wa.me/${(settings?.whatsapp || "+918688509699").replace(/\D/g, "")}`,
       bg: "bg-green-500/10 border-green-500/20",
     },
     {
       icon: <Mail className="w-5 h-5 text-blue-400" />,
       label: "Email Us",
-      value: settings?.email || "support@antigravity.in",
-      href: `mailto:${settings?.email}`,
+      value: settings?.email || "badamsudheerreddy1@gmail.com",
+      href: `mailto:${settings?.email || "badamsudheerreddy1@gmail.com"}`,
       bg: "bg-blue-500/10 border-blue-500/20",
     },
   ];

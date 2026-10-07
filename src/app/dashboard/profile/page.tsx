@@ -59,6 +59,21 @@ export default function ProfilePage() {
         registrationDate: user.metadata.creationTime || "",
         lastLogin: user.metadata.lastSignInTime || "",
       });
+
+      // Fetch the latest profile data from the database
+      fetch(`/api/users?uid=${user.uid}`)
+        .then((res) => res.json())
+        .then((data) => {
+          if (!data.error) {
+            setProfile((prev) => ({
+              ...prev,
+              name: data.name || prev.name,
+              phone: data.phone || prev.phone,
+              profilePhoto: data.profilePhoto || prev.profilePhoto,
+            }));
+          }
+        })
+        .catch(console.error);
     }
   }, [user]);
 
@@ -94,6 +109,7 @@ export default function ProfilePage() {
           uid: user?.uid,
           name: profile.name,
           phone: profile.phone,
+          profilePhoto: profile.profilePhoto,
         }),
       });
       if (res.ok) toast.success("Profile updated successfully!");

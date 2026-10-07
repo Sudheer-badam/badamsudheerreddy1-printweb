@@ -498,9 +498,16 @@ export default function HomePage() {
               <div>
                 <div className="text-white font-bold text-sm mb-4">Legal</div>
                 <div className="flex flex-col gap-2 text-sm font-medium" style={{ color: "rgba(255,255,255,0.55)" }}>
-                  <a href="/support" className="hover:text-white transition-colors">Support</a>
+                  <a href="/dashboard/support" className="hover:text-white transition-colors">Support</a>
                   <a href="/privacy" className="hover:text-white transition-colors">Privacy</a>
                   <a href="/terms" className="hover:text-white transition-colors">Terms</a>
+                </div>
+              </div>
+              <div>
+                <div className="text-white font-bold text-sm mb-4">Contact</div>
+                <div className="flex flex-col gap-2 text-sm font-medium" style={{ color: "rgba(255,255,255,0.55)" }}>
+                  <a href="tel:+918688509699" className="hover:text-white transition-colors">+91 8688509699</a>
+                  <a href="mailto:badamsudheerreddy1@gmail.com" className="hover:text-white transition-colors">badamsudheerreddy1@gmail.com</a>
                 </div>
               </div>
             </div>
