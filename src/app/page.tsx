@@ -27,12 +27,6 @@ const steps = [
   { step: "04", title: "Track & Collect", desc: "Get real-time updates and collect your prints" },
 ];
 
-const stats = [
-  { label: "Orders Completed", value: "5,000+", color: "#2D63FF" },
-  { label: "Happy Customers", value: "1,500+", color: "#00C851" },
-  { label: "Pages Printed", value: "500k+", color: "#F39C12" },
-  { label: "Quality Assured", value: "100%", color: "#2D63FF" },
-];
 
 
 
@@ -40,14 +34,42 @@ export default function HomePage() {
   const { user, userRole, loading } = useAuth();
   const router = useRouter();
   const [reviews, setReviews] = useState<any[]>([]);
+  const [dbStats, setDbStats] = useState({
+    ordersCompleted: "5,000+",
+    totalOrders: "5K+",
+    customers: "1,500+",
+    totalPages: "500k+",
+  });
+
+  const displayStats = [
+    { label: "Orders Completed", value: dbStats.ordersCompleted, color: "#2D63FF" },
+    { label: "Happy Customers", value: dbStats.customers, color: "#00C851" },
+    { label: "Pages Printed", value: dbStats.totalPages, color: "#F39C12" },
+    { label: "Quality Assured", value: "100%", color: "#2D63FF" },
+  ];
 
   useEffect(() => {
+    fetch('/api/stats')
+      .then(res => res.json())
+      .then(data => {
+        if (!data.error) {
+          setDbStats({
+            ordersCompleted: data.ordersCompleted.toLocaleString() + "+",
+            totalOrders: (data.totalOrders / 1000).toFixed(1).replace('.0', '') + "K+",
+            customers: data.customers.toLocaleString() + "+",
+            totalPages: data.totalPages >= 1000000 
+                ? (data.totalPages / 1000000).toFixed(1).replace('.0', '') + "M+" 
+                : (data.totalPages / 1000).toFixed(0) + "k+",
+          });
+        }
+      })
+      .catch(console.error);
+
     fetch('/api/reviews?limit=3')
       .then(res => res.json())
       .then(data => setReviews(Array.isArray(data) ? data : []))
       .catch(console.error);
   }, []);
-
   useEffect(() => {
     if (!loading && user) {
       router.push(userRole === "ADMIN" ? "/admin" : "/dashboard");
@@ -138,7 +160,7 @@ export default function HomePage() {
                 </div>
                 <div className="absolute -top-4 -right-4 iom-card px-4 py-3">
                   <div className="text-xs font-semibold mb-0.5" style={{ color: "#6B7280" }}>Total Orders</div>
-                  <div className="text-2xl font-extrabold" style={{ color: "#2D63FF" }}>5K+</div>
+                  <div className="text-2xl font-extrabold" style={{ color: "#2D63FF" }}>{dbStats.totalOrders}</div>
                 </div>
               </div>
             </motion.div>
@@ -148,7 +170,7 @@ export default function HomePage() {
         {/* Stats bar */}
         <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 mt-16 pb-10">
           <div className="grid grid-cols-2 md:grid-cols-4 gap-5">
-            {stats.map(s => (
+            {displayStats.map(s => (
               <div key={s.label} className="iom-card p-5 text-center">
                 <div className="text-3xl font-extrabold mb-1" style={{ color: s.color }}>{s.value}</div>
                 <div className="text-sm font-semibold" style={{ color: "#6B7280" }}>{s.label}</div>
