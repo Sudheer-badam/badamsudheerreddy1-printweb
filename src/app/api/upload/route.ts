@@ -14,6 +14,7 @@ export async function POST(request: Request): Promise<NextResponse> {
           allowedContentTypes: ['application/pdf', 'image/jpeg', 'image/png'],
           tokenPayload: JSON.stringify({}),
           addRandomSuffix: true,
+          contentDisposition: 'inline',
         };
       },
       onUploadCompleted: async ({ blob, tokenPayload }) => {

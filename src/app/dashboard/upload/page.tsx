@@ -396,17 +396,11 @@ export default function UploadPage() {
                 </div>
               ) : fileUrl ? (
                 <div className="w-full h-[500px] rounded-2xl overflow-hidden border border-gray-200 bg-gray-50 flex items-center justify-center">
-                  <object 
-                    data={`${fileUrl}#view=FitH`} 
-                    type="application/pdf"
-                    className="w-full h-full" 
-                  >
-                    <div className="flex flex-col items-center justify-center text-gray-500 space-y-2">
-                      <FileText className="w-12 h-12 text-gray-300" />
-                      <p>Preview not available in this browser.</p>
-                      <a href={fileUrl} target="_blank" rel="noopener noreferrer" className="text-violet-600 hover:underline">Click here to open PDF</a>
-                    </div>
-                  </object>
+                  <iframe 
+                    src={`${fileUrl}#view=FitH`} 
+                    className="w-full h-full border-0"
+                    title="PDF Preview"
+                  />
                 </div>
               ) : null}
             </div>

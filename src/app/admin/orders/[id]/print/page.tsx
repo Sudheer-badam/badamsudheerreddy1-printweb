@@ -26,6 +26,25 @@ export default function AdminPrintRoomPage() {
   const [order, setOrder] = useState<any>(null);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
+  const [previewUrl, setPreviewUrl] = useState<string | null>(null);
+
+  useEffect(() => {
+    if (order?.fileUrl) {
+      setPreviewUrl(null);
+      fetch(order.fileUrl)
+        .then(res => res.blob())
+        .then(blob => setPreviewUrl(URL.createObjectURL(blob)))
+        .catch(err => {
+          console.error("Failed to fetch inline PDF:", err);
+          setPreviewUrl(order.fileUrl);
+        });
+    }
+    return () => {
+      if (previewUrl && previewUrl.startsWith('blob:')) {
+        URL.revokeObjectURL(previewUrl);
+      }
+    };
+  }, [order?.fileUrl]);
 
   useEffect(() => {
     if (user && id) {
@@ -116,11 +135,18 @@ export default function AdminPrintRoomPage() {
             </div>
             <div className="text-xs text-white/40">{order.totalPages} Pages total</div>
           </div>
-          <iframe 
-            src={`${order.fileUrl}#view=FitH`}
-            className="w-full h-full border-0 bg-white" 
-            title="PDF Preview"
-          />
+          {previewUrl ? (
+            <iframe 
+              src={`${previewUrl}#view=FitH`}
+              className="w-full h-full border-0 bg-white" 
+              title="PDF Preview"
+            />
+          ) : (
+            <div className="w-full h-full flex flex-col items-center justify-center text-white/50">
+              <div className="animate-spin rounded-full h-8 w-8 border-t-2 border-b-2 border-amber-500 mb-4"></div>
+              <p>Loading document preview...</p>
+            </div>
+          )}
         </div>
 
         {/* Acrobat Settings Checklist */}
