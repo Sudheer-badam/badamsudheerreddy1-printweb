@@ -740,7 +740,7 @@ export default function OrderDetailPage() {
                     <div className="bg-white p-3 rounded-2xl border-2 border-violet-100 shadow-sm mb-4 inline-block relative">
                       {/* Dynamic QR Code based on UPI ID and Order Reference */}
                       <img 
-                        src={`https://api.qrserver.com/v1/create-qr-code/?size=200x200&data=upi://pay?pa=${encodeURIComponent(adminUpiId)}&pn=${encodeURIComponent(adminName)}&am=${order.totalAmount}&cu=INR&tr=${encodeURIComponent(order.orderNumber)}`} 
+                        src={`https://api.qrserver.com/v1/create-qr-code/?size=200x200&data=upi://pay?pa=${encodeURIComponent(adminUpiId)}&pn=${encodeURIComponent(adminName)}&am=${order.totalAmount}&cu=INR`} 
                         alt="UPI QR Code" 
                         className={`w-40 h-40 object-contain transition-opacity ${isPolling ? 'opacity-50' : 'opacity-100'}`}
                       />
@@ -756,7 +756,7 @@ export default function OrderDetailPage() {
 
                     <div className="mb-6 flex justify-center w-full">
                       <a
-                        href={`upi://pay?pa=${encodeURIComponent(adminUpiId)}&pn=${encodeURIComponent(adminName)}&am=${order.totalAmount}&cu=INR&tr=${encodeURIComponent(order.orderNumber)}`}
+                        href={`upi://pay?pa=${encodeURIComponent(adminUpiId)}&pn=${encodeURIComponent(adminName)}&am=${order.totalAmount}&cu=INR`}
                         className="w-full max-w-[220px] py-2.5 bg-violet-600 text-white font-bold rounded-xl flex items-center justify-center gap-2 hover:bg-violet-700 transition-colors shadow-lg shadow-violet-500/25"
                       >
                         <Smartphone className="w-4 h-4" /> Open UPI App to Pay
