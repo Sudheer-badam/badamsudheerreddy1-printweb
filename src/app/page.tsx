@@ -65,7 +65,7 @@ export default function HomePage() {
               <div className="w-10 h-10 rounded-full overflow-hidden flex-shrink-0" style={{ border: "2.5px solid #2D63FF", boxShadow: "0 2px 10px rgba(45,99,255,0.25)" }}>
                 <Image src="/logo.png" alt="PRINT DOCKER | BADAM SUDHEER REDDY" width={40} height={40} className="w-full h-full object-cover" />
               </div>
-              <span className="font-extrabold text-xl" style={{ color: "#0B1D3A" }}>PRINT DOCKER | BADAM SUDHEER REDDY</span>
+              <span className="font-extrabold text-xl hidden sm:block" style={{ color: "#0B1D3A" }}>PRINT DOCKER | BADAM SUDHEER REDDY</span>
             </div>
             <div className="hidden md:flex items-center gap-8 text-sm font-semibold" style={{ color: "#444B54" }}>
               <a href="#features" className="hover:text-[#2D63FF] transition-colors">Features</a>
