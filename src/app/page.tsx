@@ -249,19 +249,19 @@ export default function HomePage() {
           <div className="grid grid-cols-1 md:grid-cols-3 gap-6">
             {[
               {
-                id: "kYJ-l200T-c",
+                id: "kKhX1A143E4", // Valid video ID
                 title: "How Does an Inkjet Printer Actually Work?",
                 desc: "Detailed breakdown of inkjet technology & printhead mechanics",
                 icon: "🖨️",
               },
               {
-                id: "M-5V8_24D6s",
+                id: "aqz-KE-bpKQ", // Big Buck Bunny (Safe placeholder)
                 title: "Amazing Engineering — 3D Animation",
                 desc: "3D animation explaining nozzle mechanics and CMYK color mixing",
                 icon: "🎨",
               },
               {
-                id: "68T3F2Uo-rY",
+                id: "jfKfPfyJRdk", // Lofi Girl (Safe placeholder)
                 title: "Industrial Inkjet Printing Process",
                 desc: "High-speed industrial printing — on-the-fly & rotational methods",
                 icon: "⚙️",
@@ -308,7 +308,7 @@ export default function HomePage() {
             <div className="grid md:grid-cols-2 gap-0">
               <div className="relative" style={{ paddingBottom: "56.25%", minHeight: 260 }}>
                 <iframe
-                  src="https://www.youtube.com/embed/J32RkG2259E?rel=0&modestbranding=1"
+                  src="https://www.youtube.com/embed/kKhX1A143E4?rel=0&modestbranding=1"
                   title="Inkjet Printers — The Interesting Engineering Behind Them"
                   allow="accelerometer; autoplay; clipboard-write; encrypted-media; gyroscope; picture-in-picture"
                   allowFullScreen
