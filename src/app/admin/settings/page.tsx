@@ -353,7 +353,7 @@ export default function AdminSettingsPage() {
               <div className="w-full sm:w-[15%] relative">
                 <span className="absolute left-3 top-1/2 -translate-y-1/2 text-gray-400 text-xs">+₹</span>
                 <input 
-                  type="number" step="0.5" value={quality.colorPrice ?? quality.price ?? 0} 
+                  type="number" step="0.5" value={quality.colorPrice ?? 0} 
                   onChange={e => {
                     const newQ = [...paperQualities];
                     newQ[index].colorPrice = parseFloat(e.target.value) || 0;
@@ -366,7 +366,7 @@ export default function AdminSettingsPage() {
               <div className="w-full sm:w-[15%] relative">
                 <span className="absolute left-3 top-1/2 -translate-y-1/2 text-gray-400 text-xs">+₹</span>
                 <input 
-                  type="number" step="0.5" value={quality.bwPrice ?? quality.price ?? 0} 
+                  type="number" step="0.5" value={quality.bwPrice ?? 0} 
                   onChange={e => {
                     const newQ = [...paperQualities];
                     newQ[index].bwPrice = parseFloat(e.target.value) || 0;

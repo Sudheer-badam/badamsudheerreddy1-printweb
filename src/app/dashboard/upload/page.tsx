@@ -155,7 +155,8 @@ export default function UploadPage() {
         }
 
         const mergedPdfBytes = await mergedPdf.save();
-        const newFile = new File([mergedPdfBytes], baseName, { type: "application/pdf" });
+        const mergedPdfBuffer = mergedPdfBytes.buffer.slice(mergedPdfBytes.byteOffset, mergedPdfBytes.byteOffset + mergedPdfBytes.byteLength) as ArrayBuffer;
+        const newFile = new File([mergedPdfBuffer], baseName, { type: "application/pdf" });
         const actualPageCount = mergedPdf.getPageCount();
 
         setFile(newFile);
