@@ -12,28 +12,28 @@ const inter = Inter({
 
 export const metadata: Metadata = {
   title: {
-    default: "Sudheer Reddy Print - Smart Online Printing Management",
-    template: "%s | Sudheer Reddy Print",
+    default: "PRINT DOCKER | BADAM SUDHEER REDDY - Smart Online Printing Management",
+    template: "%s | PRINT DOCKER | BADAM SUDHEER REDDY",
   },
   description:
-    "Sudheer Reddy Print — Professional online printing management. Upload PDFs, track orders, manage payments, and get real-time status updates.",
+    "PRINT DOCKER | BADAM SUDHEER REDDY — Professional online printing management. Upload PDFs, track orders, manage payments, and get real-time status updates.",
   keywords: [
     "printing service",
     "online printing",
     "PDF printing",
     "print management",
-    "Sudheer Reddy Print",
+    "PRINT DOCKER | BADAM SUDHEER REDDY",
   ],
-  authors: [{ name: "Sudheer Reddy Print" }],
-  creator: "Sudheer Reddy Print",
+  authors: [{ name: "PRINT DOCKER | BADAM SUDHEER REDDY" }],
+  creator: "PRINT DOCKER | BADAM SUDHEER REDDY",
   robots: "index, follow",
   openGraph: {
     type: "website",
     locale: "en_IN",
-    title: "Sudheer Reddy Print - Smart Online Printing Management",
+    title: "PRINT DOCKER | BADAM SUDHEER REDDY - Smart Online Printing Management",
     description:
       "Professional online printing management system. Upload PDFs, track orders, manage payments.",
-    siteName: "Sudheer Reddy Print",
+    siteName: "PRINT DOCKER | BADAM SUDHEER REDDY",
   },
 };
 

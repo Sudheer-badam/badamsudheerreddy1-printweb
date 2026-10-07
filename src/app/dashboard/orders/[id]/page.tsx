@@ -104,7 +104,7 @@ export default function OrderDetailPage() {
   const [timeLeft, setTimeLeft] = useState(240);
   
   const adminUpiId = "8688509699-1@okbizaxis";
-  const adminName = "Sudheer Reddy Printing Shop";
+  const adminName = "PRINT DOCKER | BADAM SUDHEER REDDYing Shop";
 
   // Realistic 10-second Simulation for Demo Purposes
   useEffect(() => {
@@ -368,7 +368,7 @@ export default function OrderDetailPage() {
                     <body>
                       <div class="header">
                         <div>
-                          <div class="title">Sudheer Reddy Print</div>
+                          <div class="title">PRINT DOCKER | BADAM SUDHEER REDDY</div>
                           <div class="subtitle">Official Payment Receipt</div>
                         </div>
                         <div style="text-align: right;">
@@ -389,7 +389,7 @@ export default function OrderDetailPage() {
                       <div class="row total"><span>Total Amount Paid:</span> <span>₹${order.totalAmount.toFixed(2)}</span></div>
                       <br/><br/><br/>
                       <div style="text-align: center; color: #9ca3af; font-size: 14px; margin-top: 50px; border-top: 1px solid #f3f4f6; padding-top: 20px;">
-                        Thank you for choosing Sudheer Reddy Print!<br/>
+                        Thank you for choosing PRINT DOCKER | BADAM SUDHEER REDDY!<br/>
                         For support, contact us through the portal.
                       </div>
                       <script>

@@ -88,10 +88,10 @@ export default function AdminLayout({ children }: { children: React.ReactNode })
         <div className="p-6" style={{ borderBottom: "1px solid rgba(255,255,255,0.08)" }}>
           <div className="flex items-center gap-3">
             <div className="w-10 h-10 rounded-full overflow-hidden flex-shrink-0" style={{ border: "2.5px solid #F39C12", boxShadow: "0 2px 10px rgba(243,156,18,0.3)" }}>
-              <Image src="/BADAMSUDHEERREDDY.jpg" alt="Sudheer Reddy Print" width={40} height={40} className="w-full h-full object-cover" />
+              <Image src="/logo.png" alt="PRINT DOCKER | BADAM SUDHEER REDDY" width={40} height={40} className="w-full h-full object-cover" />
             </div>
             <div>
-              <div className="font-bold text-[#0B1D3A] text-sm">Sudheer Reddy Print</div>
+              <div className="font-bold text-white text-sm">PRINT DOCKER | BADAM SUDHEER REDDY</div>
               <div className="flex items-center gap-1.5 text-xs font-medium" style={{ color: "#F39C12" }}>
                 <Shield className="w-3 h-3" />
                 Admin Panel

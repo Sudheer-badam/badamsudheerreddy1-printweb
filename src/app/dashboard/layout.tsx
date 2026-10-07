@@ -87,10 +87,10 @@ export default function DashboardLayout({ children }: { children: React.ReactNod
         <div className="p-6" style={{ borderBottom: "1px solid #E2E6EF" }}>
           <div className="flex items-center gap-3">
             <div className="w-10 h-10 rounded-full overflow-hidden flex-shrink-0" style={{ border: "2.5px solid #2D63FF", boxShadow: "0 2px 8px rgba(45,99,255,0.2)" }}>
-              <Image src="/BADAMSUDHEERREDDY.jpg" alt="Sudheer Reddy Print" width={40} height={40} className="w-full h-full object-cover" />
+              <Image src="/logo.png" alt="PRINT DOCKER | BADAM SUDHEER REDDY" width={40} height={40} className="w-full h-full object-cover" />
             </div>
             <div>
-              <div className="font-bold text-sm" style={{ color: "#0B1D3A" }}>Sudheer Reddy Print</div>
+              <div className="font-bold text-sm" style={{ color: "#0B1D3A" }}>PRINT DOCKER | BADAM SUDHEER REDDY</div>
               <div className="text-xs font-medium" style={{ color: "#6B7280" }}>Customer Portal</div>
             </div>
           </div>

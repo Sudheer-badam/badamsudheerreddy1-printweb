@@ -76,9 +76,9 @@ export default function LoginPage() {
         style={{ background: "linear-gradient(160deg,#0B1D3A 0%,#1C3CB3 60%,#2D63FF 100%)" }}>
         <div className="flex items-center gap-3">
           <div className="w-10 h-10 rounded-full overflow-hidden" style={{ border: "2.5px solid rgba(255,255,255,0.5)" }}>
-            <Image src="/BADAMSUDHEERREDDY.jpg" alt="Logo" width={40} height={40} className="w-full h-full object-cover" />
+            <Image src="/logo.png" alt="Logo" width={40} height={40} className="w-full h-full object-cover" />
           </div>
-          <span className="font-extrabold text-white text-lg">Sudheer Reddy Print</span>
+          <span className="font-extrabold text-white text-lg">PRINT DOCKER | BADAM SUDHEER REDDY</span>
         </div>
         <div>
           <h2 className="text-4xl font-extrabold text-white mb-4 leading-tight">
@@ -100,7 +100,7 @@ export default function LoginPage() {
             ))}
           </div>
         </div>
-        <p className="text-sm" style={{ color: "rgba(255,255,255,0.4)" }}>© 2025 Sudheer Reddy Print</p>
+        <p className="text-sm" style={{ color: "rgba(255,255,255,0.4)" }}>© 2025 PRINT DOCKER | BADAM SUDHEER REDDY</p>
       </div>
 
       {/* Right panel — form */}
@@ -113,9 +113,9 @@ export default function LoginPage() {
           {/* Logo (mobile only) */}
           <div className="flex lg:hidden items-center gap-3 justify-center mb-8">
             <div className="w-10 h-10 rounded-full overflow-hidden" style={{ border: "2.5px solid #2D63FF" }}>
-              <Image src="/BADAMSUDHEERREDDY.jpg" alt="Logo" width={40} height={40} className="w-full h-full object-cover" />
+              <Image src="/logo.png" alt="Logo" width={40} height={40} className="w-full h-full object-cover" />
             </div>
-            <span className="font-extrabold text-xl" style={{ color: "#0B1D3A" }}>Sudheer Reddy Print</span>
+            <span className="font-extrabold text-xl" style={{ color: "#0B1D3A" }}>PRINT DOCKER | BADAM SUDHEER REDDY</span>
           </div>
 
           {/* Card */}

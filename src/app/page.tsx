@@ -59,9 +59,9 @@ export default function HomePage() {
           <div className="flex items-center justify-between h-16">
             <div className="flex items-center gap-3">
               <div className="w-10 h-10 rounded-full overflow-hidden flex-shrink-0" style={{ border: "2.5px solid #2D63FF", boxShadow: "0 2px 10px rgba(45,99,255,0.25)" }}>
-                <Image src="/BADAMSUDHEERREDDY.jpg" alt="Sudheer Reddy Print" width={40} height={40} className="w-full h-full object-cover" />
+                <Image src="/logo.png" alt="PRINT DOCKER | BADAM SUDHEER REDDY" width={40} height={40} className="w-full h-full object-cover" />
               </div>
-              <span className="font-extrabold text-xl" style={{ color: "#0B1D3A" }}>Sudheer Reddy Print</span>
+              <span className="font-extrabold text-xl" style={{ color: "#0B1D3A" }}>PRINT DOCKER | BADAM SUDHEER REDDY</span>
             </div>
             <div className="hidden md:flex items-center gap-8 text-sm font-semibold" style={{ color: "#444B54" }}>
               <a href="#features" className="hover:text-[#2D63FF] transition-colors">Features</a>
@@ -478,9 +478,9 @@ export default function HomePage() {
             <div>
               <div className="flex items-center gap-3 mb-3">
                 <div className="w-10 h-10 rounded-full overflow-hidden flex-shrink-0" style={{ border: "2.5px solid #2D63FF" }}>
-                  <Image src="/BADAMSUDHEERREDDY.jpg" alt="Logo" width={40} height={40} className="w-full h-full object-cover" />
+                  <Image src="/logo.png" alt="Logo" width={40} height={40} className="w-full h-full object-cover" />
                 </div>
-                <span className="font-bold text-xl text-white">Sudheer Reddy Print</span>
+                <span className="font-bold text-xl text-white">PRINT DOCKER | BADAM SUDHEER REDDY</span>
               </div>
               <p className="text-sm max-w-xs" style={{ color: "rgba(255,255,255,0.55)" }}>
                 Professional online printing management. Upload, track, and collect — all in one place.
