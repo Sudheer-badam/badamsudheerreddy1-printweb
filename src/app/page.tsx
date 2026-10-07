@@ -253,7 +253,7 @@ export default function HomePage() {
             {[
               {
                 id: "vid1",
-                src: "/13867728_3840_2160_30fps.mp4",
+                src: "/istockphoto-2255053104-640_adpp_is.mp4",
                 title: "How Does an Inkjet Printer Actually Work?",
                 desc: "Detailed breakdown of inkjet technology & printhead mechanics",
                 icon: "🖨️",
