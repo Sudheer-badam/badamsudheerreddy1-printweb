@@ -12,7 +12,7 @@ const inter = Inter({
 
 export const metadata: Metadata = {
   title: {
-    default: "PRINT DOCKER | BADAM SUDHEER REDDY - Smart Online Printing Management",
+    default: "PRINT DOCKER | BADAM SUDHEER REDDY",
     template: "%s | PRINT DOCKER | BADAM SUDHEER REDDY",
   },
   description:
