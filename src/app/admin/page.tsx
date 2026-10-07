@@ -311,7 +311,7 @@ export default function AdminDashboard() {
             </div>
             <div className="ml-auto text-right">
               <div className="text-sm text-gray-600">{stats.mostActiveCustomer.email}</div>
-              <div className="text-sm text-gray-600">{stats.mostActiveCustomer.phone}</div>
+              <div className="text-sm text-gray-600"><a href={`https://wa.me/${(stats.mostActiveCustomer.phone || "").replace(/\D/g, '')}`} target="_blank" rel="noopener noreferrer" onClick={(e) => e.stopPropagation()} className="hover:text-green-500 hover:underline cursor-pointer flex items-center gap-1">{stats.mostActiveCustomer.phone}</a></div>
             </div>
             <div className="text-2xl font-extrabold text-amber-400 ml-4">
               {stats.mostActiveCustomer.orderCount} orders
@@ -348,7 +348,7 @@ export default function AdminDashboard() {
                   </td>
                   <td className="px-4 py-4">
                     <div className="text-sm text-[#0B1D3A]">{order.user.name}</div>
-                    <div className="text-xs text-gray-500">{order.user.phone}</div>
+                    <div className="text-xs text-gray-500"><a href={`https://wa.me/${(order.user.phone || "").replace(/\D/g, '')}`} target="_blank" rel="noopener noreferrer" onClick={(e) => e.stopPropagation()} className="hover:text-green-500 hover:underline cursor-pointer flex items-center gap-1">{order.user.phone}</a></div>
                   </td>
                   <td className="px-4 py-4">
                     <span className={`px-2 py-1 rounded-lg text-xs border ${ORDER_STATUS_COLORS[order.status]}`}>

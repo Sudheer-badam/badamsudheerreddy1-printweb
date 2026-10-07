@@ -111,8 +111,7 @@ export default function AdminCustomersPage() {
 
               <div className="space-y-2">
                 <div className="flex items-center gap-2 text-xs text-gray-500">
-                  <Phone className="w-3.5 h-3.5" />
-                  <span>{customer.phone || "—"}</span>
+                  <a href={`https://wa.me/${(customer.phone || "").replace(/\D/g, '')}`} target="_blank" rel="noopener noreferrer" onClick={(e) => e.stopPropagation()} className="hover:text-green-500 hover:underline cursor-pointer flex items-center gap-1"><a href={`https://wa.me/${(customer.phone || "").replace(/\D/g, '')}`} target="_blank" rel="noopener noreferrer" onClick={(e) => e.stopPropagation()} className="hover:text-green-500 hover:underline cursor-pointer flex items-center gap-1"><Phone className="w-3.5 h-3.5" /> <span>{customer.phone || "—"}</span></a></a>
                 </div>
                 <div className="flex items-center gap-2 text-xs text-gray-500">
                   <Mail className="w-3.5 h-3.5" />

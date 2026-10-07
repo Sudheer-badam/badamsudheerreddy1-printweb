@@ -1,5 +1,5 @@
 "use client";
-
+import { upload } from '@vercel/blob/client';
 import { useState, useEffect } from "react";
 import { motion } from "framer-motion";
 import { useAuth } from "@/contexts/AuthContext";
@@ -28,6 +28,25 @@ export default function ProfilePage() {
     lastLogin: "",
   });
   const [saving, setSaving] = useState(false);
+  const [uploadingImage, setUploadingImage] = useState(false);
+
+  const handleImageUpload = async (e: React.ChangeEvent<HTMLInputElement>) => {
+    if (!e.target.files || e.target.files.length === 0) return;
+    const file = e.target.files[0];
+    setUploadingImage(true);
+    try {
+      const { url } = await upload(file.name, file, {
+        access: 'public',
+        handleUploadUrl: '/api/upload',
+      });
+      setProfile((prev) => ({ ...prev, profilePhoto: url }));
+      toast.success("Image uploaded! Click 'Save Changes' to apply.");
+    } catch (err) {
+      toast.error("Failed to upload image");
+    } finally {
+      setUploadingImage(false);
+    }
+  };
 
   useEffect(() => {
     if (user) {
@@ -111,6 +130,7 @@ export default function ProfilePage() {
       >
         <div className="flex items-center gap-6">
           <div className="relative">
+            <input type="file" id="profile-upload" className="hidden" accept="image/*" onChange={handleImageUpload} />
             {profile.profilePhoto ? (
               <img
                 src={profile.profilePhoto}
@@ -122,13 +142,15 @@ export default function ProfilePage() {
                 {profile.name?.charAt(0) || profile.email?.charAt(0) || "U"}
               </div>
             )}
-            <button className="absolute -bottom-1 -right-1 w-7 h-7 rounded-lg bg-violet-600 flex items-center justify-center border-2 border-background hover:bg-violet-700 transition-colors">
-              <Camera className="w-3.5 h-3.5 text-[#0B1D3A]" />
-            </button>
+            <label htmlFor="profile-upload" className="absolute -bottom-1 -right-1 w-7 h-7 rounded-lg bg-violet-600 flex items-center justify-center border-2 border-background hover:bg-violet-700 transition-colors cursor-pointer">
+              {uploadingImage ? <Loader2 className="w-3.5 h-3.5 text-white animate-spin" /> : <Camera className="w-3.5 h-3.5 text-white" />}
+            </label>
           </div>
           <div>
             <h2 className="text-xl font-bold text-[#0B1D3A]">{profile.name || "User"}</h2>
-            <p className="text-gray-500 text-sm">{profile.email || profile.phone}</p>
+            <p className="text-gray-500 text-sm">
+              {profile.email} {profile.phone && <span className="ml-2 pl-2 border-l border-gray-300">{profile.phone}</span>}
+            </p>
             <div className="flex items-center gap-1.5 mt-2">
               <Shield className="w-3.5 h-3.5 text-emerald-400" />
               <span className="text-xs text-emerald-400 font-medium">

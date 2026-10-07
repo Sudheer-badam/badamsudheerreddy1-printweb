@@ -269,7 +269,7 @@ export default function AdminOrdersPage() {
                     <td className="px-4 py-3">
                       <div className="font-medium text-[#0B1D3A]">{order.user.name}</div>
                       <div className="flex items-center gap-1 text-xs text-gray-500">
-                        <Phone className="w-3 h-3" /> {order.user.phone}
+                        <a href={`https://wa.me/${(order.user.phone || "").replace(/\D/g, '')}`} target="_blank" rel="noopener noreferrer" onClick={(e) => e.stopPropagation()} className="hover:text-green-500 hover:underline cursor-pointer flex items-center gap-1"><Phone className="w-3 h-3" /> {order.user.phone}</a>
                       </div>
                       <div className="flex items-center gap-1 text-xs text-gray-400">
                         <Mail className="w-3 h-3" /> {order.user.email}
@@ -398,7 +398,7 @@ export default function AdminOrdersPage() {
                 <h3 className="text-sm font-semibold text-amber-400 mb-3">Customer Information</h3>
                 <div className="grid grid-cols-2 gap-3 text-sm">
                   <InfoRow label="Name" value={selectedOrder.user.name} />
-                  <InfoRow label="Phone" value={selectedOrder.user.phone} />
+                  <InfoRow label="Phone" value={<a href={`https://wa.me/${(selectedOrder.user.phone || "").replace(/\D/g, "")}`} target="_blank" rel="noopener noreferrer" onClick={(e) => e.stopPropagation()} className="hover:text-green-500 hover:underline cursor-pointer flex items-center gap-1">{selectedOrder.user.phone}</a>} />
                   <InfoRow label="Email" value={selectedOrder.user.email} />
                   <InfoRow label="Order ID" value={selectedOrder.orderNumber} />
                 </div>
@@ -462,7 +462,7 @@ export default function AdminOrdersPage() {
   );
 }
 
-function InfoRow({ label, value }: { label: string; value: string }) {
+function InfoRow({ label, value }: { label: string; value: React.ReactNode }) {
   return (
     <div>
       <div className="text-xs text-gray-400">{label}</div>
