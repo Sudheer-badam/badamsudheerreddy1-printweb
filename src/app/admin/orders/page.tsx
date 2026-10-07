@@ -180,7 +180,7 @@ export default function AdminOrdersPage() {
     }
 
     body += `\n\nOrder Details:\n- Total Pages: ${order.totalPages}\n- Copies: ${order.copies}\n- Amount: ${formatCurrency(order.totalAmount)}\n\nThank you,\nPrint Docker`;
-    return `mailto:${order.user.email}?subject=${subject}&body=${encodeURIComponent(body)}`;
+    return `https://mail.google.com/mail/?view=cm&fs=1&to=${encodeURIComponent(order.user.email)}&su=${subject}&body=${encodeURIComponent(body)}`;
   };
 
   const deleteOrder = async (orderId: string) => {
@@ -304,7 +304,7 @@ export default function AdminOrdersPage() {
                         <a href={`https://wa.me/${(order.user.phone || "").replace(/\D/g, '')}`} target="_blank" rel="noopener noreferrer" onClick={(e) => e.stopPropagation()} className="hover:text-green-500 hover:underline cursor-pointer flex items-center gap-1"><Phone className="w-3 h-3" /> {order.user.phone}</a>
                       </div>
                       <div className="flex items-center gap-1 text-xs text-gray-400 mt-1">
-                        <a href={getEmailDraft(order)} onClick={(e) => e.stopPropagation()} className="hover:text-blue-500 hover:underline cursor-pointer flex items-center gap-1">
+                        <a href={getEmailDraft(order)} target="_blank" rel="noopener noreferrer" onClick={(e) => e.stopPropagation()} className="hover:text-blue-500 hover:underline cursor-pointer flex items-center gap-1">
                           <Mail className="w-3 h-3" /> {order.user.email}
                         </a>
                       </div>
