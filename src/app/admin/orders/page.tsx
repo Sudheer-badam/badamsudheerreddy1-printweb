@@ -151,6 +151,38 @@ export default function AdminOrdersPage() {
     }
   };
 
+  const getEmailDraft = (order: any) => {
+    if (!order) return "";
+    const subject = encodeURIComponent(`Update on your Print Docker Order #${order.orderNumber}`);
+    let body = `Hello ${order.user.name},\n\n`;
+
+    switch (order.status) {
+      case "ACCEPTED":
+        body += `We have accepted your order for "${order.fileName}" and will begin processing it soon.`;
+        break;
+      case "PRINTING":
+        body += `Your order for "${order.fileName}" is currently being printed.`;
+        break;
+      case "PRINTED":
+        body += `Good news! Your order for "${order.fileName}" has been printed successfully.`;
+        break;
+      case "READY_FOR_PICKUP":
+        body += `Your order for "${order.fileName}" is now ready for pickup! Please visit our store to collect it.`;
+        break;
+      case "DELIVERED":
+        body += `Your order for "${order.fileName}" has been delivered. Thank you for choosing Print Docker!`;
+        break;
+      case "CANCELLED":
+        body += `We regret to inform you that your order for "${order.fileName}" has been cancelled. Please contact us for more details.`;
+        break;
+      default:
+        body += `We are processing your order for "${order.fileName}".`;
+    }
+
+    body += `\n\nOrder Details:\n- Total Pages: ${order.totalPages}\n- Copies: ${order.copies}\n- Amount: ${formatCurrency(order.totalAmount)}\n\nThank you,\nPrint Docker`;
+    return `mailto:${order.user.email}?subject=${subject}&body=${encodeURIComponent(body)}`;
+  };
+
   const deleteOrder = async (orderId: string) => {
     if (!confirm("Are you sure you want to delete this order?")) return;
     try {
@@ -271,8 +303,10 @@ export default function AdminOrdersPage() {
                       <div className="flex items-center gap-1 text-xs text-gray-500">
                         <a href={`https://wa.me/${(order.user.phone || "").replace(/\D/g, '')}`} target="_blank" rel="noopener noreferrer" onClick={(e) => e.stopPropagation()} className="hover:text-green-500 hover:underline cursor-pointer flex items-center gap-1"><Phone className="w-3 h-3" /> {order.user.phone}</a>
                       </div>
-                      <div className="flex items-center gap-1 text-xs text-gray-400">
-                        <Mail className="w-3 h-3" /> {order.user.email}
+                      <div className="flex items-center gap-1 text-xs text-gray-400 mt-1">
+                        <a href={getEmailDraft(order)} onClick={(e) => e.stopPropagation()} className="hover:text-blue-500 hover:underline cursor-pointer flex items-center gap-1">
+                          <Mail className="w-3 h-3" /> {order.user.email}
+                        </a>
                       </div>
                     </td>
                     <td className="px-4 py-3 hidden lg:table-cell">
@@ -399,7 +433,7 @@ export default function AdminOrdersPage() {
                 <div className="grid grid-cols-2 gap-3 text-sm">
                   <InfoRow label="Name" value={selectedOrder.user.name} />
                   <InfoRow label="Phone" value={<a href={`https://wa.me/${(selectedOrder.user.phone || "").replace(/\D/g, "")}`} target="_blank" rel="noopener noreferrer" onClick={(e) => e.stopPropagation()} className="hover:text-green-500 hover:underline cursor-pointer flex items-center gap-1">{selectedOrder.user.phone}</a>} />
-                  <InfoRow label="Email" value={selectedOrder.user.email} />
+                  <InfoRow label="Email" value={<a href={getEmailDraft(selectedOrder)} target="_blank" rel="noopener noreferrer" onClick={(e) => e.stopPropagation()} className="hover:text-blue-500 hover:underline cursor-pointer flex items-center gap-1">{selectedOrder.user.email}</a>} />
                   <InfoRow label="Order ID" value={selectedOrder.orderNumber} />
                 </div>
               </div>
