@@ -32,7 +32,7 @@ export async function GET(req: NextRequest) {
 export async function POST(req: NextRequest) {
   try {
     const body = await req.json();
-    const { uid, orderId, amount, method, transactionId, razorpayId } = body;
+    const { uid, orderId, amount, method, transactionId, razorpayId, paymentProofUrl } = body;
 
     if (!uid || !orderId || !amount) {
       return NextResponse.json({ error: "Missing required fields" }, { status: 400 });
@@ -57,7 +57,10 @@ export async function POST(req: NextRequest) {
     // Update order payment status
     await prisma.order.update({
       where: { id: orderId },
-      data: { paymentStatus: "PAID" },
+      data: { 
+        paymentStatus: "PAID",
+        ...(paymentProofUrl ? { paymentProofUrl } : {})
+      },
     });
 
     // Send payment confirmation notification

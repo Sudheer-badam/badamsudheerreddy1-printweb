@@ -159,6 +159,8 @@ model Order {
   // Status
   status          OrderStatus   @default(UPLOADED)
   paymentStatus   PaymentStatus @default(PENDING)
+  paymentProofUrl String?
+
   
   // Admin notes
   adminNotes      String?

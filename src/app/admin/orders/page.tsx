@@ -41,6 +41,7 @@ interface Order {
   createdAt: string;
   updatedAt: string;
   adminNotes: string | null;
+  paymentProofUrl: string | null;
   user: { id: string; name: string; email: string; phone: string };
 }
 
@@ -76,8 +77,39 @@ export default function AdminOrdersPage() {
   const [newStatus, setNewStatus] = useState("");
 
   useEffect(() => {
-    if (user) fetchOrders();
+    let interval: NodeJS.Timeout;
+    if (user) {
+      fetchOrders();
+      interval = setInterval(() => {
+        fetchOrdersSilent();
+      }, 1000);
+    }
+    return () => {
+      if (interval) clearInterval(interval);
+    }
   }, [user, statusFilter, paymentFilter, page]);
+
+  const fetchOrdersSilent = async () => {
+    try {
+      const params = new URLSearchParams({
+        uid: user!.uid,
+        role: "ADMIN",
+        page: page.toString(),
+        limit: "10",
+        ...(statusFilter && { status: statusFilter }),
+        ...(paymentFilter && { paymentStatus: paymentFilter }),
+        ...(search && { search }),
+      });
+      const res = await fetch(`/api/orders?${params}`);
+      if (res.ok) {
+        const data = await res.json();
+        setOrders(data.orders);
+        setTotalPages(data.pagination.totalPages);
+      }
+    } catch (e) {
+      // Ignore silent errors
+    }
+  };
 
   const fetchOrders = async () => {
     setLoading(true);
@@ -488,6 +520,17 @@ export default function AdminOrdersPage() {
                 <span className="text-gray-600">Total Amount</span>
                 <span className="text-2xl font-extrabold text-gradient">{formatCurrency(selectedOrder.totalAmount)}</span>
               </div>
+
+              {/* Payment Proof */}
+              {selectedOrder.paymentProofUrl && (
+                <div className="glass rounded-2xl p-4 border border-gray-200 mt-4">
+                  <h3 className="text-sm font-semibold text-amber-400 mb-3">Payment Proof</h3>
+                  <a href={selectedOrder.paymentProofUrl} target="_blank" rel="noopener noreferrer">
+                    <img src={selectedOrder.paymentProofUrl} alt="Payment Proof" className="w-full max-h-64 object-contain rounded-xl border border-gray-300 hover:opacity-90 transition-opacity" />
+                  </a>
+                  <p className="text-xs text-gray-400 mt-2 text-center">Click image to view full size</p>
+                </div>
+              )}
             </div>
           </motion.div>
         </div>

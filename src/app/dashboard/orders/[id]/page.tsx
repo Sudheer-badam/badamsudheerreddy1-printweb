@@ -29,6 +29,7 @@ import { formatCurrency, formatDate, ORDER_STATUS_LABELS, PAYMENT_STATUS_COLORS 
 import { toast } from "sonner";
 import Script from "next/script";
 import Image from "next/image";
+import { upload } from '@vercel/blob/client';
 
 interface OrderDetail {
   id: string;
@@ -102,6 +103,9 @@ export default function OrderDetailPage() {
   const [transactionId, setTransactionId] = useState("");
   const [isPolling, setIsPolling] = useState(false);
   const [timeLeft, setTimeLeft] = useState(240);
+  const [screenshotFile, setScreenshotFile] = useState<File | null>(null);
+  const [screenshotPreview, setScreenshotPreview] = useState<string | null>(null);
+  const [uploadingScreenshot, setUploadingScreenshot] = useState(false);
   
   const adminUpiId = "8688509699-1@okbizaxis";
   const adminName = "PRINT DOCKER | BADAM SUDHEER REDDYing Shop";
@@ -220,14 +224,40 @@ export default function OrderDetailPage() {
   };
 
   useEffect(() => {
-    if (user && params.id) fetchOrder();
+    let interval: NodeJS.Timeout;
+    if (user && params.id) {
+      fetchOrder();
+      // Poll every 1 second for live updates
+      interval = setInterval(() => {
+        fetchOrderSilent();
+      }, 1000);
+    }
+    return () => {
+      if (interval) clearInterval(interval);
+    };
   }, [user, params.id]);
+
+  const fetchOrderSilent = async () => {
+    try {
+      const res = await fetch(`/api/orders/${params.id}?uid=${user?.uid}`);
+      if (res.ok) {
+        const data = await res.json();
+        setOrder(data);
+      }
+    } catch (e) {
+      // Ignore silent polling errors
+    }
+  };
 
   const fetchOrder = async () => {
     try {
       const res = await fetch(`/api/orders/${params.id}?uid=${user?.uid}`);
-      if (res.ok) setOrder(await res.json());
-      else router.push("/dashboard/orders");
+      if (res.ok) {
+        const data = await res.json();
+        setOrder(data);
+      } else {
+        router.push("/dashboard/orders");
+      }
     } finally {
       setLoading(false);
     }
@@ -241,13 +271,27 @@ export default function OrderDetailPage() {
   const handlePayment = async (e?: React.FormEvent) => {
     if (e) e.preventDefault();
     if (!order || !user) return;
-    if (!transactionId.trim() || transactionId.trim().length < 6) {
-      toast.error("Please enter a valid Transaction / UTR Number");
+    if (!transactionId.trim() && !screenshotFile) {
+      toast.error("Please enter a Transaction Number or upload a screenshot as proof of payment");
       return;
     }
     
     setPaying(true);
     try {
+      let paymentProofUrl = null;
+
+      if (screenshotFile) {
+        setUploadingScreenshot(true);
+        toast.loading("Uploading payment screenshot...", { id: "screenshot-upload" });
+        const storageKey = `payments/${user.uid}/${Date.now()}-${screenshotFile.name}`;
+        const newBlob = await upload(storageKey, screenshotFile, {
+          access: 'public',
+          handleUploadUrl: '/api/upload',
+        });
+        paymentProofUrl = newBlob.url;
+        toast.dismiss("screenshot-upload");
+      }
+
       const res = await fetch("/api/payments", {
         method: "POST",
         headers: { "Content-Type": "application/json" },
@@ -256,7 +300,8 @@ export default function OrderDetailPage() {
           orderId: order.id,
           amount: order.totalAmount,
           method: paymentMethod,
-          transactionId: transactionId.trim(),
+          transactionId: transactionId.trim() || "SCREENSHOT_PROOF",
+          paymentProofUrl
         }),
       });
 
@@ -269,9 +314,11 @@ export default function OrderDetailPage() {
       }
     } catch (error) {
       console.error(error);
+      toast.dismiss("screenshot-upload");
       toast.error("Payment failed.");
     } finally {
       setPaying(false);
+      setUploadingScreenshot(false);
     }
   };
 
@@ -349,33 +396,35 @@ export default function OrderDetailPage() {
                 <span className="font-mono font-bold tracking-wider">{order.orderNumber}</span>
               </div>
             </div>
-            <button 
-              onClick={() => {
-                const receiptHtml = `
-                  <html>
-                    <head>
-                      <title>Receipt - ${order.orderNumber}</title>
-                      <style>
-                        body { font-family: 'Inter', sans-serif; padding: 40px; color: #0B1D3A; max-width: 800px; margin: 0 auto; }
-                        .header { border-bottom: 2px solid #f3f4f6; padding-bottom: 20px; margin-bottom: 30px; display: flex; justify-content: space-between; align-items: flex-end; }
-                        .title { font-size: 28px; font-weight: 800; color: #7c3aed; margin-bottom: 5px; }
-                        .subtitle { color: #6b7280; font-size: 14px; }
-                        .row { display: flex; justify-content: space-between; margin-bottom: 12px; padding-bottom: 12px; border-bottom: 1px dashed #f3f4f6; }
-                        .total { font-weight: 800; font-size: 20px; border-top: 2px solid #e5e7eb; border-bottom: none; padding-top: 20px; margin-top: 10px; color: #0B1D3A; }
-                        .badge { background: #10b981; color: white; padding: 4px 10px; border-radius: 20px; font-size: 12px; font-weight: bold; }
-                      </style>
-                    </head>
-                    <body>
-                      <div class="header">
-                        <div>
-                          <div class="title">PRINT DOCKER | BADAM SUDHEER REDDY</div>
-                          <div class="subtitle">Official Payment Receipt</div>
+              <button 
+                onClick={() => {
+                  const baseUrl = window.location.origin;
+                  const receiptHtml = `
+                    <html>
+                      <head>
+                        <title>Receipt - ${order.orderNumber}</title>
+                        <style>
+                          body { font-family: 'Inter', sans-serif; padding: 40px; color: #0B1D3A; max-width: 800px; margin: 0 auto; }
+                          .header { border-bottom: 2px solid #f3f4f6; padding-bottom: 20px; margin-bottom: 30px; display: flex; justify-content: space-between; align-items: flex-end; }
+                          .title { font-size: 28px; font-weight: 800; color: #7c3aed; margin-bottom: 5px; }
+                          .subtitle { color: #6b7280; font-size: 14px; }
+                          .row { display: flex; justify-content: space-between; margin-bottom: 12px; padding-bottom: 12px; border-bottom: 1px dashed #f3f4f6; }
+                          .total { font-weight: 800; font-size: 20px; border-top: 2px solid #e5e7eb; border-bottom: none; padding-top: 20px; margin-top: 10px; color: #0B1D3A; }
+                          .badge { background: #10b981; color: white; padding: 4px 10px; border-radius: 20px; font-size: 12px; font-weight: bold; }
+                        </style>
+                      </head>
+                      <body>
+                        <div class="header">
+                          <div>
+                            <img src="${baseUrl}/logo.png" alt="Company Logo" style="height: 48px; margin-bottom: 12px;" />
+                            <div class="title">PRINT DOCKER | BADAM SUDHEER REDDY</div>
+                            <div class="subtitle">Official Payment Receipt</div>
+                          </div>
+                          <div style="text-align: right;">
+                            <div style="font-weight: bold; margin-bottom: 5px;">Order #${order.orderNumber}</div>
+                            <div class="badge">PAID SECURELY</div>
+                          </div>
                         </div>
-                        <div style="text-align: right;">
-                          <div style="font-weight: bold; margin-bottom: 5px;">Order #${order.orderNumber}</div>
-                          <div class="badge">PAID SECURELY</div>
-                        </div>
-                      </div>
                       <div class="row"><span>Date:</span> <strong>${new Date().toLocaleDateString()}</strong></div>
                       <div class="row"><span>Customer:</span> <strong>${user?.displayName || user?.email || "Customer"}</strong></div>
                       <div class="row"><span>Document:</span> <strong>${order.fileName}</strong></div>
@@ -643,6 +692,15 @@ export default function OrderDetailPage() {
                         </div>
                       )}
                     </div>
+
+                    <div className="mb-6 flex justify-center w-full">
+                      <a
+                        href={`upi://pay?pa=${encodeURIComponent(adminUpiId)}&pn=${encodeURIComponent(adminName)}&am=${order.totalAmount}&cu=INR&tr=${encodeURIComponent(order.orderNumber)}`}
+                        className="w-full max-w-[220px] py-2.5 bg-violet-600 text-white font-bold rounded-xl flex items-center justify-center gap-2 hover:bg-violet-700 transition-colors shadow-lg shadow-violet-500/25"
+                      >
+                        <Smartphone className="w-4 h-4" /> Open UPI App to Pay
+                      </a>
+                    </div>
                     
                     {isPolling ? (
                       <div className="text-center mb-6">
@@ -680,13 +738,52 @@ export default function OrderDetailPage() {
                          ⚠️ Auto-fetch timed out. Please enter the 12-digit UTR/Transaction Number manually from your UPI app.
                        </p>
                     </div>
-                    <div>
+                    <div className="bg-violet-50 border-2 border-dashed border-violet-200 rounded-2xl p-5 mb-5 relative">
+                      <div className="absolute -top-3 left-4 bg-violet-100 text-violet-700 text-xs font-bold px-2 py-1 rounded-lg">
+                        Required Proof
+                      </div>
+                      <label className="block text-sm font-bold text-[#0B1D3A] mb-2">
+                        Upload Payment Screenshot
+                      </label>
+                      <p className="text-xs text-gray-500 mb-3">
+                        Since Google Pay, PhonePe, and Paytm do not provide web receipt links, please take a screenshot of your successful payment screen and upload it here.
+                      </p>
+                      
+                      <div className="relative">
+                        <input
+                          type="file"
+                          accept="image/*"
+                          onChange={(e) => {
+                            const file = e.target.files?.[0];
+                            if (file) {
+                              setScreenshotFile(file);
+                              setScreenshotPreview(URL.createObjectURL(file));
+                            }
+                          }}
+                          className="w-full text-sm text-gray-500 file:mr-4 file:py-2.5 file:px-4 file:rounded-xl file:border-0 file:text-sm file:font-semibold file:bg-violet-600 file:text-white hover:file:bg-violet-700 cursor-pointer"
+                        />
+                      </div>
+
+                      {screenshotPreview && (
+                        <div className="mt-4 relative group">
+                          <img src={screenshotPreview} alt="Screenshot Preview" className="w-full max-h-56 object-contain rounded-xl border-2 border-violet-100 bg-white" />
+                          <button
+                            type="button"
+                            onClick={() => { setScreenshotFile(null); setScreenshotPreview(null); }}
+                            className="absolute top-2 right-2 p-1.5 bg-red-500 text-white rounded-lg opacity-0 group-hover:opacity-100 transition-opacity hover:bg-red-600 shadow-md"
+                          >
+                            <XCircle className="w-4 h-4" />
+                          </button>
+                        </div>
+                      )}
+                    </div>
+
+                    <div className="bg-gray-50 rounded-2xl p-4 border border-gray-100">
                       <label className="block text-sm font-medium text-[#0B1D3A] mb-1">
-                        Transaction / UTR Number
+                        Transaction / UTR Number <span className="text-gray-400 font-normal">(Optional)</span>
                       </label>
                       <input
                         type="text"
-                        required
                         value={transactionId}
                         onChange={(e) => setTransactionId(e.target.value)}
                         placeholder="e.g. 3145XXXXXXXX"
@@ -694,9 +791,10 @@ export default function OrderDetailPage() {
                       />
                     </div>
                     
+
                     <button
                       type="submit"
-                      disabled={paying || !transactionId.trim()}
+                      disabled={paying || (!transactionId.trim() && !screenshotFile) || uploadingScreenshot}
                       className="w-full py-3.5 bg-violet-600 text-white rounded-xl font-bold hover:bg-violet-700 transition-colors disabled:opacity-50 disabled:cursor-not-allowed flex items-center justify-center gap-2 shadow-lg shadow-violet-500/25"
                     >
                       {paying ? <RefreshCw className="w-5 h-5 animate-spin" /> : <CheckCircle className="w-5 h-5" />}

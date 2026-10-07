@@ -56,8 +56,36 @@ export default function OrdersPage() {
   const [totalPages, setTotalPages] = useState(1);
 
   useEffect(() => {
-    if (user) fetchOrders();
+    let interval: NodeJS.Timeout;
+    if (user) {
+      fetchOrders();
+      interval = setInterval(() => {
+        fetchOrdersSilent();
+      }, 1000);
+    }
+    return () => {
+      if (interval) clearInterval(interval);
+    }
   }, [user, statusFilter, page]);
+
+  const fetchOrdersSilent = async () => {
+    try {
+      const params = new URLSearchParams({
+        uid: user!.uid,
+        page: page.toString(),
+        limit: "10",
+        ...(statusFilter && { status: statusFilter }),
+      });
+      const res = await fetch(`/api/orders?${params}`);
+      if (res.ok) {
+        const data = await res.json();
+        setOrders(data.orders);
+        setTotalPages(data.pagination.totalPages);
+      }
+    } catch (e) {
+      // Ignore silent errors
+    }
+  };
 
   const fetchOrders = async () => {
     setLoading(true);
