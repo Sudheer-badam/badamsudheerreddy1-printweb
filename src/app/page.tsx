@@ -102,11 +102,7 @@ export default function HomePage() {
               <a href="#testimonials" className="hover:text-[#2D63FF] transition-colors">Reviews</a>
 
             </div>
-            <div className="flex items-center gap-3">
-              <Link href="/auth/register" className="btn-primary px-5 py-2 text-sm inline-flex items-center gap-1.5">
-                Get Started <ChevronRight className="w-4 h-4" />
-              </Link>
-            </div>
+
           </div>
         </div>
       </nav>
