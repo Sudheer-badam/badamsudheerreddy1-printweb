@@ -28,10 +28,10 @@ const steps = [
 ];
 
 const stats = [
-  { label: "Orders Completed", value: "10,000+", color: "#2D63FF" },
-  { label: "Happy Customers", value: "2,500+", color: "#00C851" },
-  { label: "Pages Printed", value: "5M+", color: "#F39C12" },
-  { label: "Uptime", value: "99.9%", color: "#2D63FF" },
+  { label: "Orders Completed", value: "5,000+", color: "#2D63FF" },
+  { label: "Happy Customers", value: "1,500+", color: "#00C851" },
+  { label: "Pages Printed", value: "500k+", color: "#F39C12" },
+  { label: "Quality Assured", value: "100%", color: "#2D63FF" },
 ];
 
 
@@ -138,7 +138,7 @@ export default function HomePage() {
                 </div>
                 <div className="absolute -top-4 -right-4 iom-card px-4 py-3">
                   <div className="text-xs font-semibold mb-0.5" style={{ color: "#6B7280" }}>Total Orders</div>
-                  <div className="text-2xl font-extrabold" style={{ color: "#2D63FF" }}>10K+</div>
+                  <div className="text-2xl font-extrabold" style={{ color: "#2D63FF" }}>5K+</div>
                 </div>
               </div>
             </motion.div>
