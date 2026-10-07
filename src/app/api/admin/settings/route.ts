@@ -6,7 +6,7 @@ export async function GET() {
     let settings = await prisma.adminSettings.findFirst();
     if (!settings) {
       settings = await prisma.adminSettings.create({
-        data: { businessName: "Antigravity" },
+        data: { businessName: "PRINT DOCKER" },
       });
     }
     return NextResponse.json(settings);

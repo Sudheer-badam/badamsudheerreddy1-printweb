@@ -185,7 +185,7 @@ export default function AdminDashboard() {
       {/* Header */}
       <div>
         <h1 className="text-2xl font-bold text-[#0B1D3A]">Admin Dashboard</h1>
-        <p className="text-gray-500 mt-1">Antigravity Printing Management Overview</p>
+        <p className="text-gray-500 mt-1">PRINT DOCKER Management Overview</p>
       </div>
 
       {/* Stats Grid */}

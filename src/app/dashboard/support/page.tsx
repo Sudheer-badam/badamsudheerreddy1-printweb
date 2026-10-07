@@ -132,7 +132,7 @@ export default function SupportPage() {
           </div>
           <div>
             <h2 className="text-xl font-bold text-[#0B1D3A]">
-              {settings?.businessName || "Antigravity"}
+              {settings?.businessName || "PRINT DOCKER"}
             </h2>
             {settings?.ownerName && (
               <p className="text-gray-500 text-sm">Owner: {settings.ownerName}</p>

@@ -207,7 +207,7 @@ export default function HomePage() {
                 <span style={{ color: "#2D63FF" }}>To Print Like a Pro</span>
               </h2>
               <p className="text-lg font-medium" style={{ color: "#444B54", lineHeight: "1.75" }}>
-                From upload to delivery, Antigravity handles every step of your printing journey — so you can focus on what matters.
+                From upload to delivery, PRINT DOCKER handles every step of your printing journey — so you can focus on what matters.
               </p>
             </div>
             <div className="rounded-3xl overflow-hidden" style={{ boxShadow: "0 20px 60px rgba(45,99,255,0.12)" }}>
@@ -472,7 +472,7 @@ export default function HomePage() {
               Ready to Start Printing?
             </h2>
             <p className="text-xl font-medium mb-10" style={{ color: "rgba(255,255,255,0.85)" }}>
-              Join 2,500+ customers who trust Antigravity for fast, reliable, affordable printing.
+              Join {dbStats.customers} customers who trust PRINT DOCKER for fast, reliable, affordable printing.
             </p>
             <div className="flex flex-col sm:flex-row gap-4 justify-center">
               <Link href="/auth/register"
@@ -533,7 +533,7 @@ export default function HomePage() {
             </div>
           </div>
           <div className="pt-6 text-sm font-medium" style={{ borderTop: "1px solid rgba(255,255,255,0.08)", color: "rgba(255,255,255,0.4)" }}>
-            © 2025 Antigravity. All rights reserved.
+            © {new Date().getFullYear()} PRINT DOCKER | BADAM SUDHEER REDDY. All rights reserved.
           </div>
         </div>
       </footer>

@@ -44,7 +44,7 @@ export default function AdminSettingsPage() {
     maxFileSize: 52428800,
   });
   const [business, setBusiness] = useState({
-    businessName: "Antigravity",
+    businessName: "PRINT DOCKER",
     ownerName: "",
     phone: "",
     whatsapp: "",
