@@ -11,6 +11,7 @@ import {
   signInWithEmailAndPassword,
   createUserWithEmailAndPassword,
   signOut,
+  sendPasswordResetEmail,
   RecaptchaVerifier,
   ConfirmationResult,
   updateProfile,
@@ -29,6 +30,7 @@ interface AuthContextType {
   signUpWithEmail: (email: string, password: string, name: string) => Promise<void>;
   sendOTP: (phone: string, recaptchaVerifier: RecaptchaVerifier) => Promise<ConfirmationResult>;
   verifyOTP: (confirmationResult: ConfirmationResult, otp: string) => Promise<void>;
+  resetPassword: (email: string) => Promise<void>;
   logout: () => Promise<void>;
 }
 
@@ -127,6 +129,10 @@ export function AuthProvider({ children }: { children: ReactNode }) {
     toast.success("Logged out successfully");
   };
 
+  const resetPassword = async (email: string) => {
+    await sendPasswordResetEmail(auth, email);
+  };
+
   return (
     <AuthContext.Provider
       value={{
@@ -140,6 +146,7 @@ export function AuthProvider({ children }: { children: ReactNode }) {
         signUpWithEmail,
         sendOTP,
         verifyOTP,
+        resetPassword,
         logout,
       }}
     >

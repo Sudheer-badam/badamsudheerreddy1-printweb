@@ -10,7 +10,7 @@ import { useAuth } from "@/contexts/AuthContext";
 import { toast } from "sonner";
 
 export default function LoginPage() {
-  const { signInWithGoogle, signInWithMicrosoft, signInWithEmail } = useAuth();
+  const { signInWithGoogle, signInWithMicrosoft, signInWithEmail, resetPassword } = useAuth();
   const router = useRouter();
   const [tab, setTab] = useState<"email" | "social">("email");
   const [loading, setLoading] = useState(false);
@@ -30,6 +30,20 @@ export default function LoginPage() {
       toast.error(error?.message || "Login failed");
     } finally {
       setLoading(false);
+    }
+  };
+
+  const handleForgotPassword = async (e: React.MouseEvent) => {
+    e.preventDefault();
+    if (!email) {
+      toast.error("Please enter your email first");
+      return;
+    }
+    try {
+      await resetPassword(email);
+      toast.success("Password reset email sent!");
+    } catch (error: any) {
+      toast.error(error?.message || "Failed to send reset email");
     }
   };
 
@@ -176,7 +190,7 @@ export default function LoginPage() {
                     <div className="space-y-1.5">
                       <div className="flex justify-between items-center ml-1">
                         <label className="text-sm font-bold text-[#1B254B]">Password</label>
-                        <a href="#" className="text-sm font-bold text-[#4318FF] hover:text-[#3311DB] transition-colors">Forgot?</a>
+                        <button type="button" onClick={handleForgotPassword} className="text-sm font-bold text-[#4318FF] hover:text-[#3311DB] transition-colors">Forgot?</button>
                       </div>
                       <div className="relative group">
                         <input
