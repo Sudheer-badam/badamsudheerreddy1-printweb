@@ -377,7 +377,7 @@ export default function OrderDetailPage() {
                         </div>
                       </div>
                       <div class="row"><span>Date:</span> <strong>${new Date().toLocaleDateString()}</strong></div>
-                      <div class="row"><span>Customer:</span> <strong>${user.displayName || user.email || "Customer"}</strong></div>
+                      <div class="row"><span>Customer:</span> <strong>${user?.displayName || user?.email || "Customer"}</strong></div>
                       <div class="row"><span>Document:</span> <strong>${order.fileName}</strong></div>
                       <br/>
                       <h3 style="margin-bottom: 15px; color: #4b5563;">Print Details</h3>

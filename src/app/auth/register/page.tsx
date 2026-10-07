@@ -5,7 +5,7 @@ import { motion } from "framer-motion";
 import Link from "next/link";
 import Image from "next/image";
 import { useRouter } from "next/navigation";
-import { Printer, Mail, Phone, User, Eye, EyeOff, Loader2, CheckCircle } from "lucide-react";
+import { Printer, Mail, User, Eye, EyeOff, Loader2, CheckCircle } from "lucide-react";
 import { useAuth } from "@/contexts/AuthContext";
 import { toast } from "sonner";
 
@@ -15,7 +15,7 @@ export default function RegisterPage() {
   const [loading, setLoading] = useState(false);
   const [showPassword, setShowPassword] = useState(false);
   const [form, setForm] = useState({
-    name: "", email: "", phone: "", password: "", confirmPassword: "",
+    name: "", email: "", password: "", confirmPassword: "",
   });
 
   const handleChange = (e: React.ChangeEvent<HTMLInputElement>) =>
@@ -128,23 +128,6 @@ export default function RegisterPage() {
                   <input type="email" name="email" value={form.email} onChange={handleChange}
                     placeholder="you@example.com" required
                     className={`${inputCls} pl-10`} style={inputStyle}
-                    onFocus={inputFocus} onBlur={inputBlur} />
-                </div>
-              </div>
-
-              {/* Phone */}
-              <div>
-                <label className="text-sm font-semibold mb-2 block" style={{ color: "#444B54" }}>Phone Number <span style={{ color: "#6B7280", fontWeight: 400 }}>(Optional)</span></label>
-                <div className="relative">
-                  <div className="absolute left-4 top-1/2 -translate-y-1/2 flex items-center gap-1.5" style={{ color: "#6B7280" }}>
-                    <Phone className="w-4 h-4" />
-                    <span className="text-sm font-medium">+91</span>
-                    <span style={{ color: "#E2E6EF" }}>|</span>
-                  </div>
-                  <input type="tel" name="phone" value={form.phone}
-                    onChange={(e) => setForm({ ...form, phone: e.target.value.replace(/\D/g, "").slice(0, 10) })}
-                    placeholder="10-digit number"
-                    className={`${inputCls} pl-24`} style={inputStyle}
                     onFocus={inputFocus} onBlur={inputBlur} />
                 </div>
               </div>
