@@ -92,29 +92,29 @@ export default function HomePage() {
           <div className="grid lg:grid-cols-2 gap-12 items-center pt-16 pb-0">
             {/* Left */}
             <motion.div initial={{ opacity: 0, x: -40 }} animate={{ opacity: 1, x: 0 }} transition={{ duration: 0.7 }}>
-              <div className="inline-flex items-center gap-2 px-4 py-1.5 rounded-full text-sm font-semibold mb-6"
+              <div className="inline-flex items-center gap-2 px-4 py-1.5 rounded-full text-xs sm:text-sm font-semibold mb-6 shadow-sm"
                 style={{ background: "rgba(45,99,255,0.12)", color: "#2D63FF", border: "1px solid rgba(45,99,255,0.22)" }}>
                 <Star className="w-3.5 h-3.5 fill-current" />
                 Smart Online Printing Management
               </div>
-              <h1 className="text-5xl lg:text-6xl font-extrabold leading-[1.1] mb-6" style={{ color: "#0B1D3A" }}>
+              <h1 className="text-4xl md:text-5xl lg:text-6xl font-extrabold leading-[1.15] mb-6 tracking-tight" style={{ color: "#0B1D3A" }}>
                 Print Smarter,<br />
                 <span style={{ color: "#2D63FF" }}>Faster & Easier</span>
               </h1>
-              <p className="text-lg font-medium mb-8 max-w-lg" style={{ color: "#444B54", lineHeight: "1.75" }}>
+              <p className="text-base sm:text-lg font-medium mb-8 max-w-lg" style={{ color: "#444B54", lineHeight: "1.75" }}>
                 Upload PDFs from your phone, get instant quotes, track your order live, and receive WhatsApp alerts at every step. Professional printing, completely online.
               </p>
               <div className="flex flex-col sm:flex-row gap-4">
-                <Link href="/auth/register" className="btn-primary inline-flex items-center justify-center gap-2 px-8 py-4 text-base font-bold">
+                <Link href="/auth/register" className="btn-primary w-full sm:w-auto inline-flex items-center justify-center gap-2 px-8 py-4 text-base font-bold shadow-lg shadow-blue-500/30">
                   Start Printing Now <ArrowRight className="w-5 h-5" />
                 </Link>
-                <Link href="/auth/login" className="btn-ghost inline-flex items-center justify-center gap-2 px-8 py-4 text-base font-bold">
+                <Link href="/auth/login" className="w-full sm:w-auto inline-flex items-center justify-center gap-2 px-8 py-4 text-base font-bold rounded-xl transition-all" style={{ background: "rgba(255,255,255,0.8)", border: "1px solid #E2E6EF", color: "#0B1D3A" }}>
                   Sign In <ChevronRight className="w-5 h-5" />
                 </Link>
               </div>
-              <div className="flex items-center gap-5 mt-8">
+              <div className="flex items-center justify-center sm:justify-start gap-x-5 gap-y-3 mt-8 flex-wrap">
                 {["Free to sign up", "No credit card", "Instant access"].map(t => (
-                  <div key={t} className="flex items-center gap-1.5 text-sm font-medium" style={{ color: "#444B54" }}>
+                  <div key={t} className="flex items-center gap-1.5 text-xs sm:text-sm font-medium" style={{ color: "#444B54" }}>
                     <CheckCircle className="w-4 h-4 flex-shrink-0" style={{ color: "#00C851" }} />
                     {t}
                   </div>
