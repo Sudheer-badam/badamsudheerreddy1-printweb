@@ -35,10 +35,10 @@ export default function HomePage() {
   const router = useRouter();
   const [reviews, setReviews] = useState<any[]>([]);
   const [dbStats, setDbStats] = useState({
-    ordersCompleted: "5,000+",
-    totalOrders: "5K+",
-    customers: "1,500+",
-    totalPages: "500k+",
+    ordersCompleted: "0",
+    totalOrders: "0",
+    customers: "0",
+    totalPages: "0",
   });
 
   const displayStats = [
@@ -54,12 +54,16 @@ export default function HomePage() {
       .then(data => {
         if (!data.error) {
           setDbStats({
-            ordersCompleted: data.ordersCompleted.toLocaleString() + "+",
-            totalOrders: (data.totalOrders / 1000).toFixed(1).replace('.0', '') + "K+",
-            customers: data.customers.toLocaleString() + "+",
+            ordersCompleted: data.ordersCompleted > 0 ? data.ordersCompleted.toLocaleString() + "+" : "0",
+            totalOrders: data.totalOrders >= 1000 
+                ? (data.totalOrders / 1000).toFixed(1).replace('.0', '') + "K+" 
+                : data.totalOrders > 0 ? data.totalOrders.toString() + "+" : "0",
+            customers: data.customers > 0 ? data.customers.toLocaleString() + "+" : "0",
             totalPages: data.totalPages >= 1000000 
                 ? (data.totalPages / 1000000).toFixed(1).replace('.0', '') + "M+" 
-                : (data.totalPages / 1000).toFixed(0) + "k+",
+                : data.totalPages >= 1000 
+                    ? (data.totalPages / 1000).toFixed(0) + "k+" 
+                    : data.totalPages > 0 ? data.totalPages.toString() + "+" : "0",
           });
         }
       })
