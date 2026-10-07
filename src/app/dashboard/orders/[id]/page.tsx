@@ -540,17 +540,18 @@ export default function OrderDetailPage() {
 
       {/* Status Timeline */}
       {!isCancelled ? (
-        <div className="glass rounded-3xl p-6 border border-gray-200">
+        <div className="glass rounded-3xl p-6 border border-gray-200 overflow-hidden">
           <h2 className="font-bold text-[#0B1D3A] mb-6">Order Status</h2>
-          <div className="relative">
-            <div className="absolute top-5 left-5 right-5 h-0.5 bg-gray-100" />
-            <div
-              className="absolute top-5 left-5 h-0.5 bg-gradient-to-r from-violet-500 to-violet-300 transition-all duration-1000"
-              style={{
-                width: `${Math.max(0, (currentStepIndex / (STATUS_STEPS.length - 1)) * 100)}%`,
-              }}
-            />
-            <div className="relative flex justify-between">
+          <div className="overflow-x-auto pb-4">
+            <div className="relative min-w-[700px] px-2">
+              <div className="absolute top-5 left-7 right-7 h-0.5 bg-gray-100" />
+              <div
+                className="absolute top-5 left-7 h-0.5 bg-gradient-to-r from-violet-500 to-violet-300 transition-all duration-1000"
+                style={{
+                  width: `calc(${Math.max(0, (currentStepIndex / (STATUS_STEPS.length - 1)) * 100)}% - 28px)`,
+                }}
+              />
+              <div className="relative flex justify-between">
               {STATUS_STEPS.map((step, i) => {
                 const isDone = i <= currentStepIndex;
                 const isCurrent = i === currentStepIndex;
@@ -572,6 +573,7 @@ export default function OrderDetailPage() {
                 );
               })}
             </div>
+          </div>
           </div>
         </div>
       ) : (
