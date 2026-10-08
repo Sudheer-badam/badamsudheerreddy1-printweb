@@ -220,15 +220,16 @@ export default function UploadPage() {
       sizeMultiplier = paperSize === "A3" ? pricing.a3Multiplier : 1;
     }
 
-    // Get dynamic quality extra cost per SHEET
-    let colorQualityCost = 0;
-    let bwQualityCost = 0;
+    // Get dynamic absolute cost per PAGE based on Paper Quality
+    let activeColorPrice = pricing.colorPrice;
+    let activeBwPrice = pricing.bwPrice;
 
     if (adminSettings?.paperQualities) {
       const pQual = adminSettings.paperQualities.find((q: any) => q.id === options.paperQuality);
       if (pQual) {
-        colorQualityCost = pQual.colorPrice ?? pQual.price ?? 0;
-        bwQualityCost = pQual.bwPrice ?? pQual.price ?? 0;
+        // We assume the user enters the TOTAL absolute price for a page of this quality
+        activeColorPrice = pQual.colorPrice ?? pQual.price ?? pricing.colorPrice;
+        activeBwPrice = pQual.bwPrice ?? pQual.price ?? pricing.bwPrice;
       }
     }
 
@@ -257,18 +258,9 @@ export default function UploadPage() {
 
     const isDoubleSided = printSide !== "SINGLE";
     
-    // Total physical sheets
-    const bwSheets = isDoubleSided ? Math.ceil(estimatedBwPages / 2) : estimatedBwPages;
-    const colorSheets = isDoubleSided ? Math.ceil(estimatedColorPages / 2) : estimatedColorPages;
-
-    // Ink/Impression cost (per side) + Premium Paper extra cost (per physical sheet)
-    const bwBaseTotal = estimatedBwPages * (pricing.bwPrice * sizeMultiplier);
-    const bwExtraTotal = bwSheets * bwQualityCost * sizeMultiplier;
-    const bwCost = (bwBaseTotal + bwExtraTotal) * copies;
-
-    const colorBaseTotal = estimatedColorPages * (pricing.colorPrice * sizeMultiplier);
-    const colorExtraTotal = colorSheets * colorQualityCost * sizeMultiplier;
-    const colorCost = (colorBaseTotal + colorExtraTotal) * copies;
+    // Total absolute cost per printed impression
+    const bwCost = estimatedBwPages * activeBwPrice * sizeMultiplier * copies;
+    const colorCost = estimatedColorPages * activeColorPrice * sizeMultiplier * copies;
 
     const bindingCost = binding ? (pricing.bindingCost * copies) : 0;
     const totalSheets = isDoubleSided ? Math.ceil(pagesToCharge / 2) : pagesToCharge;
