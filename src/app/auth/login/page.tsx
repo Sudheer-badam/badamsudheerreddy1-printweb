@@ -91,9 +91,11 @@ export default function LoginPage() {
           <motion.div 
             animate={{ y: [0, -20, 0], rotate: [0, 5, 0] }} 
             transition={{ duration: 6, repeat: Infinity, ease: "easeInOut" }}
-            className="absolute top-[25%] right-[10%] w-24 h-24 rounded-3xl bg-white/10 backdrop-blur-md border border-white/20 shadow-2xl"
+            className="absolute top-[25%] right-[10%] w-24 h-24 rounded-3xl bg-white/10 backdrop-blur-md border border-white/20 shadow-2xl overflow-hidden p-1"
             style={{ transformStyle: 'preserve-3d', transform: 'perspective(1000px) rotateX(20deg) rotateY(-20deg)' }}
-          />
+          >
+            <Image src="/BADAMSUDHEERREDDY.jpg" alt="Badam Sudheer Reddy" width={96} height={96} className="w-full h-full object-cover rounded-[1.25rem]" />
+          </motion.div>
           <motion.div 
             animate={{ y: [0, 30, 0], rotate: [0, -10, 0] }} 
             transition={{ duration: 8, repeat: Infinity, ease: "easeInOut" }}

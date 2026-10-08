@@ -77,9 +77,11 @@ export default function RegisterPage() {
 
           {/* Floating Abstract Elements */}
           <motion.div animate={{ y: [0, -25, 0], rotate: [0, -5, 0] }} transition={{ duration: 6, repeat: Infinity, ease: "easeInOut" }}
-            className="absolute top-[30%] right-[15%] w-20 h-20 rounded-[20px] bg-gradient-to-br from-white/20 to-white/5 backdrop-blur-md border border-white/30 shadow-xl"
+            className="absolute top-[30%] right-[15%] w-20 h-20 rounded-[20px] bg-gradient-to-br from-white/20 to-white/5 backdrop-blur-md border border-white/30 shadow-xl overflow-hidden p-1"
             style={{ transformStyle: 'preserve-3d', transform: 'perspective(1000px) rotateX(15deg) rotateY(-15deg)' }}
-          />
+          >
+            <Image src="/BADAMSUDHEERREDDY.jpg" alt="Badam Sudheer Reddy" width={80} height={80} className="w-full h-full object-cover rounded-[1rem]" />
+          </motion.div>
           <motion.div animate={{ y: [0, 25, 0], rotate: [0, 15, 0] }} transition={{ duration: 7, repeat: Infinity, ease: "easeInOut" }}
             className="absolute bottom-[25%] right-[20%] w-28 h-28 rounded-full bg-gradient-to-tr from-[#00E5FF] to-[#0075FF] shadow-[0_10px_30px_rgba(0,229,255,0.4)] opacity-90"
           />
