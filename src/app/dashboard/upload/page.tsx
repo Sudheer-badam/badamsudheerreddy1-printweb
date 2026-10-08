@@ -255,14 +255,10 @@ export default function UploadPage() {
       estimatedBwPages = pagesToCharge;
       estimatedColorPages = 0;
     } else {
-      if (pagesToPrint === "ALL") {
-        estimatedColorPages = colorPages;
-        estimatedBwPages = bwPages;
-      } else {
-        const colorRatio = totalPages > 0 ? colorPages / totalPages : 0;
-        estimatedColorPages = Math.round(pagesToCharge * colorRatio);
-        estimatedBwPages = pagesToCharge - estimatedColorPages;
-      }
+      // When the user explicitly selects "Color", charge all pages at the Color price
+      // since we aren't doing pixel-by-pixel color detection in the browser.
+      estimatedColorPages = pagesToCharge;
+      estimatedBwPages = 0;
     }
 
     const isDoubleSided = printSide !== "SINGLE";
