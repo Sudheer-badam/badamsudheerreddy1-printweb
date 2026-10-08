@@ -350,8 +350,8 @@ export default function AdminSettingsPage() {
                 }}
                 className="w-full sm:w-1/3 px-3 py-2 border border-gray-200 rounded-lg text-sm" placeholder="Display Name" 
               />
-              <div className="w-full sm:w-[15%] relative">
-                <span className="absolute left-3 top-1/2 -translate-y-1/2 text-gray-400 text-xs">+₹</span>
+              <div className="w-full sm:w-[18%] relative">
+                <span className="absolute left-2 top-1/2 -translate-y-1/2 text-gray-500 text-[10px] font-bold uppercase">Color +₹</span>
                 <input 
                   type="number" step="0.5" value={quality.colorPrice ?? 0} 
                   onChange={e => {
@@ -359,12 +359,12 @@ export default function AdminSettingsPage() {
                     newQ[index].colorPrice = parseFloat(e.target.value) || 0;
                     setPaperQualities(newQ);
                   }}
-                  className="w-full pl-8 pr-3 py-2 border border-gray-200 rounded-lg text-sm" placeholder="Color Cost" 
+                  className="w-full pl-16 pr-2 py-2 border border-gray-200 rounded-lg text-sm" placeholder="Cost" 
                   title="Extra cost for Color print"
                 />
               </div>
-              <div className="w-full sm:w-[15%] relative">
-                <span className="absolute left-3 top-1/2 -translate-y-1/2 text-gray-400 text-xs">+₹</span>
+              <div className="w-full sm:w-[18%] relative">
+                <span className="absolute left-2 top-1/2 -translate-y-1/2 text-gray-500 text-[10px] font-bold uppercase">B&W +₹</span>
                 <input 
                   type="number" step="0.5" value={quality.bwPrice ?? 0} 
                   onChange={e => {
@@ -372,7 +372,7 @@ export default function AdminSettingsPage() {
                     newQ[index].bwPrice = parseFloat(e.target.value) || 0;
                     setPaperQualities(newQ);
                   }}
-                  className="w-full pl-8 pr-3 py-2 border border-gray-200 rounded-lg text-sm" placeholder="B&W Cost" 
+                  className="w-full pl-14 pr-2 py-2 border border-gray-200 rounded-lg text-sm" placeholder="Cost" 
                   title="Extra cost for B&W print"
                 />
               </div>
