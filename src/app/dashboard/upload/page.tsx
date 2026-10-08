@@ -567,13 +567,12 @@ export default function UploadPage() {
               />
 
               <SelectField
-                label="Print on both sides of paper"
+                label="Print Sides"
                 value={options.printSide}
                 onChange={(v) => setOptions({ ...options, printSide: v })}
                 options={[
-                  {value:"SINGLE", label:"None (Single Sided)"},
-                  {value:"DOUBLE_LONG_EDGE", label:"Flip on long edge"},
-                  {value:"DOUBLE_SHORT_EDGE", label:"Flip on short edge"}
+                  {value:"SINGLE", label:"Single Sided"},
+                  {value:"DOUBLE", label:"Double Sided"}
                 ]}
               />
 

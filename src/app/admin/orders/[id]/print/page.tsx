@@ -213,9 +213,9 @@ export default function AdminPrintRoomPage() {
               <SettingBlock 
                 label="Print on both sides" 
                 value={
-                  order.printSide === "SINGLE" ? "None (Single Sided)" : 
-                  order.printSide === "DOUBLE_LONG_EDGE" ? "Flip on long edge" : 
-                  "Flip on short edge"
+                  order.printSide === "SINGLE" ? "Single Sided" : 
+                  (order.printSide === "DOUBLE" || order.printSide === "DOUBLE_LONG_EDGE") ? "Double Sided (Long Edge)" : 
+                  "Double Sided (Short Edge)"
                 }
                 icon={<Layers className="w-4 h-4" />}
                 highlight={order.printSide !== "SINGLE"}
