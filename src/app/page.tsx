@@ -95,12 +95,11 @@ export default function HomePage() {
                 <span className="font-extrabold text-xl whitespace-nowrap pr-2" style={{ color: "#0B1D3A" }}>PRINT DOCKER | BADAM SUDHEER REDDY</span>
               </div>
             </div>
-            <div className="hidden md:flex items-center gap-8 text-sm font-semibold" style={{ color: "#444B54" }}>
-              <a href="#features" className="hover:text-[#2D63FF] transition-colors">Features</a>
-              <a href="#videos" className="hover:text-[#2D63FF] transition-colors">Videos</a>
-              <a href="#how-it-works" className="hover:text-[#2D63FF] transition-colors">How It Works</a>
-              <a href="#testimonials" className="hover:text-[#2D63FF] transition-colors">Reviews</a>
-
+            <div className="hidden md:flex items-center gap-1 p-1.5 rounded-full border border-gray-200/60 bg-gray-50/80 shadow-[0_2px_8px_-4px_rgba(0,0,0,0.05)] text-sm font-bold text-gray-600 transition-all">
+              <a href="#features" className="px-5 py-2 rounded-full hover:bg-white hover:shadow-md hover:shadow-blue-500/10 hover:text-[#2D63FF] hover:-translate-y-0.5 transition-all duration-300">Features</a>
+              <a href="#videos" className="px-5 py-2 rounded-full hover:bg-white hover:shadow-md hover:shadow-blue-500/10 hover:text-[#2D63FF] hover:-translate-y-0.5 transition-all duration-300">Videos</a>
+              <a href="#how-it-works" className="px-5 py-2 rounded-full hover:bg-white hover:shadow-md hover:shadow-blue-500/10 hover:text-[#2D63FF] hover:-translate-y-0.5 transition-all duration-300">How It Works</a>
+              <a href="#testimonials" className="px-5 py-2 rounded-full hover:bg-white hover:shadow-md hover:shadow-blue-500/10 hover:text-[#2D63FF] hover:-translate-y-0.5 transition-all duration-300">Reviews</a>
             </div>
 
           </div>
