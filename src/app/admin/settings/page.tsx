@@ -318,7 +318,7 @@ export default function AdminSettingsPage() {
             </div>
             <div>
               <h2 className="font-bold text-[#0B1D3A]">Paper Qualities</h2>
-              <p className="text-xs text-gray-500">Configure paper thickness and total cost per page</p>
+              <p className="text-xs text-gray-500">Configure paper thickness and total cost per page. <span className="text-amber-600 font-semibold">(Set to ₹0 to use base price)</span></p>
             </div>
           </div>
           <button 
