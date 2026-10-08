@@ -69,7 +69,7 @@ export default function HomePage() {
       })
       .catch(console.error);
 
-    fetch('/api/reviews?limit=3')
+    fetch('/api/reviews?limit=100')
       .then(res => res.json())
       .then(data => setReviews(Array.isArray(data) ? data : []))
       .catch(console.error);
