@@ -573,7 +573,7 @@ export default function UploadPage() {
                 onChange={(v) => setOptions({ ...options, printSide: v })}
                 options={[
                   {value:"SINGLE", label:"Single Sided"},
-                  ...(adminSettings?.allowDoubleSided !== false ? [{value:"DOUBLE", label:"Double Sided"}] : [])
+                  ...((adminSettings as any)?.allowDoubleSided !== false ? [{value:"DOUBLE", label:"Double Sided"}] : [])
                 ]}
               />
 
