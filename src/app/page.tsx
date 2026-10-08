@@ -95,11 +95,11 @@ export default function HomePage() {
                 <span className="font-extrabold text-xl whitespace-nowrap pr-2" style={{ color: "#0B1D3A" }}>PRINT DOCKER | BADAM SUDHEER REDDY</span>
               </div>
             </div>
-            <div className="hidden md:flex items-center gap-1 p-1.5 rounded-full border border-gray-200/60 bg-gray-50/80 shadow-[0_2px_8px_-4px_rgba(0,0,0,0.05)] text-sm font-bold text-gray-600 transition-all">
-              <a href="#features" className="px-5 py-2 rounded-full hover:bg-white hover:shadow-md hover:shadow-blue-500/10 hover:text-[#2D63FF] hover:-translate-y-0.5 transition-all duration-300">Features</a>
-              <a href="#videos" className="px-5 py-2 rounded-full hover:bg-white hover:shadow-md hover:shadow-blue-500/10 hover:text-[#2D63FF] hover:-translate-y-0.5 transition-all duration-300">Videos</a>
-              <a href="#how-it-works" className="px-5 py-2 rounded-full hover:bg-white hover:shadow-md hover:shadow-blue-500/10 hover:text-[#2D63FF] hover:-translate-y-0.5 transition-all duration-300">How It Works</a>
-              <a href="#testimonials" className="px-5 py-2 rounded-full hover:bg-white hover:shadow-md hover:shadow-blue-500/10 hover:text-[#2D63FF] hover:-translate-y-0.5 transition-all duration-300">Reviews</a>
+            <div className="hidden md:flex items-center gap-2 p-1.5 rounded-full border border-gray-200/60 bg-gray-50/80 shadow-[0_2px_8px_-4px_rgba(0,0,0,0.05)] text-sm font-bold transition-all">
+              <a href="#features" className="px-5 py-2 rounded-full bg-blue-50 text-blue-600 hover:bg-blue-600 hover:text-white hover:shadow-lg hover:shadow-blue-500/30 hover:-translate-y-0.5 transition-all duration-300">Features</a>
+              <a href="#videos" className="px-5 py-2 rounded-full bg-rose-50 text-rose-600 hover:bg-rose-600 hover:text-white hover:shadow-lg hover:shadow-rose-500/30 hover:-translate-y-0.5 transition-all duration-300">Videos</a>
+              <a href="#how-it-works" className="px-5 py-2 rounded-full bg-emerald-50 text-emerald-600 hover:bg-emerald-600 hover:text-white hover:shadow-lg hover:shadow-emerald-500/30 hover:-translate-y-0.5 transition-all duration-300">How It Works</a>
+              <a href="#testimonials" className="px-5 py-2 rounded-full bg-amber-50 text-amber-600 hover:bg-amber-500 hover:text-white hover:shadow-lg hover:shadow-amber-500/30 hover:-translate-y-0.5 transition-all duration-300">Reviews</a>
             </div>
 
           </div>
