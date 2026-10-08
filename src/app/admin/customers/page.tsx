@@ -94,11 +94,21 @@ export default function AdminCustomersPage() {
               {/* Avatar */}
               <div className="flex items-start gap-3 mb-4">
                 {customer.profilePhoto ? (
-                  <img src={customer.profilePhoto} alt="" className="w-11 h-11 rounded-xl object-cover flex-shrink-0" />
+                  <img 
+                    src={customer.profilePhoto} 
+                    alt="" 
+                    className="w-11 h-11 rounded-xl object-cover flex-shrink-0" 
+                    onError={(e) => { 
+                      e.currentTarget.onerror = null; 
+                      e.currentTarget.src = `https://ui-avatars.com/api/?name=${encodeURIComponent(customer.name || 'User')}&background=F39C12&color=fff&size=128`;
+                    }}
+                  />
                 ) : (
-                  <div className="w-11 h-11 rounded-xl bg-amber-500/20 flex items-center justify-center text-lg font-bold text-amber-300 flex-shrink-0">
-                    {customer.name?.charAt(0) || "?"}
-                  </div>
+                  <img 
+                    src={`https://ui-avatars.com/api/?name=${encodeURIComponent(customer.name || 'User')}&background=F39C12&color=fff&size=128`} 
+                    alt="" 
+                    className="w-11 h-11 rounded-xl object-cover flex-shrink-0" 
+                  />
                 )}
                 <div className="flex-1 min-w-0">
                   <div className="font-semibold text-[#0B1D3A] truncate">{customer.name || "Unknown"}</div>

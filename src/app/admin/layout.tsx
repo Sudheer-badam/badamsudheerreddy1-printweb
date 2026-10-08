@@ -144,12 +144,24 @@ export default function AdminLayout({ children }: { children: React.ReactNode })
         {/* User + Logout */}
         <div className="p-4" style={{ borderTop: "1px solid rgba(255,255,255,0.08)" }}>
           <div className="flex items-center gap-3 mb-3 px-2">
-            <div
-              className="w-8 h-8 rounded-full flex items-center justify-center text-sm font-bold text-[#0B1D3A]"
-              style={{ background: "#F39C12" }}
-            >
-              A
-            </div>
+            {user?.photoURL ? (
+              <img 
+                src={user.photoURL} 
+                alt="Admin" 
+                className="w-8 h-8 rounded-full object-cover border border-white/20" 
+                onError={(e) => {
+                  e.currentTarget.onerror = null;
+                  e.currentTarget.src = `https://ui-avatars.com/api/?name=${encodeURIComponent(user?.displayName || 'Admin')}&background=F39C12&color=fff`;
+                }}
+              />
+            ) : (
+              <div
+                className="w-8 h-8 rounded-full flex items-center justify-center text-sm font-bold text-[#0B1D3A]"
+                style={{ background: "#F39C12" }}
+              >
+                {user?.displayName?.charAt(0) || "A"}
+              </div>
+            )}
             <div className="flex-1 min-w-0">
               <div className="text-sm font-semibold text-white">Admin</div>
               <div className="text-xs truncate" style={{ color: "rgba(255,255,255,0.4)" }}>
