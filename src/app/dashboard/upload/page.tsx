@@ -209,21 +209,22 @@ export default function UploadPage() {
     if (!pricing || !fileAnalysis) return null;
 
     const { colorPages, bwPages, totalPages } = fileAnalysis;
-    const { copies, binding, lamination, paperSize, printColor, pagesToPrint, customPageRange } = options;
+    const { copies, binding, lamination, paperSize, printColor, pagesToPrint, customPageRange, printSide } = options;
+    
     // Get dynamic size multiplier
     let sizeMultiplier = 1;
     if (adminSettings?.paperSizes) {
-      const pSize = adminSettings.paperSizes.find(s => s.id === paperSize);
+      const pSize = adminSettings.paperSizes.find((s: any) => s.id === paperSize);
       if (pSize) sizeMultiplier = pSize.multiplier;
     } else {
       sizeMultiplier = paperSize === "A3" ? pricing.a3Multiplier : 1;
     }
 
-    // Get dynamic quality cost per page
+    // Get dynamic quality cost per sheet
     let colorQualityCost = 0;
     let bwQualityCost = 0;
     if (adminSettings?.paperQualities) {
-      const pQual = adminSettings.paperQualities.find(q => q.id === options.paperQuality);
+      const pQual = adminSettings.paperQualities.find((q: any) => q.id === options.paperQuality);
       if (pQual) {
         colorQualityCost = pQual.colorPrice ?? pQual.price ?? 0;
         bwQualityCost = pQual.bwPrice ?? pQual.price ?? 0;
@@ -236,14 +237,45 @@ export default function UploadPage() {
       
     if (pagesToCharge === 0) return null;
 
-    const estimatedColorPages = printColor === "COLOR" ? pagesToCharge : 0;
-    const estimatedBwPages = printColor === "BLACK_AND_WHITE" ? pagesToCharge : 0;
+    let estimatedColorPages = 0;
+    let estimatedBwPages = 0;
 
-    const colorCost = estimatedColorPages * (pricing.colorPrice + colorQualityCost) * sizeMultiplier * copies;
-    const bwCost = estimatedBwPages * (pricing.bwPrice + bwQualityCost) * sizeMultiplier * copies;
+    if (printColor === "BLACK_AND_WHITE") {
+      estimatedBwPages = pagesToCharge;
+      estimatedColorPages = 0;
+    } else {
+      // If color is selected, we charge B&W price for B&W pages and Color price for Color pages
+      if (pagesToPrint === "ALL") {
+        estimatedColorPages = colorPages;
+        estimatedBwPages = bwPages;
+      } else {
+        // For custom ranges, we don't know the exact split without re-analyzing.
+        // We conservatively assume the proportion of color pages in the range is the same as the whole document,
+        // or just charge all as color to be safe. Let's do proportional to be fair:
+        const colorRatio = totalPages > 0 ? colorPages / totalPages : 0;
+        estimatedColorPages = Math.round(pagesToCharge * colorRatio);
+        estimatedBwPages = pagesToCharge - estimatedColorPages;
+      }
+    }
 
-    const bindingCost = binding ? pricing.bindingCost : 0;
-    const laminationCost = lamination ? pagesToCharge * pricing.laminationCost * copies : 0;
+    const isDoubleSided = printSide !== "SINGLE";
+
+    const bwSheets = isDoubleSided ? Math.ceil(estimatedBwPages / 2) : estimatedBwPages;
+    const colorSheets = isDoubleSided ? Math.ceil(estimatedColorPages / 2) : estimatedColorPages;
+
+    // Ink/Impression cost (per side) + Premium Paper cost (per sheet)
+    const bwBaseTotal = estimatedBwPages * (pricing.bwPrice * sizeMultiplier);
+    const bwExtraTotal = bwSheets * bwQualityCost * sizeMultiplier;
+    const bwCost = (bwBaseTotal + bwExtraTotal) * copies;
+
+    const colorBaseTotal = estimatedColorPages * (pricing.colorPrice * sizeMultiplier);
+    const colorExtraTotal = colorSheets * colorQualityCost * sizeMultiplier;
+    const colorCost = (colorBaseTotal + colorExtraTotal) * copies;
+
+    const bindingCost = binding ? (pricing.bindingCost * copies) : 0;
+    const totalSheets = isDoubleSided ? Math.ceil(pagesToCharge / 2) : pagesToCharge;
+    const laminationCost = lamination ? (totalSheets * pricing.laminationCost * copies) : 0;
+    
     const subtotal = colorCost + bwCost + bindingCost + laminationCost;
     const gstAmount = adminSettings?.enableGST ? (subtotal * pricing.gstRate) / 100 : 0;
     const total = subtotal + gstAmount;
