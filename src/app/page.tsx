@@ -432,7 +432,8 @@ export default function HomePage() {
                   <div className="flex items-center gap-3 mt-auto">
                     {r.user?.profilePhoto ? (
                       <div className="w-10 h-10 rounded-full overflow-hidden flex-shrink-0">
-                        <Image src={r.user.profilePhoto} alt={r.user.name || "User"} width={40} height={40} className="w-full h-full object-cover" />
+                        {/* eslint-disable-next-line @next/next/no-img-element */}
+                        <img src={r.user.profilePhoto} alt={r.user.name || "User"} className="w-full h-full object-cover" />
                       </div>
                     ) : (
                       <div className="w-10 h-10 rounded-full flex items-center justify-center text-sm font-bold text-white flex-shrink-0"
