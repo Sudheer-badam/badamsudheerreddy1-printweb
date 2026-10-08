@@ -518,7 +518,10 @@ export default function AdminOrdersPage() {
 
               {/* Amount */}
               <div className="glass rounded-2xl p-4 border border-violet-500/20 flex items-center justify-between">
-                <span className="text-gray-600">Total Amount</span>
+                <div className="flex flex-col">
+                  <span className="text-gray-600 font-bold">Total Amount</span>
+                  <span className="text-[10px] text-gray-500 font-bold tracking-wide uppercase mt-0.5">(Incl. of GST taxes)</span>
+                </div>
                 <span className="text-2xl font-extrabold text-gradient">{formatCurrency(selectedOrder.totalAmount)}</span>
               </div>
 

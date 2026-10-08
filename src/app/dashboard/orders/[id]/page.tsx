@@ -494,7 +494,7 @@ export default function OrderDetailPage() {
                       <div class="row"><span>Color Mode:</span> <strong>${order.printColor}</strong></div>
                       <div class="row"><span>Paper Size:</span> <strong>${order.paperSize}</strong></div>
                       <br/>
-                      <div class="row total"><span>Total Amount Paid:</span> <span>₹${order.totalAmount.toFixed(2)}</span></div>
+                      <div class="row total"><span>Total Amount Paid:<br><span style="font-size: 10px; color: #666; font-weight: bold; text-transform: uppercase;">(Incl. of GST taxes)</span></span> <span>₹${order.totalAmount.toFixed(2)}</span></div>
                       <br/><br/><br/>
                       <div style="text-align: center; color: #9ca3af; font-size: 14px; margin-top: 50px; border-top: 1px solid #f3f4f6; padding-top: 20px;">
                         Thank you for choosing PRINT DOCKER | BADAM SUDHEER REDDY!<br/>
@@ -626,7 +626,10 @@ export default function OrderDetailPage() {
               <DetailRow label="Discount" value={`- ${formatCurrency(order.discount)}`} />
             )}
             <div className="border-t border-gray-300 pt-2.5 flex justify-between font-bold">
-              <span className="text-[#0B1D3A]">Total</span>
+              <div className="flex flex-col">
+                <span className="text-[#0B1D3A]">Total</span>
+                <span className="text-[10px] text-gray-500 font-bold tracking-wide uppercase mt-0.5">(Incl. of GST taxes)</span>
+              </div>
               <span className="text-gradient text-base">{formatCurrency(order.totalAmount)}</span>
             </div>
           </div>

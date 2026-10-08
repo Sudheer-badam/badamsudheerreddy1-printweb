@@ -277,8 +277,9 @@ export default function UploadPage() {
     const laminationCost = lamination ? (totalSheets * pricing.laminationCost * copies) : 0;
     
     const subtotal = colorCost + bwCost + bindingCost + laminationCost;
-    const gstAmount = adminSettings?.enableGST ? (subtotal * pricing.gstRate) / 100 : 0;
-    const total = subtotal + gstAmount;
+    // GST is now inclusive, so we don't add it on top of the subtotal.
+    const gstAmount = 0;
+    const total = subtotal;
 
     return {
       pagesToCharge,
@@ -736,14 +737,14 @@ export default function UploadPage() {
 
                 <div className="border-t border-gray-300 pt-3">
                   <CostRow label="Subtotal" value={cost.subtotal} />
-                  {pricing && pricing.gstRate > 0 && (
-                    <CostRow label={`GST (${pricing.gstRate}%)`} value={cost.gstAmount} />
-                  )}
                 </div>
 
                 <div className="glass rounded-xl p-4 border border-violet-500/20">
                   <div className="flex justify-between items-center">
-                    <span className="font-bold text-[#0B1D3A]">Total Amount</span>
+                    <div className="flex flex-col">
+                      <span className="font-bold text-[#0B1D3A]">Total Amount</span>
+                      <span className="text-[10px] text-gray-500 font-bold tracking-wide uppercase mt-0.5">(Incl. of GST taxes)</span>
+                    </div>
                     <span className="text-xl font-extrabold text-gradient">{formatCurrency(cost.total)}</span>
                   </div>
                 </div>
