@@ -595,13 +595,11 @@ export default function UploadPage() {
                     const bp = q.bwPrice ?? q.price ?? 0;
                     let extraText = '';
                     
-                    if (cp > 0 && bp > 0) {
-                      extraText = `(+₹${cp} Color, +₹${bp} B&W)`;
-                    } else if (cp > 0) {
-                      extraText = `(+₹${cp} Color)`;
-                    } else if (bp > 0) {
-                      extraText = `(+₹${bp} B&W)`;
-                    } else if ((q.price || 0) > 0) {
+                    if (options.printColor === 'COLOR' && cp > 0) {
+                      extraText = `(+₹${cp})`;
+                    } else if (options.printColor === 'BLACK_AND_WHITE' && bp > 0) {
+                      extraText = `(+₹${bp})`;
+                    } else if (options.printColor !== 'COLOR' && options.printColor !== 'BLACK_AND_WHITE' && (q.price || 0) > 0) {
                       extraText = `(+₹${q.price})`;
                     }
                     
