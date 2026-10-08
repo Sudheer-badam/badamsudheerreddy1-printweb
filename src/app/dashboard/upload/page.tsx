@@ -228,8 +228,9 @@ export default function UploadPage() {
       const pQual = adminSettings.paperQualities.find((q: any) => q.id === options.paperQuality);
       if (pQual) {
         // We assume the user enters the TOTAL absolute price for a page of this quality
-        activeColorPrice = pQual.colorPrice ?? pQual.price ?? pricing.colorPrice;
-        activeBwPrice = pQual.bwPrice ?? pQual.price ?? pricing.bwPrice;
+        // Using || ensures that if they leave it as 0 by mistake, it safely falls back to the base price
+        activeColorPrice = pQual.colorPrice || pQual.price || pricing.colorPrice;
+        activeBwPrice = pQual.bwPrice || pQual.price || pricing.bwPrice;
       }
     }
 
