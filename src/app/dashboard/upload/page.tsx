@@ -109,31 +109,39 @@ export default function UploadPage() {
   });
 
   useEffect(() => {
-    fetch("/api/pricing", { cache: "no-store" }).then((r) => r.json()).then(setPricing);
-    fetch("/api/admin/settings", { cache: "no-store" }).then((r) => r.json()).then((data) => {
-      setAdminSettings(data);
-      if (data) {
-        setOptions(prev => {
-          const newOptions = { ...prev };
-          
-          let sizes = data.paperSizes;
-          if (!Array.isArray(sizes)) sizes = [];
-          const activeSizes = sizes.filter((s: any) => s.isActive);
-          if (activeSizes.length > 0 && !activeSizes.find((s: any) => s.id === prev.paperSize)) {
-            newOptions.paperSize = activeSizes[0].id;
-          }
-          
-          let qualities = data.paperQualities;
-          if (!Array.isArray(qualities)) qualities = [];
-          const activeQualities = qualities.filter((q: any) => q.isActive);
-          if (activeQualities.length > 0 && !activeQualities.find((q: any) => q.id === prev.paperQuality)) {
-            newOptions.paperQuality = activeQualities[0].id;
-          }
-          
-          return newOptions;
-        });
-      }
-    });
+    const loadSettings = () => {
+      fetch("/api/pricing", { cache: "no-store" }).then((r) => r.json()).then(setPricing);
+      fetch("/api/admin/settings", { cache: "no-store" }).then((r) => r.json()).then((data) => {
+        setAdminSettings(data);
+        if (data) {
+          setOptions(prev => {
+            const newOptions = { ...prev };
+            
+            let sizes = data.paperSizes;
+            if (!Array.isArray(sizes)) sizes = [];
+            const activeSizes = sizes.filter((s: any) => s.isActive);
+            if (activeSizes.length > 0 && !activeSizes.find((s: any) => s.id === prev.paperSize)) {
+              newOptions.paperSize = activeSizes[0].id;
+            }
+            
+            let qualities = data.paperQualities;
+            if (!Array.isArray(qualities)) qualities = [];
+            const activeQualities = qualities.filter((q: any) => q.isActive);
+            if (activeQualities.length > 0 && !activeQualities.find((q: any) => q.id === prev.paperQuality)) {
+              newOptions.paperQuality = activeQualities[0].id;
+            }
+            
+            return newOptions;
+          });
+        }
+      });
+    };
+
+    loadSettings();
+
+    // Re-fetch data instantly if the user switches back to this tab
+    window.addEventListener("focus", loadSettings);
+    return () => window.removeEventListener("focus", loadSettings);
   }, []);
 
   const onDrop = useCallback(
