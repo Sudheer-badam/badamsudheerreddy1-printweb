@@ -41,6 +41,11 @@ export async function POST(req: Request) {
       return NextResponse.json({ error: 'Missing required fields' }, { status: 400 });
     }
 
+    const user = await prisma.user.findUnique({ where: { firebaseUid: userId } });
+    if (!user) {
+      return NextResponse.json({ error: "User not found" }, { status: 404 });
+    }
+
     // Check if review already exists for this order
     const existingReview = await prisma.review.findUnique({
       where: { orderId }
@@ -52,7 +57,7 @@ export async function POST(req: Request) {
 
     const review = await prisma.review.create({
       data: {
-        userId,
+        userId: user.id,
         orderId,
         rating,
         comment,
