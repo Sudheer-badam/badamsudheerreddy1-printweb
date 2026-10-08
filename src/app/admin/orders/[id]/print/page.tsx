@@ -93,7 +93,7 @@ export default function AdminPrintRoomPage() {
   }
 
   return (
-    <div className="h-[calc(100vh-6rem)] flex flex-col gap-4 overflow-hidden -mx-4 -my-4 sm:-mx-6 sm:-my-6 p-4 sm:p-6 bg-[#0a0a0a]">
+    <div className="h-[calc(100vh-6rem)] flex flex-col gap-4 overflow-y-auto lg:overflow-hidden -mx-4 -my-4 sm:-mx-6 sm:-my-6 p-4 sm:p-6 bg-[#0a0a0a]">
       {/* Header */}
       <div className="flex items-center justify-between shrink-0">
         <div className="flex items-center gap-4">
@@ -120,29 +120,30 @@ export default function AdminPrintRoomPage() {
             className="flex items-center gap-2 px-4 py-2 bg-blue-500/20 text-blue-400 hover:bg-blue-500/30 rounded-xl text-sm font-medium transition-colors"
           >
             <Download className="w-4 h-4" />
-            Download Original PDF
+            <span className="hidden sm:inline">Download Original PDF</span>
+            <span className="sm:hidden">Download</span>
           </a>
         </div>
       </div>
 
-      <div className="flex flex-col lg:flex-row gap-6 h-full min-h-0">
+      <div className="flex flex-col lg:flex-row gap-6 flex-1 min-h-0 pb-10 lg:pb-0">
         {/* PDF Preview Frame */}
-        <div className="flex-1 flex flex-col rounded-3xl overflow-hidden border border-white/10 bg-black min-h-[500px]">
-          <div className="bg-white/5 px-4 py-3 flex items-center justify-between border-b border-white/10">
-            <div className="flex items-center gap-2 text-sm font-medium text-white/70">
-              <FileText className="w-4 h-4" />
-              {order.fileName}
+        <div className="flex-1 flex flex-col rounded-3xl overflow-hidden border border-white/10 bg-black min-h-[400px] lg:min-h-0">
+          <div className="bg-white/5 px-4 py-3 flex items-center justify-between border-b border-white/10 shrink-0">
+            <div className="flex items-center gap-2 text-sm font-medium text-white/70 truncate mr-2">
+              <FileText className="w-4 h-4 shrink-0" />
+              <span className="truncate">{order.fileName}</span>
             </div>
-            <div className="text-xs text-white/40">{order.totalPages} Pages total</div>
+            <div className="text-xs text-white/40 shrink-0">{order.totalPages} Pages total</div>
           </div>
           {previewUrl ? (
             <iframe 
               src={`${previewUrl}#view=FitH`}
-              className="w-full h-full border-0 bg-white" 
+              className="w-full flex-1 border-0 bg-white" 
               title="PDF Preview"
             />
           ) : (
-            <div className="w-full h-full flex flex-col items-center justify-center text-white/50">
+            <div className="w-full flex-1 flex flex-col items-center justify-center text-white/50">
               <div className="animate-spin rounded-full h-8 w-8 border-t-2 border-b-2 border-amber-500 mb-4"></div>
               <p>Loading document preview...</p>
             </div>
@@ -150,7 +151,7 @@ export default function AdminPrintRoomPage() {
         </div>
 
         {/* Acrobat Settings Checklist */}
-        <div className="w-full lg:w-[400px] flex flex-col gap-4 overflow-y-auto pr-2 shrink-0">
+        <div className="w-full lg:w-[400px] flex flex-col gap-4 lg:overflow-y-auto pr-2 shrink-0">
           <div className="glass rounded-3xl p-6 border border-amber-500/30 shadow-[0_0_30px_rgba(245,158,11,0.1)] relative overflow-hidden">
             <div className="absolute top-0 left-0 w-1 h-full bg-amber-500" />
             
