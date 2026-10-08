@@ -109,8 +109,8 @@ export default function UploadPage() {
   });
 
   useEffect(() => {
-    fetch("/api/pricing").then((r) => r.json()).then(setPricing);
-    fetch("/api/admin/settings").then((r) => r.json()).then((data) => {
+    fetch("/api/pricing", { cache: "no-store" }).then((r) => r.json()).then(setPricing);
+    fetch("/api/admin/settings", { cache: "no-store" }).then((r) => r.json()).then((data) => {
       setAdminSettings(data);
       if (data) {
         setOptions(prev => {
