@@ -130,6 +130,10 @@ export default function UploadPage() {
             if (activeQualities.length > 0 && !activeQualities.find((q: any) => q.id === prev.paperQuality)) {
               newOptions.paperQuality = activeQualities[0].id;
             }
+
+            if (data.allowDoubleSided === false) {
+              newOptions.printSide = "SINGLE";
+            }
             
             return newOptions;
           });
@@ -569,7 +573,7 @@ export default function UploadPage() {
                 onChange={(v) => setOptions({ ...options, printSide: v })}
                 options={[
                   {value:"SINGLE", label:"Single Sided"},
-                  {value:"DOUBLE", label:"Double Sided"}
+                  ...(adminSettings?.allowDoubleSided !== false ? [{value:"DOUBLE", label:"Double Sided"}] : [])
                 ]}
               />
 

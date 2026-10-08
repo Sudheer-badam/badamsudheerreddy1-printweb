@@ -59,6 +59,7 @@ export default function AdminSettingsPage() {
     enableLamination: true,
     enableGST: true,
     enableDiscount: false,
+    allowDoubleSided: true,
   });
   const [paperSizes, setPaperSizes] = useState([
     { id: "A4", label: "A4 Size", multiplier: 1, isActive: true },
@@ -104,6 +105,7 @@ export default function AdminSettingsPage() {
         enableLamination: data.enableLamination ?? true,
         enableGST: data.enableGST ?? true,
         enableDiscount: data.enableDiscount ?? false,
+        allowDoubleSided: data.allowDoubleSided ?? true,
       });
       if (data.paperSizes && Array.isArray(data.paperSizes)) setPaperSizes(data.paperSizes);
       if (data.paperQualities && Array.isArray(data.paperQualities)) setPaperQualities(data.paperQualities);
@@ -427,6 +429,7 @@ export default function AdminSettingsPage() {
 
         <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
           {[
+            { key: "allowDoubleSided", label: "Double Sided Printing", desc: "Allow customers to choose double-sided prints" },
             { key: "enableBinding", label: "Binding Service", desc: "Allow customers to request binding" },
             { key: "enableLamination", label: "Lamination Service", desc: "Allow customers to request lamination" },
             { key: "enableGST", label: "GST on Orders", desc: "Apply GST to order total" },

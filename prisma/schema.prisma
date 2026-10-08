@@ -275,6 +275,7 @@ model AdminSettings {
   enableLamination Boolean  @default(true)
   enableGST        Boolean  @default(true)
   enableDiscount   Boolean  @default(false)
+  allowDoubleSided Boolean  @default(true)
   maxFileSize      Int      @default(52428800)
   paperSizes       Json?    // [{id: "A4", label: "A4", multiplier: 1, isActive: true}]
   paperQualities   Json?    // [{id: "standard", label: "Standard 70GSM", price: 0, isActive: true}]
