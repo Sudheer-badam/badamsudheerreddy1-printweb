@@ -457,9 +457,13 @@ export default function HomePage() {
       <section className="py-24 px-4" style={{ background: "linear-gradient(160deg,#0B1D3A 0%,#1C3CB3 60%,#2D63FF 100%)" }}>
         <div className="max-w-4xl mx-auto text-center">
           <motion.div initial={{ opacity: 0, y: 30 }} whileInView={{ opacity: 1, y: 0 }} viewport={{ once: true }}>
-            <div className="w-16 h-16 rounded-2xl bg-white/10 flex items-center justify-center mx-auto mb-6">
-              <FileText className="w-8 h-8 text-white" />
-            </div>
+            <motion.div 
+              animate={{ y: [0, -15, 0] }}
+              transition={{ repeat: Infinity, duration: 2, ease: "easeInOut" }}
+              className="w-24 h-24 rounded-[2rem] bg-white/10 flex items-center justify-center mx-auto mb-6 overflow-hidden border border-white/20 shadow-2xl p-1"
+            >
+              <Image src="/BADAMSUDHEERREDDY.jpg" alt="Badam Sudheer Reddy" width={96} height={96} className="w-full h-full object-cover rounded-[1.75rem]" />
+            </motion.div>
             <h2 className="text-4xl md:text-5xl font-extrabold text-white mb-4">
               Ready to Start Printing?
             </h2>
