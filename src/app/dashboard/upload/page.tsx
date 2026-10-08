@@ -220,14 +220,19 @@ export default function UploadPage() {
       sizeMultiplier = paperSize === "A3" ? pricing.a3Multiplier : 1;
     }
 
-    // Get dynamic quality cost per sheet
-    let colorQualityCost = 0;
-    let bwQualityCost = 0;
+    // Get dynamic base cost per sheet based on Paper Quality
+    let activeColorPrice = pricing.colorPrice;
+    let activeBwPrice = pricing.bwPrice;
+
     if (adminSettings?.paperQualities) {
       const pQual = adminSettings.paperQualities.find((q: any) => q.id === options.paperQuality);
       if (pQual) {
-        colorQualityCost = pQual.colorPrice ?? pQual.price ?? 0;
-        bwQualityCost = pQual.bwPrice ?? pQual.price ?? 0;
+        if ((pQual.colorPrice ?? pQual.price ?? 0) > 0) {
+          activeColorPrice = pQual.colorPrice ?? pQual.price;
+        }
+        if ((pQual.bwPrice ?? pQual.price ?? 0) > 0) {
+          activeBwPrice = pQual.bwPrice ?? pQual.price;
+        }
       }
     }
 
@@ -244,14 +249,10 @@ export default function UploadPage() {
       estimatedBwPages = pagesToCharge;
       estimatedColorPages = 0;
     } else {
-      // If color is selected, we charge B&W price for B&W pages and Color price for Color pages
       if (pagesToPrint === "ALL") {
         estimatedColorPages = colorPages;
         estimatedBwPages = bwPages;
       } else {
-        // For custom ranges, we don't know the exact split without re-analyzing.
-        // We conservatively assume the proportion of color pages in the range is the same as the whole document,
-        // or just charge all as color to be safe. Let's do proportional to be fair:
         const colorRatio = totalPages > 0 ? colorPages / totalPages : 0;
         estimatedColorPages = Math.round(pagesToCharge * colorRatio);
         estimatedBwPages = pagesToCharge - estimatedColorPages;
@@ -259,18 +260,12 @@ export default function UploadPage() {
     }
 
     const isDoubleSided = printSide !== "SINGLE";
-
-    const bwSheets = isDoubleSided ? Math.ceil(estimatedBwPages / 2) : estimatedBwPages;
-    const colorSheets = isDoubleSided ? Math.ceil(estimatedColorPages / 2) : estimatedColorPages;
-
-    // Ink/Impression cost (per side) + Premium Paper cost (per sheet)
-    const bwBaseTotal = estimatedBwPages * (pricing.bwPrice * sizeMultiplier);
-    const bwExtraTotal = bwSheets * bwQualityCost * sizeMultiplier;
-    const bwCost = (bwBaseTotal + bwExtraTotal) * copies;
-
-    const colorBaseTotal = estimatedColorPages * (pricing.colorPrice * sizeMultiplier);
-    const colorExtraTotal = colorSheets * colorQualityCost * sizeMultiplier;
-    const colorCost = (colorBaseTotal + colorExtraTotal) * copies;
+    
+    // Total pages calculation depending on duplex is mostly for physical sheets,
+    // but pricing is typically per PAGE (impression), not per SHEET, unless specified.
+    // We'll charge per impression using active price.
+    const bwCost = estimatedBwPages * activeBwPrice * sizeMultiplier * copies;
+    const colorCost = estimatedColorPages * activeColorPrice * sizeMultiplier * copies;
 
     const bindingCost = binding ? (pricing.bindingCost * copies) : 0;
     const totalSheets = isDoubleSided ? Math.ceil(pagesToCharge / 2) : pagesToCharge;
