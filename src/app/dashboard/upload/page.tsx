@@ -548,23 +548,36 @@ export default function UploadPage() {
                 label="Paper Size"
                 value={options.paperSize}
                 onChange={(v) => setOptions({ ...options, paperSize: v })}
-                options={(adminSettings?.paperSizes?.filter(s => s.isActive) || [{id:"A4", label:"A4 Size", multiplier: 1, isActive: true}]).map(s => ({ value: s.id, label: s.label }))}
+                options={(() => {
+                  let sizes = adminSettings?.paperSizes;
+                  if (!Array.isArray(sizes)) sizes = [];
+                  let activeSizes = sizes.filter(s => s.isActive);
+                  if (activeSizes.length === 0) activeSizes = [{id:"A4", label:"A4 Size", multiplier: 1, isActive: true}];
+                  return activeSizes.map(s => ({ value: s.id, label: s.label }));
+                })()}
               />
 
               <SelectField
                 label="Paper Quality"
                 value={options.paperQuality}
                 onChange={(v) => setOptions({ ...options, paperQuality: v })}
-                options={(adminSettings?.paperQualities?.filter(q => q.isActive) || [{id:"standard", label:"Standard", colorPrice:0, bwPrice:0, price:0, isActive:true}]).map(q => {
-                  const cp = q.colorPrice ?? q.price ?? 0;
-                  const bp = q.bwPrice ?? q.price ?? 0;
-                  let extraText = '';
-                  if (options.printColor === 'COLOR' && cp > 0) extraText = `(+₹${cp})`;
-                  else if (options.printColor === 'BLACK_AND_WHITE' && bp > 0) extraText = `(+₹${bp})`;
-                  else if (options.printColor !== 'COLOR' && options.printColor !== 'BLACK_AND_WHITE' && (q.price || 0) > 0) extraText = `(+₹${q.price})`;
+                options={(() => {
+                  let qualities = adminSettings?.paperQualities;
+                  if (!Array.isArray(qualities)) qualities = [];
+                  let activeQualities = qualities.filter(q => q.isActive);
+                  if (activeQualities.length === 0) activeQualities = [{id:"standard", label:"Standard", colorPrice:0, bwPrice:0, price:0, isActive:true}];
                   
-                  return { value: q.id, label: `${q.label} ${extraText}`.trim() };
-                })}
+                  return activeQualities.map(q => {
+                    const cp = q.colorPrice ?? q.price ?? 0;
+                    const bp = q.bwPrice ?? q.price ?? 0;
+                    let extraText = '';
+                    if (options.printColor === 'COLOR' && cp > 0) extraText = `(+₹${cp})`;
+                    else if (options.printColor === 'BLACK_AND_WHITE' && bp > 0) extraText = `(+₹${bp})`;
+                    else if (options.printColor !== 'COLOR' && options.printColor !== 'BLACK_AND_WHITE' && (q.price || 0) > 0) extraText = `(+₹${q.price})`;
+                    
+                    return { value: q.id, label: `${q.label} ${extraText}`.trim() };
+                  });
+                })()}
               />
 
               <div>
