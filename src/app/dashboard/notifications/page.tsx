@@ -126,7 +126,7 @@ export default function NotificationsPage() {
                     )}
                   </div>
                   <p className="text-sm text-gray-500 mt-0.5 leading-relaxed">{notif.message}</p>
-                  <p className="text-xs text-white/25 mt-2">{formatDate(notif.createdAt)}</p>
+                  <p className="text-xs text-gray-400 mt-2">{formatDate(notif.createdAt)}</p>
                 </div>
               </motion.div>
             ))}

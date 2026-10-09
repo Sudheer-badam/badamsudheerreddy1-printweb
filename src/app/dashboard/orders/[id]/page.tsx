@@ -231,6 +231,34 @@ export default function OrderDetailPage() {
     }
   };
 
+  const handleMockPayment = async () => {
+    if (!user || !order) return;
+    try {
+      const paymentRes = await fetch("/api/payments", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({
+          uid: user.uid,
+          orderId: order.id,
+          amount: order.totalAmount,
+          method: "RAZORPAY",
+          transactionId: "mock_tx_" + Math.random().toString(36).substr(2, 9),
+          razorpayId: "mock_pay_" + Math.random().toString(36).substr(2, 9)
+        }),
+      });
+      
+      if (paymentRes.ok) {
+        toast.success("Test Payment successful!");
+        setShowPaymentModal(false);
+        fetchOrder();
+      } else {
+        toast.error("Test Payment failed.");
+      }
+    } catch (error) {
+      toast.error("An error occurred during test payment.");
+    }
+  };
+
   useEffect(() => {
     let interval: NodeJS.Timeout;
     if (user && params.id) {
@@ -820,7 +848,14 @@ export default function OrderDetailPage() {
                   <div className="flex flex-col items-center justify-center py-6 text-center text-gray-500">
                     <RefreshCw className="w-12 h-12 text-violet-300 mb-3 animate-spin" />
                     <p className="text-sm mb-2 font-semibold text-[#0B1D3A]">Connecting to Payment Gateway...</p>
-                    <p className="text-xs">A secure window should open to process your payment.</p>
+                    <p className="text-xs mb-6">A secure window should open to process your payment.</p>
+                    
+                    <button
+                      onClick={handleMockPayment}
+                      className="px-4 py-2 bg-gray-100 hover:bg-gray-200 text-gray-600 rounded-lg text-xs font-semibold transition-colors mt-4"
+                    >
+                      [DEV] Simulate Successful Payment
+                    </button>
                   </div>
                 )}
               </div>
