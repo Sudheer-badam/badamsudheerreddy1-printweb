@@ -1,5 +1,6 @@
 import { NextRequest, NextResponse } from "next/server";
 import { prisma } from "@/lib/prisma";
+import { sendOrderStatusEmail } from "@/lib/email";
 
 // GET single order
 export async function GET(
@@ -136,6 +137,17 @@ export async function PATCH(
             status: "SENT",
           },
         });
+      }
+      
+      // Send HTML Email to the customer with logo
+      if (order.user?.email) {
+        await sendOrderStatusEmail(
+          order.user.email,
+          order.user.name || order.user.email,
+          order.orderNumber,
+          status,
+          order.fileName || "your document"
+        );
       }
     }
 
