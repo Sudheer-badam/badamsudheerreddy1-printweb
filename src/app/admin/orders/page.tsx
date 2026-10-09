@@ -474,16 +474,35 @@ export default function AdminOrdersPage() {
               {/* Print Details */}
               <div className="glass rounded-2xl p-4 border border-gray-200">
                 <h3 className="text-sm font-semibold text-amber-400 mb-3">Print Details</h3>
-                <div className="grid grid-cols-2 gap-3 text-sm">
-                  <InfoRow label="File" value={selectedOrder.fileName} />
-                  <InfoRow label="Pages" value={selectedOrder.totalPages.toString()} />
-                  <InfoRow label="Paper Size" value={selectedOrder.paperSize} />
-                  <InfoRow label="Color Mode" value={selectedOrder.printColor} />
-                  <InfoRow label="Print Side" value={selectedOrder.printSide} />
-                  <InfoRow label="Copies" value={selectedOrder.copies.toString()} />
-                  <InfoRow label="Binding" value={selectedOrder.binding ? "Yes" : "No"} />
-                  <InfoRow label="Lamination" value={selectedOrder.lamination ? "Yes" : "No"} />
-                </div>
+                {selectedOrder.documents && selectedOrder.documents.length > 0 ? (
+                  <div className="space-y-4">
+                    {selectedOrder.documents.map((doc: any, i: number) => (
+                      <div key={i} className="pb-3 border-b border-gray-100 last:border-0 last:pb-0">
+                        <div className="font-semibold text-violet-600 mb-2 truncate text-sm" title={doc.fileName}>{doc.fileName}</div>
+                        <div className="grid grid-cols-2 gap-3 text-sm">
+                          <InfoRow label="Pages" value={doc.totalPages?.toString()} />
+                          <InfoRow label="Paper Size" value={doc.paperSize} />
+                          <InfoRow label="Color Mode" value={doc.printColor} />
+                          <InfoRow label="Print Side" value={doc.printSide} />
+                          <InfoRow label="Copies" value={doc.copies?.toString()} />
+                          <InfoRow label="Binding" value={doc.binding ? "Yes" : "No"} />
+                          <InfoRow label="Lamination" value={doc.lamination ? "Yes" : "No"} />
+                        </div>
+                      </div>
+                    ))}
+                  </div>
+                ) : (
+                  <div className="grid grid-cols-2 gap-3 text-sm">
+                    <InfoRow label="File" value={selectedOrder.fileName} />
+                    <InfoRow label="Pages" value={selectedOrder.totalPages.toString()} />
+                    <InfoRow label="Paper Size" value={selectedOrder.paperSize} />
+                    <InfoRow label="Color Mode" value={selectedOrder.printColor} />
+                    <InfoRow label="Print Side" value={selectedOrder.printSide} />
+                    <InfoRow label="Copies" value={selectedOrder.copies.toString()} />
+                    <InfoRow label="Binding" value={selectedOrder.binding ? "Yes" : "No"} />
+                    <InfoRow label="Lamination" value={selectedOrder.lamination ? "Yes" : "No"} />
+                  </div>
+                )}
               </div>
 
               {/* Status Update */}

@@ -88,27 +88,27 @@ enum SupportTicketStatus {
 }
 
 model User {
-  id                String    @id @default(cuid())
-  firebaseUid       String    @unique
-  email             String?   @unique
-  name              String?
-  phone             String?
-  profilePhoto      String?
-  role              UserRole  @default(CUSTOMER)
-  authProvider      String?   // google, microsoft, apple, phone, email
-  isActive          Boolean   @default(true)
-  registrationDate  DateTime  @default(now())
-  lastLogin         DateTime?
-  createdAt         DateTime  @default(now())
-  updatedAt         DateTime  @updatedAt
+  id               String    @id @default(cuid())
+  firebaseUid      String    @unique
+  email            String?   @unique
+  name             String?
+  phone            String?
+  profilePhoto     String?
+  role             UserRole  @default(CUSTOMER)
+  authProvider     String? // google, microsoft, apple, phone, email
+  isActive         Boolean   @default(true)
+  registrationDate DateTime  @default(now())
+  lastLogin        DateTime?
+  createdAt        DateTime  @default(now())
+  updatedAt        DateTime  @updatedAt
 
-  orders            Order[]
-  payments          Payment[]
-  notifications     Notification[]
-  invoices          Invoice[]
-  supportTickets    SupportTicket[]
-  auditLogs         AuditLog[]
-  reviews           Review[]
+  orders         Order[]
+  payments       Payment[]
+  notifications  Notification[]
+  invoices       Invoice[]
+  supportTickets SupportTicket[]
+  auditLogs      AuditLog[]
+  reviews        Review[]
 
   @@index([email])
   @@index([phone])
@@ -116,66 +116,69 @@ model User {
 }
 
 model Order {
-  id              String        @id @default(cuid())
-  orderNumber     String        @unique @default(cuid())
-  userId          String
-  user            User          @relation(fields: [userId], references: [id], onDelete: Cascade)
+  id          String @id @default(cuid())
+  orderNumber String @unique @default(cuid())
+  userId      String
+  user        User   @relation(fields: [userId], references: [id], onDelete: Cascade)
+
+  // File Info (Legacy / Fallback for single file)
+  fileName   String?
+  fileUrl    String? // Secure signed URL
+  fileKey    String? // Storage key
+  fileSize   Int? // in bytes
   
-  // File Info
-  fileName        String
-  fileUrl         String        // Secure signed URL
-  fileKey         String        // Storage key
-  fileSize        Int           // in bytes
-  totalPages      Int
-  colorPages      Int           @default(0)
-  bwPages         Int           @default(0)
-  
+  // New: Multiple documents support
+  documents  Json? // Array of objects with file and options
+
+  totalPages Int
+  colorPages Int    @default(0)
+  bwPages    Int    @default(0)
+
   // Print Options
-  paperSize       PaperSize     @default(A4)
-  orientation     Orientation   @default(PORTRAIT)
-  printSide       PrintSide     @default(SINGLE)
-  printColor      PrintColor    @default(BLACK_AND_WHITE)
-  copies          Int           @default(1)
-  collate         Boolean       @default(true)
-  pagesToPrint    String        @default("ALL")
+  paperSize       PaperSize   @default(A4)
+  orientation     Orientation @default(PORTRAIT)
+  printSide       PrintSide   @default(SINGLE)
+  printColor      PrintColor  @default(BLACK_AND_WHITE)
+  copies          Int         @default(1)
+  collate         Boolean     @default(true)
+  pagesToPrint    String      @default("ALL")
   customPageRange String?
-  pageSizing      String        @default("FIT")
-  saveInk         Boolean       @default(false)
-  binding         Boolean       @default(false)
-  lamination      Boolean       @default(false)
-  paperQuality    String        @default("standard")
+  pageSizing      String      @default("FIT")
+  saveInk         Boolean     @default(false)
+  binding         Boolean     @default(false)
+  lamination      Boolean     @default(false)
+  paperQuality    String      @default("standard")
   instructions    String?
-  
+
   // Pricing
-  colorPrice      Float         @default(0)
-  bwPrice         Float         @default(0)
-  bindingCost     Float         @default(0)
-  laminationCost  Float         @default(0)
-  subtotal        Float
-  gstRate         Float         @default(0)
-  gstAmount       Float         @default(0)
-  discount        Float         @default(0)
-  totalAmount     Float
-  
+  colorPrice     Float @default(0)
+  bwPrice        Float @default(0)
+  bindingCost    Float @default(0)
+  laminationCost Float @default(0)
+  subtotal       Float
+  gstRate        Float @default(0)
+  gstAmount      Float @default(0)
+  discount       Float @default(0)
+  totalAmount    Float
+
   // Status
   status          OrderStatus   @default(UPLOADED)
   paymentStatus   PaymentStatus @default(PENDING)
   paymentProofUrl String?
 
-  
   // Admin notes
   adminNotes      String?
   rejectionReason String?
-  
-  createdAt       DateTime      @default(now())
-  updatedAt       DateTime      @updatedAt
-  completedAt     DateTime?
-  
-  payments        Payment[]
-  notifications   Notification[]
-  invoice         Invoice?
-  review          Review?
-  statusHistory   OrderStatusHistory[]
+
+  createdAt   DateTime  @default(now())
+  updatedAt   DateTime  @updatedAt
+  completedAt DateTime?
+
+  payments      Payment[]
+  notifications Notification[]
+  invoice       Invoice?
+  review        Review?
+  statusHistory OrderStatusHistory[]
 
   @@index([userId])
   @@index([status])
@@ -189,7 +192,7 @@ model OrderStatusHistory {
   orderId   String
   order     Order       @relation(fields: [orderId], references: [id], onDelete: Cascade)
   status    OrderStatus
-  changedBy String      // admin user id or "system"
+  changedBy String // admin user id or "system"
   notes     String?
   createdAt DateTime    @default(now())
 
@@ -197,22 +200,22 @@ model OrderStatusHistory {
 }
 
 model Payment {
-  id             String        @id @default(cuid())
-  orderId        String
-  order          Order         @relation(fields: [orderId], references: [id], onDelete: Cascade)
-  userId         String
-  user           User          @relation(fields: [userId], references: [id], onDelete: Cascade)
-  
-  amount         Float
-  method         PaymentMethod?
-  status         PaymentStatus @default(PENDING)
-  transactionId  String?       @unique
-  razorpayId     String?
-  upiId          String?
-  
-  paidAt         DateTime?
-  createdAt      DateTime      @default(now())
-  updatedAt      DateTime      @updatedAt
+  id      String @id @default(cuid())
+  orderId String
+  order   Order  @relation(fields: [orderId], references: [id], onDelete: Cascade)
+  userId  String
+  user    User   @relation(fields: [userId], references: [id], onDelete: Cascade)
+
+  amount        Float
+  method        PaymentMethod?
+  status        PaymentStatus  @default(PENDING)
+  transactionId String?        @unique
+  razorpayId    String?
+  upiId         String?
+
+  paidAt    DateTime?
+  createdAt DateTime  @default(now())
+  updatedAt DateTime  @updatedAt
 
   @@index([orderId])
   @@index([userId])
@@ -220,41 +223,41 @@ model Payment {
 }
 
 model Invoice {
-  id            String    @id @default(cuid())
-  invoiceNumber String    @unique
-  orderId       String    @unique
-  order         Order     @relation(fields: [orderId], references: [id], onDelete: Cascade)
+  id            String @id @default(cuid())
+  invoiceNumber String @unique
+  orderId       String @unique
+  order         Order  @relation(fields: [orderId], references: [id], onDelete: Cascade)
   userId        String
-  user          User      @relation(fields: [userId], references: [id], onDelete: Cascade)
-  
-  amount        Float
-  gstAmount     Float     @default(0)
-  totalAmount   Float
-  
-  pdfUrl        String?
-  issuedAt      DateTime  @default(now())
-  dueDate       DateTime?
-  
-  createdAt     DateTime  @default(now())
-  updatedAt     DateTime  @updatedAt
+  user          User   @relation(fields: [userId], references: [id], onDelete: Cascade)
+
+  amount      Float
+  gstAmount   Float @default(0)
+  totalAmount Float
+
+  pdfUrl   String?
+  issuedAt DateTime  @default(now())
+  dueDate  DateTime?
+
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
 
   @@index([userId])
   @@index([orderId])
 }
 
 model Pricing {
-  id              String   @id @default(cuid())
-  name            String   @unique
-  colorPrice      Float    @default(10.0)   // per page
-  bwPrice         Float    @default(2.0)    // per page
-  a3Multiplier    Float    @default(2.0)
-  bindingCost     Float    @default(50.0)
-  laminationCost  Float    @default(20.0)   // per page
-  gstRate         Float    @default(18.0)   // percentage
-  maxFileSize     Int      @default(52428800) // 50MB in bytes
-  isActive        Boolean  @default(true)
-  createdAt       DateTime @default(now())
-  updatedAt       DateTime @updatedAt
+  id             String   @id @default(cuid())
+  name           String   @unique
+  colorPrice     Float    @default(10.0) // per page
+  bwPrice        Float    @default(2.0) // per page
+  a3Multiplier   Float    @default(2.0)
+  bindingCost    Float    @default(50.0)
+  laminationCost Float    @default(20.0) // per page
+  gstRate        Float    @default(18.0) // percentage
+  maxFileSize    Int      @default(52428800) // 50MB in bytes
+  isActive       Boolean  @default(true)
+  createdAt      DateTime @default(now())
+  updatedAt      DateTime @updatedAt
 }
 
 model AdminSettings {
@@ -277,26 +280,26 @@ model AdminSettings {
   enableDiscount   Boolean  @default(false)
   allowDoubleSided Boolean  @default(true)
   maxFileSize      Int      @default(52428800)
-  paperSizes       Json?    // [{id: "A4", label: "A4", multiplier: 1, isActive: true}]
-  paperQualities   Json?    // [{id: "standard", label: "Standard 70GSM", price: 0, isActive: true}]
+  paperSizes       Json? // [{id: "A4", label: "A4", multiplier: 1, isActive: true}]
+  paperQualities   Json? // [{id: "standard", label: "Standard 70GSM", price: 0, isActive: true}]
   createdAt        DateTime @default(now())
   updatedAt        DateTime @updatedAt
 }
 
 model Notification {
-  id        String              @id @default(cuid())
-  userId    String
-  user      User                @relation(fields: [userId], references: [id], onDelete: Cascade)
-  orderId   String?
-  order     Order?              @relation(fields: [orderId], references: [id], onDelete: SetNull)
-  
-  title     String
-  message   String
-  channel   NotificationChannel @default(IN_APP)
-  status    NotificationStatus  @default(PENDING)
-  isRead    Boolean             @default(false)
-  
-  createdAt DateTime            @default(now())
+  id      String  @id @default(cuid())
+  userId  String
+  user    User    @relation(fields: [userId], references: [id], onDelete: Cascade)
+  orderId String?
+  order   Order?  @relation(fields: [orderId], references: [id], onDelete: SetNull)
+
+  title   String
+  message String
+  channel NotificationChannel @default(IN_APP)
+  status  NotificationStatus  @default(PENDING)
+  isRead  Boolean             @default(false)
+
+  createdAt DateTime  @default(now())
   sentAt    DateTime?
 
   @@index([userId])
@@ -305,17 +308,17 @@ model Notification {
 }
 
 model AuditLog {
-  id          String   @id @default(cuid())
-  userId      String?
-  user        User?    @relation(fields: [userId], references: [id], onDelete: SetNull)
-  action      String
-  entity      String
-  entityId    String?
-  oldData     Json?
-  newData     Json?
-  ipAddress   String?
-  userAgent   String?
-  createdAt   DateTime @default(now())
+  id        String   @id @default(cuid())
+  userId    String?
+  user      User?    @relation(fields: [userId], references: [id], onDelete: SetNull)
+  action    String
+  entity    String
+  entityId  String?
+  oldData   Json?
+  newData   Json?
+  ipAddress String?
+  userAgent String?
+  createdAt DateTime @default(now())
 
   @@index([userId])
   @@index([entity])
@@ -334,18 +337,18 @@ model OTPLog {
 }
 
 model SupportTicket {
-  id          String              @id @default(cuid())
-  userId      String
-  user        User                @relation(fields: [userId], references: [id], onDelete: Cascade)
-  
-  subject     String
-  message     String
-  status      SupportTicketStatus @default(OPEN)
-  adminReply  String?
-  
-  createdAt   DateTime            @default(now())
-  updatedAt   DateTime            @updatedAt
-  resolvedAt  DateTime?
+  id     String @id @default(cuid())
+  userId String
+  user   User   @relation(fields: [userId], references: [id], onDelete: Cascade)
+
+  subject    String
+  message    String
+  status     SupportTicketStatus @default(OPEN)
+  adminReply String?
+
+  createdAt  DateTime  @default(now())
+  updatedAt  DateTime  @updatedAt
+  resolvedAt DateTime?
 
   @@index([userId])
   @@index([status])

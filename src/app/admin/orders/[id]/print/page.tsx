@@ -27,16 +27,21 @@ export default function AdminPrintRoomPage() {
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
   const [previewUrl, setPreviewUrl] = useState<string | null>(null);
+  const [activeDocIndex, setActiveDocIndex] = useState(0);
+
+  const currentDoc = order?.documents && order.documents.length > 0 
+    ? order.documents[activeDocIndex] 
+    : order;
 
   useEffect(() => {
-    if (order?.fileUrl) {
+    if (currentDoc?.fileUrl) {
       setPreviewUrl(null);
-      fetch(order.fileUrl)
+      fetch(currentDoc.fileUrl)
         .then(res => res.blob())
         .then(blob => setPreviewUrl(URL.createObjectURL(blob)))
         .catch(err => {
           console.error("Failed to fetch inline PDF:", err);
-          setPreviewUrl(order.fileUrl);
+          setPreviewUrl(currentDoc.fileUrl);
         });
     }
     return () => {
@@ -44,7 +49,7 @@ export default function AdminPrintRoomPage() {
         URL.revokeObjectURL(previewUrl);
       }
     };
-  }, [order?.fileUrl]);
+  }, [currentDoc?.fileUrl]);
 
   useEffect(() => {
     if (user && id) {
@@ -95,7 +100,7 @@ export default function AdminPrintRoomPage() {
   return (
     <div className="h-[calc(100vh-6rem)] flex flex-col gap-4 overflow-y-auto lg:overflow-hidden -mx-4 -my-4 sm:-mx-6 sm:-my-6 p-4 sm:p-6 bg-[#0a0a0a]">
       {/* Header */}
-      <div className="flex items-center justify-between shrink-0">
+      <div className="flex items-center justify-between shrink-0 flex-wrap gap-4">
         <div className="flex items-center gap-4">
           <button 
             onClick={() => router.push("/admin/orders")}
@@ -113,18 +118,38 @@ export default function AdminPrintRoomPage() {
         </div>
 
         <div className="flex gap-2">
-          <a
-            href={order.fileUrl}
-            target="_blank"
-            rel="noopener noreferrer"
-            className="flex items-center gap-2 px-4 py-2 bg-blue-500/20 text-blue-400 hover:bg-blue-500/30 rounded-xl text-sm font-medium transition-colors"
-          >
-            <Download className="w-4 h-4" />
-            <span className="hidden sm:inline">Download Original PDF</span>
-            <span className="sm:hidden">Download</span>
-          </a>
+          {currentDoc?.fileUrl && (
+            <a
+              href={currentDoc.fileUrl}
+              target="_blank"
+              rel="noopener noreferrer"
+              className="flex items-center gap-2 px-4 py-2 bg-blue-500/20 text-blue-400 hover:bg-blue-500/30 rounded-xl text-sm font-medium transition-colors"
+            >
+              <Download className="w-4 h-4" />
+              <span className="hidden sm:inline">Download Current PDF</span>
+              <span className="sm:hidden">Download</span>
+            </a>
+          )}
         </div>
       </div>
+
+      {order.documents && order.documents.length > 1 && (
+        <div className="flex gap-2 overflow-x-auto pb-2 shrink-0">
+          {order.documents.map((doc: any, idx: number) => (
+            <button
+              key={idx}
+              onClick={() => setActiveDocIndex(idx)}
+              className={`px-4 py-2 rounded-xl text-sm font-medium whitespace-nowrap transition-colors ${
+                activeDocIndex === idx
+                  ? "bg-violet-600 text-white"
+                  : "bg-white/10 text-white/70 hover:bg-white/20"
+              }`}
+            >
+              Doc {idx + 1}: {doc.fileName}
+            </button>
+          ))}
+        </div>
+      )}
 
       <div className="flex flex-col lg:flex-row gap-6 flex-1 min-h-0 pb-10 lg:pb-0">
         {/* PDF Preview Frame */}
@@ -132,9 +157,9 @@ export default function AdminPrintRoomPage() {
           <div className="bg-white/5 px-4 py-3 flex items-center justify-between border-b border-white/10 shrink-0">
             <div className="flex items-center gap-2 text-sm font-medium text-white/70 truncate mr-2">
               <FileText className="w-4 h-4 shrink-0" />
-              <span className="truncate">{order.fileName}</span>
+              <span className="truncate">{currentDoc.fileName}</span>
             </div>
-            <div className="text-xs text-white/40 shrink-0">{order.totalPages} Pages total</div>
+            <div className="text-xs text-white/40 shrink-0">{currentDoc.totalPages} Pages total</div>
           </div>
           {previewUrl ? (
             <iframe 
@@ -163,38 +188,38 @@ export default function AdminPrintRoomPage() {
             <div className="space-y-5">
               <SettingBlock 
                 label="Pages to Print" 
-                value={order.pagesToPrint === "ALL" ? "All Pages" : `Custom: ${order.customPageRange}`}
+                value={currentDoc.pagesToPrint === "ALL" ? "All Pages" : `Custom: ${currentDoc.customPageRange}`}
                 icon={<Layers className="w-4 h-4" />}
-                highlight={order.pagesToPrint === "CUSTOM"}
+                highlight={currentDoc.pagesToPrint === "CUSTOM"}
               />
 
               <SettingBlock 
                 label="Copies & Collate" 
-                value={`${order.copies} Copies • ${order.collate ? "Collate ON" : "Collate OFF"}`}
+                value={`${currentDoc.copies} Copies • ${currentDoc.collate ? "Collate ON" : "Collate OFF"}`}
                 icon={<Copy className="w-4 h-4" />}
-                highlight={order.copies > 1}
+                highlight={currentDoc.copies > 1}
               />
 
               <SettingBlock 
                 label="Color / Grayscale" 
-                value={order.printColor === "COLOR" ? "Color" : "Black & White (Grayscale)"}
+                value={currentDoc.printColor === "COLOR" ? "Color" : "Black & White (Grayscale)"}
                 icon={<Droplet className="w-4 h-4" />}
-                highlight={order.printColor === "COLOR"}
+                highlight={currentDoc.printColor === "COLOR"}
               />
 
               <div className="h-px w-full bg-white/10 my-2" />
 
               <SettingBlock 
                 label="Paper Size" 
-                value={order.paperSize}
+                value={currentDoc.paperSize}
                 icon={<Maximize className="w-4 h-4" />}
               />
 
               <SettingBlock 
                 label="Page Sizing & Handling" 
                 value={
-                  order.pageSizing === "FIT" ? "Fit" : 
-                  order.pageSizing === "ACTUAL_SIZE" ? "Actual Size" : 
+                  currentDoc.pageSizing === "FIT" ? "Fit" : 
+                  currentDoc.pageSizing === "ACTUAL_SIZE" ? "Actual Size" : 
                   "Shrink oversized pages"
                 }
                 icon={<Settings2 className="w-4 h-4" />}
@@ -203,8 +228,8 @@ export default function AdminPrintRoomPage() {
               <SettingBlock 
                 label="Orientation" 
                 value={
-                  order.orientation === "AUTO" ? "Auto portrait/landscape" : 
-                  order.orientation === "PORTRAIT" ? "Portrait" : 
+                  currentDoc.orientation === "AUTO" ? "Auto portrait/landscape" : 
+                  currentDoc.orientation === "PORTRAIT" ? "Portrait" : 
                   "Landscape"
                 }
                 icon={<Info className="w-4 h-4" />}
@@ -213,15 +238,15 @@ export default function AdminPrintRoomPage() {
               <SettingBlock 
                 label="Print on both sides" 
                 value={
-                  order.printSide === "SINGLE" ? "Single Sided" : 
-                  (order.printSide === "DOUBLE" || order.printSide === "DOUBLE_LONG_EDGE") ? "Double Sided (Long Edge)" : 
+                  currentDoc.printSide === "SINGLE" ? "Single Sided" : 
+                  (currentDoc.printSide === "DOUBLE" || currentDoc.printSide === "DOUBLE_LONG_EDGE") ? "Double Sided (Long Edge)" : 
                   "Double Sided (Short Edge)"
                 }
                 icon={<Layers className="w-4 h-4" />}
-                highlight={order.printSide !== "SINGLE"}
+                highlight={currentDoc.printSide !== "SINGLE"}
               />
 
-              {order.saveInk && (
+              {currentDoc.saveInk && (
                 <div className="flex items-center gap-3 p-3 bg-emerald-500/10 border border-emerald-500/20 rounded-xl mt-4">
                   <CheckCircle2 className="w-5 h-5 text-emerald-400 shrink-0" />
                   <div>
@@ -233,16 +258,16 @@ export default function AdminPrintRoomPage() {
             </div>
           </div>
 
-          {(order.binding || order.lamination || order.instructions) && (
+          {(currentDoc.binding || currentDoc.lamination || currentDoc.instructions || order.instructions) && (
             <div className="glass rounded-3xl p-6 border border-white/10">
               <h3 className="font-bold text-white mb-4">Post-Print Instructions</h3>
               <div className="space-y-3">
-                {order.binding && <div className="text-sm text-white/70 flex items-center gap-2"><CheckCircle2 className="w-4 h-4 text-violet-400"/> Binding Required</div>}
-                {order.lamination && <div className="text-sm text-white/70 flex items-center gap-2"><CheckCircle2 className="w-4 h-4 text-violet-400"/> Lamination Required</div>}
-                {order.instructions && (
-                  <div className="mt-4 p-3 bg-white/5 rounded-xl border border-gray-300 text-sm text-gray-700">
+                {currentDoc.binding && <div className="text-sm text-white/70 flex items-center gap-2"><CheckCircle2 className="w-4 h-4 text-violet-400"/> Binding Required</div>}
+                {currentDoc.lamination && <div className="text-sm text-white/70 flex items-center gap-2"><CheckCircle2 className="w-4 h-4 text-violet-400"/> Lamination Required</div>}
+                {(currentDoc.instructions || order.instructions) && (
+                  <div className="mt-4 p-3 bg-white/5 rounded-xl border border-white/10 text-sm text-white/70">
                     <span className="font-semibold block mb-1">Customer Notes:</span>
-                    &quot;{order.instructions}&quot;
+                    &quot;{currentDoc.instructions || order.instructions}&quot;
                   </div>
                 )}
               </div>

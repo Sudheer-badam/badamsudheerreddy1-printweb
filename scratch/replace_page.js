@@ -1,3 +1,14 @@
+const fs = require('fs');
+const path = require('path');
+
+const targetPath = path.join(__dirname, 'src/app/dashboard/upload/page.tsx');
+
+let content = fs.readFileSync(targetPath, 'utf8');
+
+// I will make replacements to change the state and processing.
+// Wait, a full replace via script is tedious. I will just output the new file directly in a big string in this script.
+
+const newContent = `
 "use client";
 
 import { useState, useCallback, useEffect } from "react";
@@ -173,7 +184,7 @@ export default function UploadPage() {
 
         for (const newFile of validFiles) {
           if (pricing && newFile.size > pricing.maxFileSize) {
-            toast.error(`File ${newFile.name} is too large. Maximum ${formatFileSize(pricing.maxFileSize)}`);
+            toast.error(\`File \${newFile.name} is too large. Maximum \${formatFileSize(pricing.maxFileSize)}\`);
             continue;
           }
 
@@ -186,7 +197,7 @@ export default function UploadPage() {
               totalPages = pdfDoc.getPageCount();
             } catch(e) {
               console.error("Failed to parse PDF", e);
-              toast.error(`Failed to read ${newFile.name}`);
+              toast.error(\`Failed to read \${newFile.name}\`);
               continue;
             }
           }
@@ -371,7 +382,7 @@ export default function UploadPage() {
         const copiedPages = await newPdf.copyPages(originalPdf, uniqueIndices);
         copiedPages.forEach((page) => newPdf.addPage(page));
         const newPdfBytes = await newPdf.save();
-        return new File([newPdfBytes], `${item.file.name.replace('.pdf', '')}_CustomPages.pdf`, { type: "application/pdf" });
+        return new File([newPdfBytes], \`\${item.file.name.replace('.pdf', '')}_CustomPages.pdf\`, { type: "application/pdf" });
       }
     }
     return item.file;
@@ -389,7 +400,7 @@ export default function UploadPage() {
         method: "POST",
         headers: {
           "Content-Type": "application/json",
-          Authorization: `Bearer ${idToken}`,
+          Authorization: \`Bearer \${idToken}\`,
         },
         body: JSON.stringify({
           uid: user.uid,
@@ -401,20 +412,21 @@ export default function UploadPage() {
         }),
       });
 
-      let uploadedDocuments = [];
-      let totalAmount = 0;
-      let totalSubtotal = 0;
+      let completedOrders = 0;
+      let orderId = ""; // To redirect to the last order created, or a list
 
       for (let i = 0; i < fileItems.length; i++) {
         const item = fileItems[i];
         const cost = calculateItemCost(item);
         if (!cost) continue;
         
-        toast.loading(`Processing file ${i+1} of ${fileItems.length}...`, { id: "upload-toast" });
+        toast.loading(\`Processing file \${i+1} of \${fileItems.length}...\`, { id: "upload-toast" });
 
         const fileToUpload = await createExtractPdf(item);
-        const storageKey = `orders/${user.uid}/${Date.now()}-${fileToUpload.name}`;
 
+        const storageKey = \`orders/\${user.uid}/\${Date.now()}-\${fileToUpload.name}\`;
+
+        // We update progress proportionally
         setUploadProgress(Math.floor((i / fileItems.length) * 100) + 5);
         
         const newBlob = await upload(storageKey, fileToUpload, {
@@ -424,62 +436,52 @@ export default function UploadPage() {
         
         setUploadProgress(Math.floor(((i + 1) / fileItems.length) * 100));
 
-        uploadedDocuments.push({
-          fileName: fileToUpload.name,
-          fileUrl: newBlob.url,
-          fileKey: storageKey,
-          fileSize: fileToUpload.size,
-          totalPages: cost.pagesToCharge,
-          colorPages: cost.estimatedColorPages,
-          bwPages: cost.estimatedBwPages,
-          ...item.options,
-          colorPrice: cost.colorPrice,
-          bwPrice: cost.bwPrice,
-          bindingCost: cost.bindingCost,
-          laminationCost: cost.laminationCost,
-          subtotal: cost.subtotal,
-          gstRate: pricing?.gstRate || 0,
-          gstAmount: cost.gstAmount,
-          discount: 0,
-          totalAmount: cost.total,
+        const orderRes = await fetch("/api/orders", {
+          method: "POST",
+          headers: { "Content-Type": "application/json" },
+          body: JSON.stringify({
+            uid: user.uid,
+            fileName: fileToUpload.name,
+            fileUrl: newBlob.url,
+            fileKey: storageKey,
+            fileSize: fileToUpload.size,
+            totalPages: cost.pagesToCharge, // The new file will have this many pages
+            colorPages: cost.estimatedColorPages,
+            bwPages: cost.estimatedBwPages,
+            ...item.options,
+            colorPrice: cost.colorPrice,
+            bwPrice: cost.bwPrice,
+            bindingCost: cost.bindingCost,
+            laminationCost: cost.laminationCost,
+            subtotal: cost.subtotal,
+            gstRate: pricing?.gstRate || 0,
+            gstAmount: cost.gstAmount,
+            discount: 0,
+            totalAmount: cost.total,
+          }),
         });
 
-        totalAmount += cost.total;
-        totalSubtotal += cost.subtotal;
+        if (orderRes.ok) {
+          const order = await orderRes.json();
+          completedOrders++;
+          orderId = order.id;
+        } else {
+          const errorData = await orderRes.json().catch(() => ({}));
+          throw new Error(errorData.error || \`Failed to create order for \${item.file.name}\`);
+        }
       }
 
-      if (uploadedDocuments.length === 0) {
-        toast.dismiss("upload-toast");
-        return;
-      }
-
-      toast.loading("Creating order...", { id: "upload-toast" });
-
-      const orderRes = await fetch("/api/orders", {
-        method: "POST",
-        headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({
-          uid: user.uid,
-          documents: uploadedDocuments,
-          subtotal: totalSubtotal,
-          totalAmount: totalAmount,
-          // We provide a fallback for root fields if needed
-          fileName: uploadedDocuments.length > 1 ? "Multiple Files" : uploadedDocuments[0].fileName,
-          fileUrl: uploadedDocuments[0].fileUrl,
-        }),
-      });
-
-      if (orderRes.ok) {
-        const order = await orderRes.json();
-        toast.dismiss("upload-toast");
+      toast.dismiss("upload-toast");
+      if (completedOrders > 0) {
         setSubmitted(true);
-        toast.success("Order placed successfully!");
+        toast.success(completedOrders > 1 ? \`\${completedOrders} Orders placed successfully!\` : "Order placed successfully!");
         setTimeout(() => {
-          router.push(`/dashboard/orders/${order.id}`);
+          if (completedOrders > 1) {
+            router.push(\`/dashboard/orders\`); // Redirect to list if multiple
+          } else {
+            router.push(\`/dashboard/orders/\${orderId}\`);
+          }
         }, 2000);
-      } else {
-        const errorData = await orderRes.json().catch(() => ({}));
-        throw new Error(errorData.error || "Failed to create order");
       }
     } catch (error: any) {
       toast.dismiss("upload-toast");
@@ -521,11 +523,11 @@ export default function UploadPage() {
             <div 
               key={item.id}
               onClick={() => setActiveFileId(item.id)}
-              className={`flex items-center gap-2 px-4 py-2 rounded-xl cursor-pointer transition-colors border ${
+              className={\`flex items-center gap-2 px-4 py-2 rounded-xl cursor-pointer transition-colors border \${
                 activeFileId === item.id 
                   ? "bg-violet-50 border-violet-500 text-violet-700 font-semibold" 
                   : "bg-white border-gray-200 text-gray-600 hover:bg-gray-50"
-              }`}
+              }\`}
             >
               {item.type === 'pdf' ? <FileText className="w-4 h-4" /> : <FileImage className="w-4 h-4" />}
               <span className="text-sm max-w-[120px] truncate">{item.file.name}</span>
@@ -563,9 +565,9 @@ export default function UploadPage() {
           {fileItems.length === 0 && (
             <div
               {...getRootProps()}
-              className={`upload-zone rounded-3xl p-10 text-center cursor-pointer transition-all ${
+              className={\`upload-zone rounded-3xl p-10 text-center cursor-pointer transition-all \${
                 isDragActive ? "drag-over" : ""
-              }`}
+              }\`}
             >
               <input {...getInputProps()} />
               <div className="space-y-3">
@@ -600,7 +602,7 @@ export default function UploadPage() {
                     />
                   ) : (
                     <iframe 
-                      src={`${activeItem.previewUrl}#view=FitH`} 
+                      src={\`\${activeItem.previewUrl}#view=FitH\`} 
                       className="w-full h-full border-0"
                       title="PDF Preview"
                     />
@@ -734,14 +736,14 @@ export default function UploadPage() {
                       let extraText = '';
                       
                       if (activeItem.options.printColor === 'COLOR' && cp > 0) {
-                        extraText = `(+₹${cp})`;
+                        extraText = \`(+₹\${cp})\`;
                       } else if (activeItem.options.printColor === 'BLACK_AND_WHITE' && bp > 0) {
-                        extraText = `(+₹${bp})`;
+                        extraText = \`(+₹\${bp})\`;
                       } else if (activeItem.options.printColor !== 'COLOR' && activeItem.options.printColor !== 'BLACK_AND_WHITE' && (q.price || 0) > 0) {
-                        extraText = `(+₹${q.price})`;
+                        extraText = \`(+₹\${q.price})\`;
                       }
                       
-                      return { value: q.id, label: `${q.label} ${extraText}`.trim() };
+                      return { value: q.id, label: \`\${q.label} \${extraText}\`.trim() };
                     });
                   })()}
                 />
@@ -789,7 +791,7 @@ export default function UploadPage() {
                 {adminSettings?.enableBinding !== false && (
                   <ToggleField
                     label="Binding"
-                    sublabel={pricing ? `₹${pricing.bindingCost}` : ""}
+                    sublabel={pricing ? \`₹\${pricing.bindingCost}\` : ""}
                     checked={activeItem.options.binding}
                     onChange={(v) => updateItemOptions(activeItem.id, { binding: v })}
                   />
@@ -797,7 +799,7 @@ export default function UploadPage() {
                 {adminSettings?.enableLamination !== false && (
                   <ToggleField
                     label="Lamination"
-                    sublabel={pricing ? `₹${pricing.laminationCost}/sheet` : ""}
+                    sublabel={pricing ? \`₹\${pricing.laminationCost}/sheet\` : ""}
                     checked={activeItem.options.lamination}
                     onChange={(v) => updateItemOptions(activeItem.id, { lamination: v })}
                   />
@@ -837,9 +839,9 @@ export default function UploadPage() {
                 {activeItem && activeCost && (
                   <div className="pb-3 border-b border-gray-200 mb-3">
                     <h4 className="text-sm font-semibold text-[#0B1D3A] mb-2">Current File Breakdown</h4>
-                    <CostRow label={`B&W Pages (${activeCost.estimatedBwPages} × ${activeItem.options.copies})`} value={activeCost.bwCost} />
+                    <CostRow label={\`B&W Pages (\${activeCost.estimatedBwPages} × \${activeItem.options.copies})\`} value={activeCost.bwCost} />
                     {activeItem.options.printColor === "COLOR" && activeCost.colorCost > 0 && (
-                      <CostRow label={`Color Pages (${activeCost.estimatedColorPages} × ${activeItem.options.copies})`} value={activeCost.colorCost} />
+                      <CostRow label={\`Color Pages (\${activeCost.estimatedColorPages} × \${activeItem.options.copies})\`} value={activeCost.colorCost} />
                     )}
                     {activeItem.options.binding && <CostRow label="Binding" value={activeCost.bindingCost} />}
                     {activeItem.options.lamination && <CostRow label="Lamination" value={activeCost.laminationCost} />}
@@ -874,7 +876,7 @@ export default function UploadPage() {
                       <motion.div
                         className="h-full gradient-primary rounded-full"
                         initial={{ width: 0 }}
-                        animate={{ width: `${uploadProgress}%` }}
+                        animate={{ width: \`\${uploadProgress}%\` }}
                         transition={{ duration: 0.3 }}
                       />
                     </div>
@@ -967,27 +969,31 @@ function ToggleField({
   return (
     <div
       onClick={() => onChange(!checked)}
-      className={`flex items-center justify-between p-3 rounded-xl border cursor-pointer transition-all ${
+      className={\`flex items-center justify-between p-3 rounded-xl border cursor-pointer transition-all \${
         checked
           ? "border-violet-500/30 bg-violet-500/10"
           : "border-gray-300 bg-gray-50 hover:border-gray-400"
-      }`}
+      }\`}
     >
       <div>
         <div className="text-sm font-medium text-[#0B1D3A]">{label}</div>
         {sublabel && <div className="text-xs text-gray-400">{sublabel}</div>}
       </div>
       <div
-        className={`w-10 h-5 rounded-full transition-colors ${
+        className={\`w-10 h-5 rounded-full transition-colors \${
           checked ? "bg-violet-600" : "bg-gray-100"
-        }`}
+        }\`}
       >
         <div
-          className={`w-4 h-4 rounded-full bg-white m-0.5 transition-transform ${
+          className={\`w-4 h-4 rounded-full bg-white m-0.5 transition-transform \${
             checked ? "translate-x-5" : "translate-x-0"
-          }`}
+          }\`}
         />
       </div>
     </div>
   );
 }
+`;
+
+fs.writeFileSync(targetPath, newContent);
+console.log("Written successfully");

@@ -112,10 +112,16 @@ export async function POST(req: NextRequest) {
       customPageRange = null,
       pageSizing = "FIT",
       saveInk = false,
+      documents = null, // Array of documents if multi-document order
     } = body;
 
-    if (!uid || !fileName || !fileUrl) {
-      return NextResponse.json({ error: "Missing required fields" }, { status: 400 });
+    if (!uid) {
+      return NextResponse.json({ error: "Missing user ID" }, { status: 400 });
+    }
+    
+    // Support either single document fields OR multiple documents array
+    if ((!fileName || !fileUrl) && (!documents || documents.length === 0)) {
+       return NextResponse.json({ error: "Missing document information" }, { status: 400 });
     }
 
     const user = await prisma.user.findUnique({ where: { firebaseUid: uid } });
@@ -128,13 +134,14 @@ export async function POST(req: NextRequest) {
       data: {
         orderNumber,
         userId: user.id,
-        fileName,
-        fileUrl,
-        fileKey,
-        fileSize,
-        totalPages,
-        colorPages,
-        bwPages,
+        fileName: fileName || (documents && documents[0]?.fileName) || "Multiple Files",
+        fileUrl: fileUrl || (documents && documents[0]?.fileUrl) || "",
+        fileKey: fileKey || (documents && documents[0]?.fileKey) || "",
+        fileSize: fileSize || (documents && documents.reduce((acc: number, d: any) => acc + (d.fileSize || 0), 0)) || 0,
+        documents,
+        totalPages: totalPages || (documents && documents.reduce((acc: number, d: any) => acc + (d.totalPages || 0), 0)) || 0,
+        colorPages: colorPages || (documents && documents.reduce((acc: number, d: any) => acc + (d.colorPages || 0), 0)) || 0,
+        bwPages: bwPages || (documents && documents.reduce((acc: number, d: any) => acc + (d.bwPages || 0), 0)) || 0,
         paperSize,
         orientation: orientation === "AUTO" ? "PORTRAIT" : orientation,
         printSide,

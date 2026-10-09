@@ -486,13 +486,23 @@ export default function OrderDetailPage() {
                         </div>
                       <div class="row"><span>Date & Time:</span> <strong>${new Date().toLocaleString('en-IN', { dateStyle: 'medium', timeStyle: 'short' })}</strong></div>
                       <div class="row"><span>Customer:</span> <strong>${user?.displayName || user?.email || "Customer"}</strong></div>
-                      <div class="row"><span>Document:</span> <strong>${order.fileName}</strong></div>
                       <br/>
                       <h3 style="margin-bottom: 15px; color: #4b5563;">Print Details</h3>
-                      <div class="row"><span>Total Pages:</span> <strong>${order.totalPages}</strong></div>
-                      <div class="row"><span>Copies:</span> <strong>${order.copies}</strong></div>
-                      <div class="row"><span>Color Mode:</span> <strong>${order.printColor}</strong></div>
-                      <div class="row"><span>Paper Size:</span> <strong>${order.paperSize}</strong></div>
+                      ${order.documents && order.documents.length > 0 
+                        ? order.documents.map((d: any, i: number) => `
+                            <div class="row" style="background: #f9fafb; padding: 10px; border-radius: 8px; margin-bottom: 8px; border: none; display: flex; flex-direction: column; gap: 4px;">
+                                <div style="font-weight: bold; color: #7c3aed; font-size: 14px;">Doc ${i+1}: ${d.fileName}</div>
+                                <div style="font-size: 12px; color: #6b7280;">${d.totalPages} Pages • ${d.copies} Copies • ${d.printColor} • ${d.paperSize}</div>
+                            </div>
+                          `).join('')
+                        : `
+                          <div class="row"><span>Document:</span> <strong>${order.fileName}</strong></div>
+                          <div class="row"><span>Total Pages:</span> <strong>${order.totalPages}</strong></div>
+                          <div class="row"><span>Copies:</span> <strong>${order.copies}</strong></div>
+                          <div class="row"><span>Color Mode:</span> <strong>${order.printColor}</strong></div>
+                          <div class="row"><span>Paper Size:</span> <strong>${order.paperSize}</strong></div>
+                        `
+                      }
                       <br/>
                       <div class="row total"><span>Total Amount Paid:<br><span style="font-size: 10px; color: #666; font-weight: bold; text-transform: uppercase;">(Incl. of GST taxes)</span></span> <span>₹${order.totalAmount.toFixed(2)}</span></div>
                       <br/><br/><br/>
@@ -590,23 +600,48 @@ export default function OrderDetailPage() {
       <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
         <div className="glass rounded-2xl p-5 border border-gray-200">
           <h3 className="font-semibold text-[#0B1D3A] mb-4 text-sm">Print Specifications</h3>
-          <div className="space-y-2.5 text-sm">
-            <DetailRow label="Paper Size" value={order.paperSize} />
-            <DetailRow label="Orientation" value={order.orientation} />
-            <DetailRow label="Print Side" value={order.printSide === "SINGLE" ? "Single Side" : "Double Side"} />
-            <DetailRow label="Color Mode" value={order.printColor === "COLOR" ? "Full Color" : "Black & White"} />
-            <DetailRow label="Copies" value={order.copies.toString()} />
-            <DetailRow label="Total Pages" value={order.totalPages.toString()} />
-            {order.printColor === "COLOR" && (
-              <>
-                <DetailRow label="Color Pages" value={order.colorPages.toString()} />
-                <DetailRow label="B&W Pages" value={order.bwPages.toString()} />
-              </>
-            )}
-            <DetailRow label="Binding" value={order.binding ? "Yes" : "No"} />
-            <DetailRow label="Lamination" value={order.lamination ? "Yes" : "No"} />
-            <DetailRow label="Paper Quality" value={order.paperQuality} />
-          </div>
+          {order.documents && order.documents.length > 0 ? (
+            <div className="space-y-6">
+              {order.documents.map((doc: any, index: number) => (
+                <div key={index} className="space-y-2.5 text-sm pb-4 border-b border-gray-100 last:border-0 last:pb-0">
+                  <div className="font-semibold text-violet-600 mb-2 truncate" title={doc.fileName}>{doc.fileName}</div>
+                  <DetailRow label="Paper Size" value={doc.paperSize} />
+                  <DetailRow label="Orientation" value={doc.orientation} />
+                  <DetailRow label="Print Side" value={doc.printSide === "SINGLE" ? "Single Side" : "Double Side"} />
+                  <DetailRow label="Color Mode" value={doc.printColor === "COLOR" ? "Full Color" : "Black & White"} />
+                  <DetailRow label="Copies" value={doc.copies.toString()} />
+                  <DetailRow label="Total Pages" value={doc.totalPages.toString()} />
+                  {doc.printColor === "COLOR" && (
+                    <>
+                      <DetailRow label="Color Pages" value={doc.colorPages.toString()} />
+                      <DetailRow label="B&W Pages" value={doc.bwPages.toString()} />
+                    </>
+                  )}
+                  <DetailRow label="Binding" value={doc.binding ? "Yes" : "No"} />
+                  <DetailRow label="Lamination" value={doc.lamination ? "Yes" : "No"} />
+                  <DetailRow label="Paper Quality" value={doc.paperQuality} />
+                </div>
+              ))}
+            </div>
+          ) : (
+            <div className="space-y-2.5 text-sm">
+              <DetailRow label="Paper Size" value={order.paperSize} />
+              <DetailRow label="Orientation" value={order.orientation} />
+              <DetailRow label="Print Side" value={order.printSide === "SINGLE" ? "Single Side" : "Double Side"} />
+              <DetailRow label="Color Mode" value={order.printColor === "COLOR" ? "Full Color" : "Black & White"} />
+              <DetailRow label="Copies" value={order.copies.toString()} />
+              <DetailRow label="Total Pages" value={order.totalPages.toString()} />
+              {order.printColor === "COLOR" && (
+                <>
+                  <DetailRow label="Color Pages" value={order.colorPages.toString()} />
+                  <DetailRow label="B&W Pages" value={order.bwPages.toString()} />
+                </>
+              )}
+              <DetailRow label="Binding" value={order.binding ? "Yes" : "No"} />
+              <DetailRow label="Lamination" value={order.lamination ? "Yes" : "No"} />
+              <DetailRow label="Paper Quality" value={order.paperQuality} />
+            </div>
+          )}
         </div>
 
         <div className="glass rounded-2xl p-5 border border-gray-200">
@@ -690,10 +725,10 @@ export default function OrderDetailPage() {
           <motion.div
             initial={{ opacity: 0, scale: 0.95 }}
             animate={{ opacity: 1, scale: 1 }}
-            className="bg-white rounded-3xl w-full max-w-2xl overflow-hidden shadow-2xl flex flex-col md:flex-row"
+            className="bg-white rounded-3xl w-full max-w-2xl max-h-[90vh] overflow-hidden shadow-2xl flex flex-col md:flex-row"
           >
             {/* Left side: Payment Methods */}
-            <div className="w-full md:w-1/3 bg-gray-50 border-r border-gray-100 p-6">
+            <div className="w-full md:w-1/3 bg-gray-50 border-r border-gray-100 p-6 flex flex-col overflow-y-auto">
               <h3 className="text-lg font-bold text-[#0B1D3A] mb-6">Payment Method</h3>
               <div className="space-y-3">
                 <button
@@ -720,7 +755,7 @@ export default function OrderDetailPage() {
             </div>
 
             {/* Right side: Payment Details */}
-            <div className="w-full md:w-2/3 p-6 md:p-8 flex flex-col">
+            <div className="w-full md:w-2/3 p-6 md:p-8 flex flex-col overflow-y-auto">
               <div className="flex justify-between items-start mb-6">
                 <div>
                   <h3 className="text-xl font-bold text-[#0B1D3A]">
