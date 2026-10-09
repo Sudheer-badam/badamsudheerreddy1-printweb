@@ -177,7 +177,7 @@ export default function UploadPage() {
             continue;
           }
 
-          let type: "pdf" | "image" = newFile.type.startsWith("image/") ? "image" : "pdf";
+          const type: "pdf" | "image" = newFile.type.startsWith("image/") ? "image" : "pdf";
           let totalPages = 1;
 
           if (type === "pdf") {
@@ -371,7 +371,7 @@ export default function UploadPage() {
         const copiedPages = await newPdf.copyPages(originalPdf, uniqueIndices);
         copiedPages.forEach((page) => newPdf.addPage(page));
         const newPdfBytes = await newPdf.save();
-        return new File([newPdfBytes], `${item.file.name.replace('.pdf', '')}_CustomPages.pdf`, { type: "application/pdf" });
+        return new File([newPdfBytes as any], `${item.file.name.replace('.pdf', '')}_CustomPages.pdf`, { type: "application/pdf" });
       }
     }
     return item.file;
@@ -401,7 +401,7 @@ export default function UploadPage() {
         }),
       });
 
-      let uploadedDocuments = [];
+      const uploadedDocuments: any[] = [];
       let totalAmount = 0;
       let totalSubtotal = 0;
 

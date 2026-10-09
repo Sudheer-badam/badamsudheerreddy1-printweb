@@ -58,6 +58,7 @@ interface OrderDetail {
   gstRate: number;
   gstAmount: number;
   discount: number;
+  documents?: any[];
   totalAmount: number;
   status: string;
   paymentStatus: string;

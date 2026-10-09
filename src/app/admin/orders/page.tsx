@@ -43,6 +43,7 @@ interface Order {
   adminNotes: string | null;
   paymentProofUrl: string | null;
   user: { id: string; name: string; email: string; phone: string };
+  documents?: any[];
 }
 
 const STATUSES = [
