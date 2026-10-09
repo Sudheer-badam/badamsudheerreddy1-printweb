@@ -68,10 +68,63 @@ interface FileItem {
   id: string;
   file: File;
   previewUrl: string;
+  thumbnailUrl?: string;
   type: "pdf" | "image";
   analysis: FileAnalysis;
   options: PrintOptions;
 }
+
+const generatePdfThumbnail = async (file: File): Promise<string | null> => {
+  return new Promise((resolve) => {
+    try {
+      const loadPdf = async () => {
+        let pdfjsLib = (window as any).pdfjsLib;
+        
+        if (!pdfjsLib) {
+          await new Promise<void>((res, rej) => {
+            const script = document.createElement('script');
+            script.src = 'https://cdnjs.cloudflare.com/ajax/libs/pdf.js/3.11.174/pdf.min.js';
+            script.onload = () => {
+              pdfjsLib = (window as any).pdfjsLib;
+              pdfjsLib.GlobalWorkerOptions.workerSrc = 'https://cdnjs.cloudflare.com/ajax/libs/pdf.js/3.11.174/pdf.worker.min.js';
+              res();
+            };
+            script.onerror = rej;
+            document.head.appendChild(script);
+          });
+        }
+
+        const arrayBuffer = await file.arrayBuffer();
+        const loadingTask = pdfjsLib.getDocument(arrayBuffer);
+        const pdf = await loadingTask.promise;
+        const page = await pdf.getPage(1);
+        
+        const viewport = page.getViewport({ scale: 1.5 });
+        const canvas = document.createElement('canvas');
+        const context = canvas.getContext('2d');
+        
+        if (!context) {
+          resolve(null);
+          return;
+        }
+        
+        canvas.height = viewport.height;
+        canvas.width = viewport.width;
+        
+        await page.render({ canvasContext: context, viewport: viewport }).promise;
+        resolve(canvas.toDataURL('image/jpeg', 0.8));
+      };
+      
+      loadPdf().catch((e) => {
+        console.error("Error inside loadPdf", e);
+        resolve(null);
+      });
+    } catch (error) {
+      console.error("Error generating PDF thumbnail:", error);
+      resolve(null);
+    }
+  });
+};
 
 const getPrintablePageCount = (rangeStr: string, totalPages: number): number => {
   if (!rangeStr.trim()) return 0;
@@ -179,11 +232,13 @@ export default function UploadPage() {
 
           const type: "pdf" | "image" = newFile.type.startsWith("image/") ? "image" : "pdf";
           let totalPages = 1;
+          let thumbnailUrl: string | undefined;
 
           if (type === "pdf") {
             try {
               const pdfDoc = await PDFDocument.load(await newFile.arrayBuffer());
               totalPages = pdfDoc.getPageCount();
+              thumbnailUrl = (await generatePdfThumbnail(newFile)) || undefined;
             } catch(e) {
               console.error("Failed to parse PDF", e);
               toast.error(`Failed to read ${newFile.name}`);
@@ -197,6 +252,7 @@ export default function UploadPage() {
             id,
             file: newFile,
             previewUrl: URL.createObjectURL(newFile),
+            thumbnailUrl,
             type,
             analysis: {
               totalPages,
@@ -595,6 +651,12 @@ export default function UploadPage() {
                   {activeItem.type === 'image' ? (
                     <img 
                       src={activeItem.previewUrl} 
+                      alt="Preview" 
+                      className="max-w-full max-h-full object-contain"
+                    />
+                  ) : activeItem.thumbnailUrl ? (
+                    <img 
+                      src={activeItem.thumbnailUrl} 
                       alt="Preview" 
                       className="max-w-full max-h-full object-contain"
                     />
