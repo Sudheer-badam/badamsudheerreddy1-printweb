@@ -152,9 +152,9 @@ export default function UploadPage() {
     async (acceptedFiles: File[]) => {
       if (!acceptedFiles.length) return;
 
-      const validFiles = acceptedFiles.filter(f => f.type === "application/pdf");
+      const validFiles = acceptedFiles.filter(f => f.type === "application/pdf" || f.type === "image/jpeg" || f.type === "image/png" || f.type === "image/jpg");
       if (validFiles.length !== acceptedFiles.length) {
-        toast.error("Only PDF files are allowed");
+        toast.error("Only PDF, JPEG, and PNG files are allowed");
         if (!validFiles.length) return;
       }
 
@@ -179,14 +179,51 @@ export default function UploadPage() {
         }
 
         for (const newFile of validFiles) {
-          if (!file && newFile === validFiles[0]) {
+          if (!file && newFile === validFiles[0] && newFile.type === "application/pdf") {
              mergedPdf = await PDFDocument.load(await newFile.arrayBuffer());
              continue;
           }
-          const pdfToMerge = await PDFDocument.load(await newFile.arrayBuffer());
-          const copiedPages = await mergedPdf.copyPages(pdfToMerge, pdfToMerge.getPageIndices());
-          copiedPages.forEach((page) => mergedPdf.addPage(page));
-          baseName = "Merged_Document.pdf";
+
+          if (newFile.type === "application/pdf") {
+            const pdfToMerge = await PDFDocument.load(await newFile.arrayBuffer());
+            const copiedPages = await mergedPdf.copyPages(pdfToMerge, pdfToMerge.getPageIndices());
+            copiedPages.forEach((page) => mergedPdf.addPage(page));
+          } else if (newFile.type.startsWith("image/")) {
+            const imageBuffer = await newFile.arrayBuffer();
+            let image;
+            if (newFile.type === "image/jpeg" || newFile.type === "image/jpg") {
+              image = await mergedPdf.embedJpg(imageBuffer);
+            } else if (newFile.type === "image/png") {
+              image = await mergedPdf.embedPng(imageBuffer);
+            }
+            
+            if (image) {
+              const page = mergedPdf.addPage();
+              const { width, height } = page.getSize();
+              const maxWidth = width - 40;
+              const maxHeight = height - 40;
+              
+              const imgWidth = image.width;
+              const imgHeight = image.height;
+              
+              const scale = Math.min(maxWidth / imgWidth, maxHeight / imgHeight);
+              const scaledWidth = imgWidth * scale;
+              const scaledHeight = imgHeight * scale;
+              
+              page.drawImage(image, {
+                x: width / 2 - scaledWidth / 2,
+                y: height / 2 - scaledHeight / 2,
+                width: scaledWidth,
+                height: scaledHeight,
+              });
+            }
+          }
+          
+          if (validFiles.length > 1 || file) {
+            baseName = "Merged_Document.pdf";
+          } else if (newFile.type.startsWith("image/")) {
+            baseName = newFile.name.replace(/\.[^/.]+$/, "") + ".pdf";
+          }
         }
 
         const mergedPdfBytes = await mergedPdf.save();
@@ -201,10 +238,10 @@ export default function UploadPage() {
           bwPages: actualPageCount,
           paperSize: "A4",
         });
-        toast.success("PDFs analyzed and ready!");
+        toast.success("Files analyzed and ready!");
       } catch (error) {
-        console.error("PDF analysis error:", error);
-        toast.error("Failed to read PDF file(s).");
+        console.error("File analysis error:", error);
+        toast.error("Failed to read file(s).");
       } finally {
         setAnalyzing(false);
       }
@@ -214,7 +251,11 @@ export default function UploadPage() {
 
   const { getRootProps, getInputProps, isDragActive } = useDropzone({
     onDrop,
-    accept: { "application/pdf": [".pdf"] },
+    accept: { 
+      "application/pdf": [".pdf"],
+      "image/jpeg": [".jpg", ".jpeg"],
+      "image/png": [".png"]
+    },
   });
 
   const calculateCost = () => {
@@ -418,8 +459,8 @@ export default function UploadPage() {
   return (
     <div className="space-y-6">
       <div>
-        <h1 className="text-2xl font-bold text-[#0B1D3A]">Upload PDF</h1>
-        <p className="text-gray-500 mt-1">Upload your PDF and configure print options</p>
+        <h1 className="text-2xl font-bold text-[#0B1D3A]">Upload File</h1>
+        <p className="text-gray-500 mt-1">Upload your PDF or Images and configure print options</p>
       </div>
 
       <div className="grid grid-cols-1 xl:grid-cols-3 gap-6">
@@ -438,10 +479,10 @@ export default function UploadPage() {
                 <Upload className="w-12 h-12 text-gray-400 mx-auto" />
                 <div>
                   <p className="font-medium text-[#0B1D3A]">
-                    {isDragActive ? "Drop your PDFs here" : "Drag & drop PDFs or click to browse"}
+                    {isDragActive ? "Drop your files here" : "Drag & drop PDFs/Images or click to browse"}
                   </p>
                   <p className="text-sm text-gray-500 mt-1">
-                    PDFs only • Max {pricing ? formatFileSize(pricing.maxFileSize) : "50MB"}
+                    PDF, JPEG, PNG • Max {pricing ? formatFileSize(pricing.maxFileSize) : "50MB"}
                   </p>
                 </div>
               </div>
@@ -466,7 +507,7 @@ export default function UploadPage() {
                     onClick={() => {
                       const input = document.createElement("input");
                       input.type = "file";
-                      input.accept = "application/pdf";
+                      input.accept = "application/pdf,image/jpeg,image/png";
                       input.multiple = true;
                       input.onchange = (e) => {
                         const files = Array.from((e.target as HTMLInputElement).files || []);
@@ -475,9 +516,9 @@ export default function UploadPage() {
                       input.click();
                     }}
                     className="px-3 py-1.5 rounded-xl bg-violet-50 text-violet-600 hover:bg-violet-100 transition-colors text-xs font-semibold"
-                    title="Add More PDF"
+                    title="Add More Files"
                   >
-                    + Add More PDF
+                    + Add More Files
                   </button>
                   <button
                     onClick={() => { setFile(null); setFileAnalysis(null); }}
@@ -492,7 +533,7 @@ export default function UploadPage() {
               {analyzing ? (
                 <div className="w-full h-[500px] rounded-2xl bg-gray-50 border border-gray-200 flex flex-col items-center justify-center space-y-3">
                   <Loader2 className="w-10 h-10 text-violet-400 animate-spin" />
-                  <p className="text-gray-500 font-medium">Analyzing PDF...</p>
+                  <p className="text-gray-500 font-medium">Analyzing File(s)...</p>
                 </div>
               ) : fileUrl ? (
                 <div className="w-full h-[500px] rounded-2xl overflow-hidden border border-gray-200 bg-gray-50 flex items-center justify-center">
