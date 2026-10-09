@@ -20,9 +20,6 @@ import { useRouter } from "next/navigation";
 import { toast } from "sonner";
 import { formatCurrency, formatFileSize } from "@/lib/utils";
 import { upload } from '@vercel/blob/client';
-import dynamic from 'next/dynamic';
-
-const PdfPreview = dynamic(() => import('@/components/PdfPreview'), { ssr: false });
 
 interface Pricing {
   colorPrice: number;
@@ -602,7 +599,14 @@ export default function UploadPage() {
                       className="max-w-full max-h-full object-contain"
                     />
                   ) : (
-                    <PdfPreview url={activeItem.previewUrl} />
+                    <div className="w-full h-full flex flex-col items-center justify-center bg-gray-50 text-gray-400 space-y-4 p-6 text-center">
+                      <div className="w-24 h-24 bg-red-100 rounded-2xl flex items-center justify-center mb-2 shadow-sm">
+                        <FileText className="w-12 h-12 text-red-500" />
+                      </div>
+                      <p className="font-bold text-gray-700 text-lg line-clamp-1">{activeItem.file.name}</p>
+                      <p className="text-sm font-medium">PDF Document • {formatFileSize(activeItem.file.size)}</p>
+                      <p className="text-xs text-gray-400 max-w-[250px] mt-2">Ready to upload and print. Settings below will be applied.</p>
+                    </div>
                   )}
                 </div>
               ) : null}
