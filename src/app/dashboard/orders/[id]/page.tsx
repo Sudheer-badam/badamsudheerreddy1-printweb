@@ -118,59 +118,18 @@ export default function OrderDetailPage() {
   const adminUpiId = "gpay-12208028036@okbizaxis";
   const adminName = "SUDHEER REDDY PRINTING SHOP";
 
-  // Realistic 10-second Simulation for Demo Purposes
   useEffect(() => {
     let interval: NodeJS.Timeout;
-    
-    // DEMO: Automatically trigger success after 10 seconds (when timeLeft drops from 240 to 230)
-    if (isPolling && timeLeft === 230) {
-      setIsPolling(false);
-      const fakeUtr = Math.floor(100000000000 + Math.random() * 900000000000).toString();
-      setTransactionId(fakeUtr);
-      
-      const autoSubmit = async () => {
-        setPaying(true);
-        try {
-          const res = await fetch("/api/payments", {
-            method: "POST",
-            headers: { "Content-Type": "application/json" },
-            body: JSON.stringify({
-              uid: user?.uid,
-              orderId: order?.id,
-              amount: order?.totalAmount,
-              method: "UPI",
-              transactionId: fakeUtr,
-            }),
-          });
-          if (res.ok) {
-            toast.success("Payment verified and linked to your bank account!");
-            setShowPaymentModal(false);
-            fetchOrder();
-          } else {
-            toast.error("Payment verification failed.");
-          }
-        } catch (err) {
-          toast.error("Payment verification failed.");
-        } finally {
-          setPaying(false);
-        }
-      };
-      
-      toast.success("Payment detected! Generating receipt...");
-      autoSubmit();
-      return;
-    }
-
     if (isPolling && timeLeft > 0) {
       interval = setInterval(() => {
         setTimeLeft(prev => prev - 1);
       }, 1000);
     } else if (isPolling && timeLeft === 0) {
       setIsPolling(false);
-      toast.error("Auto-fetch timed out. Please enter the UTR manually.");
+      toast.error("Auto-fetch timed out. Please enter the UTR manually or upload screenshot.");
     }
     return () => clearInterval(interval);
-  }, [isPolling, timeLeft, user, order]);
+  }, [isPolling, timeLeft]);
 
   const handleRazorpay = async () => {
     if (!order || !user) return;
@@ -861,18 +820,13 @@ export default function OrderDetailPage() {
               </div>
 
               {/* Transaction Input Form (Fallback) */}
-              {paymentMethod === "UPI" && !isPolling && (
+              {paymentMethod === "UPI" && (
                 <motion.div 
                   initial={{ opacity: 0, y: 10 }}
                   animate={{ opacity: 1, y: 0 }}
                   className="mt-2 pt-6 border-t border-gray-100"
                 >
                   <form onSubmit={handlePayment} className="space-y-4">
-                    <div className="bg-amber-50 border border-amber-200 rounded-xl p-3 mb-4">
-                       <p className="text-xs text-amber-800">
-                         ⚠️ Auto-fetch timed out. Please enter the 12-digit UTR/Transaction Number manually from your UPI app.
-                       </p>
-                    </div>
                     <div className="bg-violet-50 border-2 border-dashed border-violet-200 rounded-2xl p-5 mb-5 relative">
                       <div className="absolute -top-3 left-4 bg-violet-100 text-violet-700 text-xs font-bold px-2 py-1 rounded-lg">
                         Required Proof
