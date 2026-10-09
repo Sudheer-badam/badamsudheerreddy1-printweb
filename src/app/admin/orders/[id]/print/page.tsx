@@ -180,7 +180,7 @@ export default function AdminPrintRoomPage() {
           <div className="glass rounded-3xl p-6 border border-amber-500/30 shadow-[0_0_30px_rgba(245,158,11,0.1)] relative overflow-hidden">
             <div className="absolute top-0 left-0 w-1 h-full bg-amber-500" />
             
-            <h2 className="text-lg font-bold text-white flex items-center gap-2 mb-6">
+            <h2 className="text-lg font-bold text-gray-900 flex items-center gap-2 mb-6">
               <Settings2 className="w-5 h-5 text-amber-500" />
               Printer Settings
             </h2>
@@ -207,7 +207,7 @@ export default function AdminPrintRoomPage() {
                 highlight={currentDoc.printColor === "COLOR"}
               />
 
-              <div className="h-px w-full bg-white/10 my-2" />
+              <div className="h-px w-full bg-gray-200 my-2" />
 
               <SettingBlock 
                 label="Paper Size" 
@@ -259,14 +259,14 @@ export default function AdminPrintRoomPage() {
           </div>
 
           {(currentDoc.binding || currentDoc.lamination || currentDoc.instructions || order.instructions) && (
-            <div className="glass rounded-3xl p-6 border border-white/10">
-              <h3 className="font-bold text-white mb-4">Post-Print Instructions</h3>
+            <div className="glass rounded-3xl p-6 border border-gray-200">
+              <h3 className="font-bold text-gray-900 mb-4">Post-Print Instructions</h3>
               <div className="space-y-3">
-                {currentDoc.binding && <div className="text-sm text-white/70 flex items-center gap-2"><CheckCircle2 className="w-4 h-4 text-violet-400"/> Binding Required</div>}
-                {currentDoc.lamination && <div className="text-sm text-white/70 flex items-center gap-2"><CheckCircle2 className="w-4 h-4 text-violet-400"/> Lamination Required</div>}
+                {currentDoc.binding && <div className="text-sm text-gray-700 flex items-center gap-2"><CheckCircle2 className="w-4 h-4 text-violet-600"/> Binding Required</div>}
+                {currentDoc.lamination && <div className="text-sm text-gray-700 flex items-center gap-2"><CheckCircle2 className="w-4 h-4 text-violet-600"/> Lamination Required</div>}
                 {(currentDoc.instructions || order.instructions) && (
-                  <div className="mt-4 p-3 bg-white/5 rounded-xl border border-white/10 text-sm text-white/70">
-                    <span className="font-semibold block mb-1">Customer Notes:</span>
+                  <div className="mt-4 p-3 bg-gray-50 rounded-xl border border-gray-200 text-sm text-gray-700">
+                    <span className="font-semibold block mb-1 text-gray-900">Customer Notes:</span>
                     &quot;{currentDoc.instructions || order.instructions}&quot;
                   </div>
                 )}
@@ -282,8 +282,8 @@ export default function AdminPrintRoomPage() {
 function SettingBlock({ label, value, icon, highlight = false }: { label: string, value: string, icon: React.ReactNode, highlight?: boolean }) {
   return (
     <div className="flex flex-col gap-1">
-      <div className="text-xs font-medium text-white/40 uppercase tracking-wider">{label}</div>
-      <div className={`flex items-center gap-2 text-sm font-semibold p-2.5 rounded-xl border ${highlight ? 'bg-amber-500/10 border-amber-500/30 text-amber-400' : 'bg-white/5 border-white/5 text-white'}`}>
+      <div className="text-xs font-bold text-gray-400 uppercase tracking-wider">{label}</div>
+      <div className={`flex items-center gap-2 text-sm font-semibold p-2.5 rounded-xl border ${highlight ? 'bg-amber-50 border-amber-200 text-amber-600' : 'bg-white/50 border-gray-200 text-gray-700'}`}>
         <span className="opacity-70">{icon}</span>
         {value}
       </div>
