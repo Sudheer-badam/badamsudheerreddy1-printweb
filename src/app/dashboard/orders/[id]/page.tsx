@@ -115,7 +115,7 @@ export default function OrderDetailPage() {
   const [comment, setComment] = useState("");
   const [submittingReview, setSubmittingReview] = useState(false);
   
-  const adminUpiId = "8688509699-1@okbizaxis";
+  const adminUpiId = "gpay-12208028036@okbizaxis";
   const adminName = "SUDHEER REDDY PRINTING SHOP";
 
   // Realistic 10-second Simulation for Demo Purposes
