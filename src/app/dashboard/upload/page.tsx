@@ -20,9 +20,9 @@ import { useRouter } from "next/navigation";
 import { toast } from "sonner";
 import { formatCurrency, formatFileSize } from "@/lib/utils";
 import { upload } from '@vercel/blob/client';
-import { Document, Page, pdfjs } from 'react-pdf';
+import dynamic from 'next/dynamic';
 
-pdfjs.GlobalWorkerOptions.workerSrc = `//unpkg.com/pdfjs-dist@${pdfjs.version}/build/pdf.worker.min.mjs`;
+const PdfPreview = dynamic(() => import('@/components/PdfPreview'), { ssr: false });
 
 interface Pricing {
   colorPrice: number;
@@ -602,21 +602,7 @@ export default function UploadPage() {
                       className="max-w-full max-h-full object-contain"
                     />
                   ) : (
-                    <div className="w-full h-full overflow-y-auto flex items-start justify-center pt-4 custom-scrollbar">
-                      <Document
-                        file={activeItem.previewUrl}
-                        loading={<Loader2 className="w-8 h-8 text-violet-400 animate-spin" />}
-                        error={<p className="text-gray-500 text-sm">Preview not available.</p>}
-                      >
-                        <Page 
-                          pageNumber={1} 
-                          renderTextLayer={false}
-                          renderAnnotationLayer={false}
-                          width={350}
-                          className="shadow-lg"
-                        />
-                      </Document>
-                    </div>
+                    <PdfPreview url={activeItem.previewUrl} />
                   )}
                 </div>
               ) : null}
