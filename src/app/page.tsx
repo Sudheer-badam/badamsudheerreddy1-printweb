@@ -115,11 +115,11 @@ export default function HomePage() {
               <div className="inline-flex items-center gap-2 px-4 py-1.5 rounded-full text-xs sm:text-sm font-semibold mb-6 shadow-sm"
                 style={{ background: "rgba(45,99,255,0.12)", color: "#2D63FF", border: "1px solid rgba(45,99,255,0.22)" }}>
                 <Star className="w-3.5 h-3.5 fill-current" />
-                Smart Online Printing Management
+                PRINT DOCKER • Smart Online Printing
               </div>
               <h1 className="text-4xl md:text-5xl lg:text-6xl font-extrabold leading-[1.15] mb-6 tracking-tight" style={{ color: "#0B1D3A" }}>
-                Print Smarter,<br />
-                <span style={{ color: "#2D63FF" }}>Faster & Easier</span>
+                PRINT DOCKER<br />
+                <span style={{ color: "#2D63FF" }}>Print Smarter, Faster & Easier</span>
               </h1>
               <p className="text-base sm:text-lg font-medium mb-8 max-w-lg" style={{ color: "#444B54", lineHeight: "1.75" }}>
                 Upload PDFs from your phone, get instant quotes, track your order live, and receive WhatsApp alerts at every step. Professional printing, completely online.
