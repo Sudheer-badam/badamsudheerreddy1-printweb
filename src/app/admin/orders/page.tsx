@@ -2,6 +2,7 @@
 
 import { useState, useEffect } from "react";
 import { motion } from "framer-motion";
+import Link from "next/link";
 import {
   Search,
   Filter,
@@ -271,17 +272,23 @@ export default function AdminOrdersPage() {
             </button>
           ))}
           <div className="w-px bg-gray-100 mx-1" />
-          {["", "PENDING", "PAID"].map((p) => (
+          {[
+            { label: "All Payments", value: "" },
+            { label: "Verification Pending", value: "SUBMITTED" },
+            { label: "Paid", value: "PAID" },
+            { label: "Pending", value: "PENDING" },
+            { label: "Rejected", value: "REJECTED" },
+          ].map((p) => (
             <button
-              key={p}
-              onClick={() => { setPaymentFilter(p); setPage(1); }}
+              key={p.value}
+              onClick={() => { setPaymentFilter(p.value); setPage(1); }}
               className={`px-3 py-1.5 rounded-lg text-xs font-medium whitespace-nowrap transition-all ${
-                paymentFilter === p
-                  ? "bg-green-600 text-white"
+                paymentFilter === p.value
+                  ? "bg-blue-600 text-white"
                   : "glass border border-gray-300 text-gray-500 hover:text-[#0B1D3A]"
               }`}
             >
-              {p === "" ? "All Payments" : p === "PAID" ? "Paid" : "Unpaid"}
+              {p.label}
             </button>
           ))}
         </div>
@@ -363,16 +370,26 @@ export default function AdminOrdersPage() {
                       </select>
                     </td>
                     <td className="px-4 py-3">
-                      <select
-                        value={order.paymentStatus}
-                        onChange={(e) => updatePaymentStatus(order.id, e.target.value)}
-                        disabled={updating === order.id}
-                        className={`text-xs px-2 py-1 rounded-lg border cursor-pointer bg-transparent focus:outline-none ${PAYMENT_STATUS_COLORS[order.paymentStatus]}`}
-                      >
-                        {["PENDING", "PAID", "FAILED", "REFUNDED"].map((s) => (
-                          <option key={s} value={s} className="bg-white text-[#0B1D3A]">{s}</option>
-                        ))}
-                      </select>
+                      <div className="flex flex-col gap-1 items-start">
+                        <select
+                          value={order.paymentStatus}
+                          onChange={(e) => updatePaymentStatus(order.id, e.target.value)}
+                          disabled={updating === order.id}
+                          className={`text-xs px-2 py-1 rounded-lg border cursor-pointer bg-transparent focus:outline-none ${PAYMENT_STATUS_COLORS[order.paymentStatus] || "bg-gray-100 text-gray-700"}`}
+                        >
+                          {["PENDING", "SUBMITTED", "UNDER_REVIEW", "PAID", "REJECTED", "CANCELLED", "FAILED", "REFUNDED"].map((s) => (
+                            <option key={s} value={s} className="bg-white text-[#0B1D3A]">{s}</option>
+                          ))}
+                        </select>
+                        {(order.paymentStatus === "SUBMITTED" || order.paymentStatus === "UNDER_REVIEW") && (
+                          <Link
+                            href="/admin/payments"
+                            className="text-[10px] text-blue-600 hover:underline font-bold"
+                          >
+                            Verify in Payments →
+                          </Link>
+                        )}
+                      </div>
                     </td>
                     <td className="px-4 py-3 text-right font-semibold text-[#0B1D3A]">
                       {formatCurrency(order.totalAmount)}
@@ -545,14 +562,30 @@ export default function AdminOrdersPage() {
                 <span className="text-2xl font-extrabold text-gradient">{formatCurrency(selectedOrder.totalAmount)}</span>
               </div>
 
+              {/* Payment Verification Banner */}
+              {(selectedOrder.paymentStatus === "SUBMITTED" || selectedOrder.paymentStatus === "UNDER_REVIEW") && (
+                <div className="bg-blue-50 border border-blue-200 rounded-2xl p-4 flex items-center justify-between gap-3">
+                  <div>
+                    <span className="text-xs font-bold text-blue-700 block">Payment Verification Required</span>
+                    <span className="text-xs text-blue-600">Customer submitted payment proof for this order.</span>
+                  </div>
+                  <Link
+                    href="/admin/payments"
+                    className="px-3 py-1.5 bg-blue-600 text-white rounded-xl text-xs font-bold hover:bg-blue-700 transition-colors shrink-0"
+                  >
+                    Verify in Payments →
+                  </Link>
+                </div>
+              )}
+
               {/* Payment Proof */}
               {selectedOrder.paymentProofUrl && (
                 <div className="glass rounded-2xl p-4 border border-gray-200 mt-4">
-                  <h3 className="text-sm font-semibold text-amber-400 mb-3">Payment Proof</h3>
+                  <h3 className="text-sm font-semibold text-amber-500 mb-3">Customer Payment Proof Screenshot</h3>
                   <a href={selectedOrder.paymentProofUrl} target="_blank" rel="noopener noreferrer">
                     <img src={selectedOrder.paymentProofUrl} alt="Payment Proof" className="w-full max-h-64 object-contain rounded-xl border border-gray-300 hover:opacity-90 transition-opacity" />
                   </a>
-                  <p className="text-xs text-gray-400 mt-2 text-center">Click image to view full size</p>
+                  <p className="text-xs text-gray-500 mt-2 text-center">Click image to view full size</p>
                 </div>
               )}
             </div>

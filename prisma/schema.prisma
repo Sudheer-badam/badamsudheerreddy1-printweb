@@ -29,7 +29,11 @@ enum OrderStatus {
 
 enum PaymentStatus {
   PENDING
+  SUBMITTED
+  UNDER_REVIEW
   PAID
+  REJECTED
+  CANCELLED
   FAILED
   REFUNDED
 }
@@ -212,6 +216,11 @@ model Payment {
   transactionId String?        @unique
   razorpayId    String?
   upiId         String?
+  paymentProofUrl String?
+  rejectionReason String?
+  verifiedBy    String?
+  verifiedAt    DateTime?
+  adminNotes    String?
 
   paidAt    DateTime?
   createdAt DateTime  @default(now())
@@ -274,6 +283,8 @@ model AdminSettings {
   pickupAddress    String?
   razorpayKey      String?
   upiId            String?
+  merchantName     String?  @default("SUDHEER REDDY PRINTING SHOP")
+  merchantQrImage  String?
   enableBinding    Boolean  @default(true)
   enableLamination Boolean  @default(true)
   enableGST        Boolean  @default(true)

@@ -1,5 +1,6 @@
 import { NextRequest, NextResponse } from "next/server";
 import { prisma } from "@/lib/prisma";
+import { calculateOrderCost } from "@/lib/pricing";
 
 // GET all orders (admin) or user orders (customer)
 export async function GET(req: NextRequest) {
@@ -127,6 +128,31 @@ export async function POST(req: NextRequest) {
     const user = await prisma.user.findUnique({ where: { firebaseUid: uid } });
     if (!user) return NextResponse.json({ error: "User not found" }, { status: 404 });
 
+    // Calculate total amount securely on backend using existing pricing configuration
+    const costDetails = await calculateOrderCost({
+      documents,
+      singleDoc: {
+        fileName,
+        fileUrl,
+        fileKey,
+        fileSize,
+        totalPages,
+        colorPages,
+        bwPages,
+        paperSize,
+        orientation,
+        printSide,
+        printColor,
+        copies,
+        binding,
+        lamination,
+        paperQuality,
+        pagesToPrint,
+        customPageRange,
+        instructions,
+      },
+    });
+
     // Generate unique order number
     const orderNumber = `AGP-${Date.now().toString(36).toUpperCase()}-${Math.random().toString(36).substring(2, 5).toUpperCase()}`;
 
@@ -134,14 +160,14 @@ export async function POST(req: NextRequest) {
       data: {
         orderNumber,
         userId: user.id,
-        fileName: fileName || (documents && documents[0]?.fileName) || "Multiple Files",
-        fileUrl: fileUrl || (documents && documents[0]?.fileUrl) || "",
-        fileKey: fileKey || (documents && documents[0]?.fileKey) || "",
-        fileSize: fileSize || (documents && documents.reduce((acc: number, d: any) => acc + (d.fileSize || 0), 0)) || 0,
-        documents,
-        totalPages: totalPages || (documents && documents.reduce((acc: number, d: any) => acc + (d.totalPages || 0), 0)) || 0,
-        colorPages: colorPages || (documents && documents.reduce((acc: number, d: any) => acc + (d.colorPages || 0), 0)) || 0,
-        bwPages: bwPages || (documents && documents.reduce((acc: number, d: any) => acc + (d.bwPages || 0), 0)) || 0,
+        fileName: fileName || (costDetails.verifiedDocuments[0]?.fileName) || "Multiple Files",
+        fileUrl: fileUrl || (costDetails.verifiedDocuments[0]?.fileUrl) || "",
+        fileKey: fileKey || (costDetails.verifiedDocuments[0]?.fileKey) || "",
+        fileSize: fileSize || (costDetails.verifiedDocuments.reduce((acc: number, d: any) => acc + (d.fileSize || 0), 0)) || 0,
+        documents: costDetails.verifiedDocuments.length > 1 ? costDetails.verifiedDocuments : (documents || null),
+        totalPages: costDetails.totalPages || totalPages || 1,
+        colorPages: costDetails.colorPages || 0,
+        bwPages: costDetails.bwPages || 0,
         paperSize,
         orientation: orientation === "AUTO" ? "PORTRAIT" : orientation,
         printSide,
@@ -151,15 +177,15 @@ export async function POST(req: NextRequest) {
         lamination,
         paperQuality,
         instructions,
-        colorPrice,
-        bwPrice,
-        bindingCost,
-        laminationCost,
-        subtotal,
-        gstRate,
-        gstAmount,
-        discount,
-        totalAmount,
+        colorPrice: costDetails.colorPrice,
+        bwPrice: costDetails.bwPrice,
+        bindingCost: costDetails.bindingCost,
+        laminationCost: costDetails.laminationCost,
+        subtotal: costDetails.subtotal,
+        gstRate: costDetails.pricing.gstRate,
+        gstAmount: 0,
+        discount: 0,
+        totalAmount: costDetails.totalAmount,
         collate,
         pagesToPrint,
         customPageRange,

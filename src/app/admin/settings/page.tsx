@@ -18,6 +18,7 @@ import {
   MapPin,
   Clock,
   Image,
+  CreditCard,
 } from "lucide-react";
 import { useAuth } from "@/contexts/AuthContext";
 import { toast } from "sonner";
@@ -45,6 +46,9 @@ export default function AdminSettingsPage() {
   });
   const [business, setBusiness] = useState({
     businessName: "PRINT DOCKER",
+    merchantName: "SUDHEER REDDY PRINTING SHOP",
+    upiId: "gpay-12208028036@okbizaxis",
+    merchantQrImage: "/payments/gpay-merchant-qr.png",
     ownerName: "",
     phone: "",
     whatsapp: "",
@@ -90,7 +94,10 @@ export default function AdminSettingsPage() {
     if (res.ok) {
       const data = await res.json();
       setBusiness({
-        businessName: data.businessName || "",
+        businessName: data.businessName || "PRINT DOCKER",
+        merchantName: data.merchantName || "SUDHEER REDDY PRINTING SHOP",
+        upiId: data.upiId || "gpay-12208028036@okbizaxis",
+        merchantQrImage: data.merchantQrImage || "/payments/gpay-merchant-qr.png",
         ownerName: data.ownerName || "",
         phone: data.phone || "",
         whatsapp: data.whatsapp || "",
@@ -547,6 +554,63 @@ export default function AdminSettingsPage() {
         >
           {savingBusiness ? <Loader2 className="w-4 h-4 animate-spin" /> : <Save className="w-4 h-4" />}
           Save Business Info
+        </button>
+      </section>
+
+      {/* Google Pay / UPI Merchant Configuration */}
+      <section className="glass rounded-3xl p-6 border border-blue-500/20 bg-blue-50/10">
+        <div className="flex items-center gap-3 mb-6">
+          <div className="w-10 h-10 rounded-xl bg-gradient-to-br from-blue-500 to-indigo-600 flex items-center justify-center text-white">
+            <CreditCard className="w-5 h-5 text-white" />
+          </div>
+          <div>
+            <h2 className="font-bold text-[#0B1D3A]">Google Pay & UPI Merchant Configuration</h2>
+            <p className="text-xs text-gray-500">Configure your business VPA and QR code displayed at checkout</p>
+          </div>
+        </div>
+
+        <div className="grid grid-cols-1 sm:grid-cols-2 gap-5 items-start">
+          <div className="space-y-4">
+            <TextField
+              label="Merchant Account Name"
+              value={business.merchantName}
+              onChange={(v) => setBusiness({ ...business, merchantName: v })}
+            />
+            <TextField
+              label="Google Pay / Merchant UPI ID (VPA)"
+              value={business.upiId}
+              onChange={(v) => setBusiness({ ...business, upiId: v })}
+            />
+            <TextField
+              label="Merchant QR Asset Path / URL"
+              value={business.merchantQrImage}
+              onChange={(v) => setBusiness({ ...business, merchantQrImage: v })}
+            />
+            <p className="text-xs text-gray-500 leading-relaxed">
+              Default QR image is stored in <code className="bg-gray-100 px-1 py-0.5 rounded font-mono">public/payments/gpay-merchant-qr.png</code>.
+              Payments sent to this UPI ID will be verified by the admin in the Payments tab.
+            </p>
+          </div>
+
+          <div className="flex flex-col items-center justify-center p-4 bg-white rounded-2xl border border-gray-200 shadow-sm text-center">
+            <span className="text-xs font-semibold text-gray-500 mb-2">Current Merchant QR Preview</span>
+            <img
+              src={business.merchantQrImage || "/payments/gpay-merchant-qr.png"}
+              alt="Merchant QR"
+              className="w-36 h-36 object-contain rounded-xl border border-gray-100 p-1 mb-2"
+            />
+            <span className="text-xs font-mono font-bold text-gray-800">{business.upiId}</span>
+            <span className="text-[11px] text-gray-500">{business.merchantName}</span>
+          </div>
+        </div>
+
+        <button
+          onClick={saveBusiness}
+          disabled={savingBusiness}
+          className="mt-6 flex items-center gap-2 px-6 py-2.5 rounded-xl bg-blue-600 text-white text-sm font-semibold hover:bg-blue-700 transition-colors disabled:opacity-50"
+        >
+          {savingBusiness ? <Loader2 className="w-4 h-4 animate-spin" /> : <Save className="w-4 h-4" />}
+          Save UPI Merchant Settings
         </button>
       </section>
 

@@ -69,9 +69,25 @@ export const ORDER_STATUS_COLORS: Record<string, string> = {
   COMPLETED: "bg-emerald-500/10 text-emerald-400 border-emerald-500/20",
 };
 
-export const PAYMENT_STATUS_COLORS: Record<string, string> = {
-  PENDING: "bg-yellow-500/10 text-yellow-400 border-yellow-500/20",
-  PAID: "bg-green-500/10 text-green-400 border-green-500/20",
-  FAILED: "bg-red-500/10 text-red-400 border-red-500/20",
-  REFUNDED: "bg-purple-500/10 text-purple-400 border-purple-500/20",
+export const PAYMENT_STATUS_LABELS: Record<string, string> = {
+  PENDING: "Pending",
+  SUBMITTED: "Submitted (Verification Pending)",
+  UNDER_REVIEW: "Under Review",
+  PAID: "Paid & Verified",
+  REJECTED: "Verification Rejected",
+  CANCELLED: "Cancelled",
+  FAILED: "Failed",
+  REFUNDED: "Refunded",
 };
+
+export const PAYMENT_STATUS_COLORS: Record<string, string> = {
+  PENDING: "bg-amber-500/10 text-amber-600 border-amber-500/20",
+  SUBMITTED: "bg-blue-500/10 text-blue-600 border-blue-500/20",
+  UNDER_REVIEW: "bg-purple-500/10 text-purple-600 border-purple-500/20",
+  PAID: "bg-emerald-500/10 text-emerald-600 border-emerald-500/20",
+  REJECTED: "bg-rose-500/10 text-rose-600 border-rose-500/20",
+  CANCELLED: "bg-gray-500/10 text-gray-600 border-gray-500/20",
+  FAILED: "bg-red-500/10 text-red-600 border-red-500/20",
+  REFUNDED: "bg-indigo-500/10 text-indigo-600 border-indigo-500/20",
+};
+

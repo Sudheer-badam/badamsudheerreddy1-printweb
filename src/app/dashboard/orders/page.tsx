@@ -21,6 +21,7 @@ import {
   ORDER_STATUS_COLORS,
   ORDER_STATUS_LABELS,
   PAYMENT_STATUS_COLORS,
+  PAYMENT_STATUS_LABELS,
 } from "@/lib/utils";
 
 interface Order {
@@ -228,15 +229,22 @@ export default function OrdersPage() {
                         </span>
                       </td>
                       <td className="px-4 py-4 hidden sm:table-cell">
-                        <span className={`px-2 py-1 rounded-lg text-xs border ${PAYMENT_STATUS_COLORS[order.paymentStatus]}`}>
-                          {order.paymentStatus}
+                        <span className={`px-2 py-1 rounded-lg text-xs border font-medium ${PAYMENT_STATUS_COLORS[order.paymentStatus] || "bg-gray-100 text-gray-700"}`}>
+                          {PAYMENT_STATUS_LABELS[order.paymentStatus] || order.paymentStatus}
                         </span>
                       </td>
                       <td className="px-6 py-4 text-right">
                         <span className="font-semibold text-[#0B1D3A] text-sm">{formatCurrency(order.totalAmount)}</span>
                       </td>
                       <td className="px-4 py-4">
-                        <div className="flex items-center gap-1">
+                        <div className="flex items-center gap-1.5">
+                          {(order.paymentStatus === "PENDING" || order.paymentStatus === "REJECTED") && order.status !== "CANCELLED" && (
+                            <Link href={`/dashboard/orders/${order.id}`}>
+                              <button className="px-2.5 py-1 text-xs font-semibold bg-gradient-to-r from-blue-600 to-indigo-600 hover:opacity-95 text-white rounded-lg shadow-sm transition-all flex items-center gap-1" title="Pay for Order">
+                                Pay Now
+                              </button>
+                            </Link>
+                          )}
                           <Link href={`/dashboard/orders/${order.id}`}>
                             <button className="p-2 rounded-lg text-gray-500 hover:text-[#0B1D3A] hover:bg-gray-100 transition-all" title="View Details">
                               <Eye className="w-4 h-4" />

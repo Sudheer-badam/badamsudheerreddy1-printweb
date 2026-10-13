@@ -4,7 +4,7 @@ import { useState, useEffect } from "react";
 import { motion } from "framer-motion";
 import { CreditCard, CheckCircle, XCircle, Clock, TrendingUp } from "lucide-react";
 import { useAuth } from "@/contexts/AuthContext";
-import { formatCurrency, formatDate, PAYMENT_STATUS_COLORS } from "@/lib/utils";
+import { formatCurrency, formatDate, PAYMENT_STATUS_COLORS, PAYMENT_STATUS_LABELS } from "@/lib/utils";
 
 interface Payment {
   id: string;
@@ -107,8 +107,8 @@ export default function CustomerPaymentsPage() {
                 </div>
                 <div className="text-right">
                   <div className="font-bold text-[#0B1D3A]">{formatCurrency(payment.amount)}</div>
-                  <span className={`text-xs px-2 py-0.5 rounded-full border ${PAYMENT_STATUS_COLORS[payment.status]}`}>
-                    {payment.status}
+                  <span className={`text-xs px-2.5 py-0.5 rounded-full border font-medium ${PAYMENT_STATUS_COLORS[payment.status] || "bg-gray-100 text-gray-700"}`}>
+                    {PAYMENT_STATUS_LABELS[payment.status] || payment.status}
                   </span>
                 </div>
               </motion.div>
