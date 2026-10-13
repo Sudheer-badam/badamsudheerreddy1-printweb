@@ -14,13 +14,11 @@ import {
   Truck,
   XCircle,
   Download,
-  Smartphone,
   ShieldCheck,
   RefreshCw,
   Copy,
   Trash2,
   AlertTriangle,
-  ExternalLink,
   QrCode,
   Eye,
   Info,
@@ -866,7 +864,7 @@ export default function OrderDetailPage() {
                     </button>
                   </div>
 
-                  {/* Actions: Download QR + Open UPI Apps on Mobile */}
+                  {/* Actions: Download QR */}
                   <div className="flex flex-wrap items-center justify-center gap-2 mt-3 w-full">
                     <button
                       type="button"
@@ -875,24 +873,6 @@ export default function OrderDetailPage() {
                     >
                       <Download className="w-3.5 h-3.5" /> Download QR
                     </button>
-
-                    {/* Mobile UPI Direct App Links */}
-                    <a
-                      href={`gpay://upi/pay?pa=${encodeURIComponent(merchantUpiId)}&pn=${encodeURIComponent(
-                        merchantName
-                      )}&am=${order.totalAmount.toFixed(2)}&cu=INR&tn=${encodeURIComponent(
-                        "Order " + order.orderNumber
-                      )}`}
-                      className="px-3.5 py-1.5 rounded-xl bg-blue-50 text-blue-700 border border-blue-200 hover:bg-blue-100 text-xs font-semibold flex items-center gap-1.5 transition-colors sm:hidden"
-                    >
-                      <Smartphone className="w-3.5 h-3.5" /> Pay with Google Pay
-                    </a>
-                    <a
-                      href={dynamicUpiUri}
-                      className="px-3.5 py-1.5 rounded-xl bg-indigo-600 text-white hover:bg-indigo-700 text-xs font-semibold flex items-center gap-1.5 transition-colors sm:hidden"
-                    >
-                      <ExternalLink className="w-3.5 h-3.5" /> Open Any UPI App
-                    </a>
                   </div>
                 </div>
 
