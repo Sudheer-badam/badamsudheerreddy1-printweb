@@ -22,7 +22,7 @@ import {
 } from "lucide-react";
 import { useAuth } from "@/contexts/AuthContext";
 import { useRouter, useSearchParams } from "next/navigation";
-import { formatCurrency, formatDate, ORDER_STATUS_COLORS, ORDER_STATUS_LABELS, PAYMENT_STATUS_COLORS } from "@/lib/utils";
+import { formatCurrency, formatDate, ORDER_STATUS_COLORS, ORDER_STATUS_LABELS, PAYMENT_STATUS_COLORS, formatPaperQuality } from "@/lib/utils";
 import { toast } from "sonner";
 
 interface Order {
@@ -31,6 +31,7 @@ interface Order {
   fileName: string;
   totalPages: number;
   paperSize: string;
+  paperQuality?: string;
   printColor: string;
   printSide: string;
   copies: number;
@@ -356,6 +357,11 @@ export default function AdminOrdersPage() {
                     <td className="px-4 py-3 hidden md:table-cell text-xs text-gray-500">
                       <div>{order.totalPages}p • {order.paperSize} • {order.copies}x</div>
                       <div>{order.printColor === "COLOR" ? "Color" : "B&W"} • {order.printSide === "SINGLE" ? "1-sided" : "2-sided"}</div>
+                      <div className="mt-1">
+                        <span className="inline-block px-1.5 py-0.5 bg-amber-50 text-amber-700 rounded text-[10px] font-semibold border border-amber-200">
+                          {formatPaperQuality(order.paperQuality)}
+                        </span>
+                      </div>
                     </td>
                     <td className="px-4 py-3">
                       <select
@@ -500,6 +506,7 @@ export default function AdminOrdersPage() {
                         <div className="grid grid-cols-2 gap-3 text-sm">
                           <InfoRow label="Pages" value={doc.totalPages?.toString()} />
                           <InfoRow label="Paper Size" value={doc.paperSize} />
+                          <InfoRow label="Paper Quality" value={formatPaperQuality(doc.paperQuality || selectedOrder.paperQuality)} />
                           <InfoRow label="Color Mode" value={doc.printColor} />
                           <InfoRow label="Print Side" value={doc.printSide} />
                           <InfoRow label="Copies" value={doc.copies?.toString()} />
@@ -514,6 +521,7 @@ export default function AdminOrdersPage() {
                     <InfoRow label="File" value={selectedOrder.fileName} />
                     <InfoRow label="Pages" value={selectedOrder.totalPages.toString()} />
                     <InfoRow label="Paper Size" value={selectedOrder.paperSize} />
+                    <InfoRow label="Paper Quality" value={formatPaperQuality(selectedOrder.paperQuality)} />
                     <InfoRow label="Color Mode" value={selectedOrder.printColor} />
                     <InfoRow label="Print Side" value={selectedOrder.printSide} />
                     <InfoRow label="Copies" value={selectedOrder.copies.toString()} />

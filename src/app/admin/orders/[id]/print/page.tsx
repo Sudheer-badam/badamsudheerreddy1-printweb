@@ -15,8 +15,10 @@ import {
   Maximize,
   Copy,
   CheckCircle2,
-  AlertCircle
+  AlertCircle,
+  ScrollText,
 } from "lucide-react";
+import { formatPaperQuality } from "@/lib/utils";
 
 export default function AdminPrintRoomPage() {
   const { id } = useParams();
@@ -24,10 +26,18 @@ export default function AdminPrintRoomPage() {
   const { user } = useAuth();
   
   const [order, setOrder] = useState<any>(null);
+  const [adminSettings, setAdminSettings] = useState<any>(null);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
   const [previewUrl, setPreviewUrl] = useState<string | null>(null);
   const [activeDocIndex, setActiveDocIndex] = useState(0);
+
+  useEffect(() => {
+    fetch("/api/admin/settings")
+      .then((res) => res.json())
+      .then((data) => setAdminSettings(data))
+      .catch(() => {});
+  }, []);
 
   const currentDoc = order?.documents && order.documents.length > 0 
     ? order.documents[activeDocIndex] 
@@ -211,8 +221,18 @@ export default function AdminPrintRoomPage() {
 
               <SettingBlock 
                 label="Paper Size" 
-                value={currentDoc.paperSize}
+                value={currentDoc.paperSize || "A4"}
                 icon={<Maximize className="w-4 h-4" />}
+              />
+
+              <SettingBlock 
+                label="Paper Quality / GSM" 
+                value={formatPaperQuality(currentDoc.paperQuality || order.paperQuality, adminSettings?.paperQualities)}
+                icon={<ScrollText className="w-4 h-4" />}
+                highlight={Boolean(
+                  (currentDoc.paperQuality || order.paperQuality) && 
+                  (currentDoc.paperQuality || order.paperQuality) !== "standard"
+                )}
               />
 
               <SettingBlock 

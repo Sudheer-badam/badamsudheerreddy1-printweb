@@ -91,3 +91,22 @@ export const PAYMENT_STATUS_COLORS: Record<string, string> = {
   REFUNDED: "bg-indigo-500/10 text-indigo-600 border-indigo-500/20",
 };
 
+export function formatPaperQuality(quality?: string | null, customQualities?: any[]): string {
+  if (!quality) return "Standard 70 GSM";
+  if (Array.isArray(customQualities)) {
+    const found = customQualities.find(
+      (q: any) =>
+        q.id?.toLowerCase() === quality.toLowerCase() ||
+        q.label?.toLowerCase() === quality.toLowerCase()
+    );
+    if (found?.label) return found.label;
+  }
+  const qLower = quality.toLowerCase().trim();
+  if (qLower === "standard") return "Standard 70 GSM";
+  if (qLower === "premium") return "Premium 75 GSM";
+  if (qLower === "executive") return "Executive 80 GSM";
+  if (qLower === "glossy") return "Glossy Photo Paper";
+  return quality.charAt(0).toUpperCase() + quality.slice(1);
+}
+
+
