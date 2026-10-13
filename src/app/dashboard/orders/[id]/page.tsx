@@ -13,7 +13,6 @@ import {
   Package,
   Truck,
   XCircle,
-  CreditCard,
   Download,
   Smartphone,
   ShieldCheck,
@@ -25,7 +24,6 @@ import {
   QrCode,
   Eye,
   Info,
-  Zap,
 } from "lucide-react";
 import { useAuth } from "@/contexts/AuthContext";
 import { formatCurrency, formatDate, ORDER_STATUS_LABELS, PAYMENT_STATUS_COLORS, PAYMENT_STATUS_LABELS } from "@/lib/utils";
@@ -128,8 +126,6 @@ export default function OrderDetailPage() {
 
   // Payment Modal States
   const [showPaymentModal, setShowPaymentModal] = useState(false);
-  const [paymentTab, setPaymentTab] = useState<"UPI_QR" | "GATEWAY">("UPI_QR");
-  const [razorpayLoading, setRazorpayLoading] = useState(false);
   const [qrType, setQrType] = useState<"DYNAMIC" | "MERCHANT">("DYNAMIC");
   const [transactionId, setTransactionId] = useState("");
   const [screenshotFile, setScreenshotFile] = useState<File | null>(null);
@@ -287,143 +283,7 @@ export default function OrderDetailPage() {
     }
   };
 
-  const loadRazorpaySdk = (): Promise<boolean> => {
-    return new Promise((resolve) => {
-      if (typeof window !== "undefined" && (window as any).Razorpay) {
-        resolve(true);
-        return;
-      }
-      const script = document.createElement("script");
-      script.src = "https://checkout.razorpay.com/v1/checkout.js";
-      script.async = true;
-      script.onload = () => resolve(true);
-      script.onerror = () => resolve(false);
-      document.body.appendChild(script);
-    });
-  };
 
-  const handleRazorpayPayment = async (simulateSandbox = false) => {
-    if (!order || !user) return;
-    setRazorpayLoading(true);
-
-    try {
-      // 1. Fetch Razorpay Order from secure backend
-      const res = await fetch("/api/payments/razorpay/order", {
-        method: "POST",
-        headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({ uid: user.uid, orderId: order.id }),
-      });
-
-      const orderData = await res.json();
-      if (!res.ok) {
-        throw new Error(orderData.error || "Failed to initialize payment gateway order");
-      }
-
-      // Free Tier / Sandbox Simulation (Test Mode Instant Verification)
-      if (simulateSandbox) {
-        toast.loading("Simulating Free Tier sandbox authorization...", { id: "rzp-sim" });
-        const mockPaymentId = `pay_sim_${Date.now().toString(36)}_${Math.random().toString(36).substring(2, 7)}`;
-        const verifyRes = await fetch("/api/payments/razorpay/verify", {
-          method: "POST",
-          headers: { "Content-Type": "application/json" },
-          body: JSON.stringify({
-            uid: user.uid,
-            orderId: order.id,
-            razorpay_payment_id: mockPaymentId,
-            razorpay_order_id: orderData.orderId,
-            razorpay_signature: "sandbox_auto_approved",
-          }),
-        });
-
-        const verifyData = await verifyRes.json();
-        toast.dismiss("rzp-sim");
-        if (verifyRes.ok) {
-          toast.success("Payment Received & Verified! Order marked as PAID & ACCEPTED.");
-          setShowPaymentModal(false);
-          fetchOrder();
-        } else {
-          toast.error(verifyData.error || "Sandbox verification failed.");
-        }
-        return;
-      }
-
-      // 2. Load standard Razorpay SDK
-      const loaded = await loadRazorpaySdk();
-      if (!loaded) {
-        throw new Error("Razorpay Checkout SDK failed to load. Please check your internet connection.");
-      }
-
-      // 3. Launch Razorpay Checkout Modal
-      const options: any = {
-        key: orderData.keyId,
-        amount: orderData.amount,
-        currency: orderData.currency || "INR",
-        name: orderData.businessName || "PRINT DOCKER",
-        description: `Order #${order.orderNumber} Payment`,
-        image: "/icon.png",
-        handler: async function (response: any) {
-          toast.loading("Verifying transaction with payment gateway...", { id: "rzp-verify" });
-          try {
-            const verifyRes = await fetch("/api/payments/razorpay/verify", {
-              method: "POST",
-              headers: { "Content-Type": "application/json" },
-              body: JSON.stringify({
-                uid: user.uid,
-                orderId: order.id,
-                razorpay_payment_id: response.razorpay_payment_id,
-                razorpay_order_id: response.razorpay_order_id,
-                razorpay_signature: response.razorpay_signature,
-              }),
-            });
-            const verifyData = await verifyRes.json();
-            toast.dismiss("rzp-verify");
-            if (verifyRes.ok) {
-              toast.success("Payment Verified! Your order is now confirmed.");
-              setShowPaymentModal(false);
-              fetchOrder();
-            } else {
-              toast.error(verifyData.error || "Payment verification failed.");
-            }
-          } catch {
-            toast.dismiss("rzp-verify");
-            toast.error("Network error during payment verification.");
-          }
-        },
-        prefill: {
-          name: user.displayName || order.user?.name || "",
-          email: user.email || order.user?.email || "",
-          contact: order.user?.phone || "",
-        },
-        notes: {
-          orderId: order.id,
-          orderNumber: order.orderNumber,
-        },
-        theme: {
-          color: "#4F46E5",
-        },
-        modal: {
-          ondismiss: function () {
-            toast.info("Payment window closed.");
-          },
-        },
-      };
-
-      if (orderData.orderId && !orderData.notice && !orderData.isTestMode) {
-        options.order_id = orderData.orderId;
-      }
-
-      const rzp = new (window as any).Razorpay(options);
-      rzp.on("payment.failed", function (resp: any) {
-        toast.error(resp.error?.description || "Payment failed. Please try again.");
-      });
-      rzp.open();
-    } catch (error: any) {
-      console.error("Razorpay initiation error:", error);
-      toast.error(error.message || "Failed to initialize payment gateway.");
-    } finally {
-      setRazorpayLoading(false);
-    }
-  };
 
   const deleteOrder = async () => {
     if (!confirm("Are you sure you want to permanently delete this order?")) return;
@@ -529,25 +389,11 @@ export default function OrderDetailPage() {
               {(order.paymentStatus === "PENDING" || order.paymentStatus === "REJECTED") && !isCancelled && (
                 <div className="flex items-center gap-2 flex-wrap justify-end">
                   <button
-                    onClick={() => {
-                      setPaymentTab("UPI_QR");
-                      setShowPaymentModal(true);
-                    }}
+                    onClick={() => setShowPaymentModal(true)}
                     className="px-4 py-2.5 bg-gradient-to-r from-blue-600 via-indigo-600 to-violet-600 text-white rounded-xl text-xs sm:text-sm font-semibold hover:opacity-95 transition-all flex items-center gap-2 shadow-lg shadow-indigo-500/25"
                   >
                     <QrCode className="w-4 h-4" />
-                    {order.paymentStatus === "REJECTED" ? "Resubmit UPI Proof" : "Google Pay / UPI QR"}
-                  </button>
-
-                  <button
-                    onClick={() => {
-                      setPaymentTab("GATEWAY");
-                      setShowPaymentModal(true);
-                    }}
-                    className="px-4 py-2.5 bg-gradient-to-r from-emerald-600 via-teal-600 to-cyan-600 text-white rounded-xl text-xs sm:text-sm font-semibold hover:opacity-95 transition-all flex items-center gap-2 shadow-lg shadow-teal-500/25"
-                  >
-                    <CreditCard className="w-4 h-4" />
-                    Free Tier Gateway Pay
+                    {order.paymentStatus === "REJECTED" ? "Resubmit Google Pay Details" : "Pay with Google Pay"}
                   </button>
                 </div>
               )}
@@ -927,18 +773,12 @@ export default function OrderDetailPage() {
               <div className="bg-gradient-to-r from-[#0B1D3A] via-indigo-950 to-[#0B1D3A] p-5 text-white flex justify-between items-center border-b border-white/10">
                 <div className="flex items-center gap-3">
                   <div className="w-10 h-10 bg-white/10 rounded-xl flex items-center justify-center backdrop-blur-sm border border-white/10">
-                    {paymentTab === "UPI_QR" ? (
-                      <QrCode className="w-5 h-5 text-blue-400" />
-                    ) : (
-                      <CreditCard className="w-5 h-5 text-emerald-400" />
-                    )}
+                    <QrCode className="w-5 h-5 text-blue-400" />
                   </div>
                   <div>
-                    <h3 className="text-base sm:text-lg font-bold">Secure Order Payment</h3>
+                    <h3 className="text-base sm:text-lg font-bold">Google Pay for Business Payment</h3>
                     <p className="text-xs text-blue-200">
-                      {paymentTab === "UPI_QR"
-                        ? "Google Pay for Business • 0% Fee UPI QR"
-                        : "Razorpay Free Tier Gateway • Instant Auto-Verify"}
+                      Scan Merchant QR code with Google Pay • 0% Fee UPI
                     </p>
                   </div>
                 </div>
@@ -948,36 +788,6 @@ export default function OrderDetailPage() {
                 >
                   <XCircle className="w-5 h-5" />
                 </button>
-              </div>
-
-              {/* Main Tab Switcher */}
-              <div className="p-3 bg-gray-50 border-b border-gray-200">
-                <div className="grid grid-cols-2 gap-2 bg-gray-200/80 p-1 rounded-2xl">
-                  <button
-                    type="button"
-                    onClick={() => setPaymentTab("UPI_QR")}
-                    className={`flex items-center justify-center gap-2 py-2.5 px-3 rounded-xl text-xs sm:text-sm font-bold transition-all ${
-                      paymentTab === "UPI_QR"
-                        ? "bg-white text-blue-700 shadow-md"
-                        : "text-gray-600 hover:text-gray-900"
-                    }`}
-                  >
-                    <QrCode className="w-4 h-4" />
-                    <span>Google Pay / UPI QR</span>
-                  </button>
-                  <button
-                    type="button"
-                    onClick={() => setPaymentTab("GATEWAY")}
-                    className={`flex items-center justify-center gap-2 py-2.5 px-3 rounded-xl text-xs sm:text-sm font-bold transition-all ${
-                      paymentTab === "GATEWAY"
-                        ? "bg-white text-emerald-700 shadow-md"
-                        : "text-gray-600 hover:text-gray-900"
-                    }`}
-                  >
-                    <CreditCard className="w-4 h-4" />
-                    <span>Online Gateway <span className="hidden sm:inline text-[10px] bg-emerald-100 text-emerald-800 px-1.5 py-0.5 rounded-full uppercase ml-1">Free Tier</span></span>
-                  </button>
-                </div>
               </div>
 
               {/* Modal Content */}
@@ -994,11 +804,8 @@ export default function OrderDetailPage() {
                   </div>
                 </div>
 
-                {/* ========================================== */}
-                {/* TAB 1: GOOGLE PAY / UPI QR PAYMENT */}
-                {/* ========================================== */}
-                {paymentTab === "UPI_QR" && (
-                  <div className="space-y-5">
+                {/* GOOGLE PAY / UPI QR PAYMENT */}
+                <div className="space-y-5">
                     {/* QR Type Switcher */}
                     <div className="flex rounded-xl bg-gray-100 p-1 text-xs font-semibold">
                   <button
@@ -1182,112 +989,12 @@ export default function OrderDetailPage() {
                     Status will become <strong>Payment Submitted — Verification Pending</strong> until shop admin verifies the credit.
                   </p>
                 </form>
-                  </div>
-                )}
-
-                {/* ========================================== */}
-                {/* TAB 2: ONLINE PAYMENT GATEWAY (FREE TIER) */}
-                {/* ========================================== */}
-                {paymentTab === "GATEWAY" && (
-                  <div className="space-y-5">
-                    {/* Instant Verification Banner */}
-                    <div className="bg-gradient-to-br from-emerald-500/10 via-teal-500/10 to-cyan-500/10 border border-emerald-500/20 rounded-2xl p-4 flex items-start gap-3">
-                      <div className="w-9 h-9 rounded-xl bg-emerald-500/20 flex items-center justify-center shrink-0 mt-0.5">
-                        <Zap className="w-5 h-5 text-emerald-600" />
-                      </div>
-                      <div>
-                        <h4 className="font-bold text-sm text-[#0B1D3A]">Instant Automated Order Confirmation</h4>
-                        <p className="text-xs text-gray-600 mt-0.5 leading-relaxed">
-                          Payments made through this gateway are verified automatically in real-time. Your order status will immediately switch to <strong>PAID & ACCEPTED</strong> without waiting for manual admin approval.
-                        </p>
-                      </div>
-                    </div>
-
-                    {/* Accepted Payment Modes Showcase */}
-                    <div className="glass rounded-2xl p-4 border border-gray-200">
-                      <div className="text-xs font-bold uppercase tracking-wider text-gray-500 mb-3">
-                        Accepted Payment Modes
-                      </div>
-                      <div className="grid grid-cols-2 gap-2.5 text-xs text-gray-700">
-                        <div className="flex items-center gap-2 p-2 rounded-xl bg-gray-50 border border-gray-100">
-                          <CreditCard className="w-4 h-4 text-indigo-600 shrink-0" />
-                          <span>Credit & Debit Cards</span>
-                        </div>
-                        <div className="flex items-center gap-2 p-2 rounded-xl bg-gray-50 border border-gray-100">
-                          <Smartphone className="w-4 h-4 text-emerald-600 shrink-0" />
-                          <span>UPI (GPay, PhonePe, Paytm)</span>
-                        </div>
-                        <div className="flex items-center gap-2 p-2 rounded-xl bg-gray-50 border border-gray-100">
-                          <Package className="w-4 h-4 text-blue-600 shrink-0" />
-                          <span>Net Banking (50+ Banks)</span>
-                        </div>
-                        <div className="flex items-center gap-2 p-2 rounded-xl bg-gray-50 border border-gray-100">
-                          <Clock className="w-4 h-4 text-violet-600 shrink-0" />
-                          <span>Digital Wallets</span>
-                        </div>
-                      </div>
-                    </div>
-
-                    {/* Free Tier Notice */}
-                    <div className="bg-blue-50 border border-blue-200 rounded-2xl p-3.5 flex items-start gap-3 text-xs text-blue-900">
-                      <Info className="w-5 h-5 text-blue-600 shrink-0 mt-0.5" />
-                      <div>
-                        <div className="font-bold text-blue-800">Free Tier & Sandbox Test Mode Enabled</div>
-                        <p className="mt-0.5 text-blue-700 leading-relaxed">
-                          This payment gateway operates on Razorpay Free Tier / Test Mode. You can test live checkout or use the instant test simulation button below to safely test the end-to-end payment and auto-acceptance flow.
-                        </p>
-                      </div>
-                    </div>
-
-                    {/* Action Buttons */}
-                    <div className="space-y-3 pt-2">
-                      {/* Primary Gateway Button */}
-                      <button
-                        type="button"
-                        disabled={razorpayLoading}
-                        onClick={() => handleRazorpayPayment(false)}
-                        className="w-full py-3.5 bg-gradient-to-r from-emerald-600 via-teal-600 to-cyan-600 text-white rounded-xl font-bold text-sm hover:opacity-95 transition-all disabled:opacity-50 flex items-center justify-center gap-2 shadow-lg shadow-teal-500/25"
-                      >
-                        {razorpayLoading ? (
-                          <>
-                            <RefreshCw className="w-4 h-4 animate-spin" /> Initializing Payment Gateway...
-                          </>
-                        ) : (
-                          <>
-                            <CreditCard className="w-4 h-4" /> Pay {formatCurrency(order.totalAmount)} with Razorpay
-                          </>
-                        )}
-                      </button>
-
-                      {/* Instant Sandbox Simulation Button (Free Tier Developer/Test mode) */}
-                      <button
-                        type="button"
-                        disabled={razorpayLoading}
-                        onClick={() => handleRazorpayPayment(true)}
-                        className="w-full py-2.5 bg-gray-100 hover:bg-gray-200 text-gray-800 border border-gray-300 rounded-xl font-semibold text-xs transition-colors flex items-center justify-center gap-2"
-                        title="Simulate instant test payment authorization"
-                      >
-                        <Zap className="w-3.5 h-3.5 text-amber-500" /> Simulate Free Tier Test Payment (Sandbox Instant Approval)
-                      </button>
-                    </div>
-
-                    {/* Security Disclaimer */}
-                    <div className="flex items-center justify-center gap-3 text-[11px] text-gray-400 text-center pt-1">
-                      <span className="flex items-center gap-1">
-                        <ShieldCheck className="w-3.5 h-3.5 text-emerald-500" /> 256-bit SSL Encrypted
-                      </span>
-                      <span>•</span>
-                      <span>PCI-DSS Level 1 Compliant</span>
-                      <span>•</span>
-                      <span>Zero fee on UPI</span>
-                    </div>
-                  </div>
-                )}
               </div>
-            </motion.div>
-          </div>
-        )}
-      </AnimatePresence>
+            </div>
+          </motion.div>
+        </div>
+      )}
+    </AnimatePresence>
 
       {/* Lightbox / Image Preview Modal */}
       <AnimatePresence>
