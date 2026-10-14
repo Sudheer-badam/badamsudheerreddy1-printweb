@@ -939,6 +939,9 @@ export default function OrderDetailPage() {
                     <span className="font-black text-base text-white font-mono leading-tight">
                       ₹ {order.totalAmount.toFixed(2)}
                     </span>
+                    <span className="text-[8px] text-blue-200/90 block leading-none mt-0.5 font-medium">
+                      (Incl. of all taxes)
+                    </span>
                   </div>
                   <button
                     type="button"
@@ -1007,7 +1010,12 @@ export default function OrderDetailPage() {
                     </div>
 
                     <div className="border-t-2 border-white/30 pt-2 flex justify-between items-baseline">
-                      <span className="font-bold text-sm text-white">Total Payable</span>
+                      <div className="flex flex-col">
+                        <span className="font-bold text-sm text-white">Total Payable</span>
+                        <span className="text-[10px] text-blue-200 font-medium tracking-tight">
+                          (Incl. of all taxes)
+                        </span>
+                      </div>
                       <span className="font-black text-xl sm:text-2xl text-white font-mono">
                         ₹ {order.totalAmount.toFixed(2)}
                       </span>
