@@ -135,7 +135,6 @@ export default function OrderDetailPage() {
   const [screenshotFile, setScreenshotFile] = useState<File | null>(null);
   const [screenshotPreview, setScreenshotPreview] = useState<string | null>(null);
   const [selectedProofPreview, setSelectedProofPreview] = useState<string | null>(null);
-  const [autoCountdown, setAutoCountdown] = useState<number>(180);
   const isProcessingPaymentRef = useRef(false);
   const showPaymentModalRef = useRef(showPaymentModal);
   showPaymentModalRef.current = showPaymentModal;
@@ -269,6 +268,18 @@ export default function OrderDetailPage() {
   const handleAutomaticPayment = async (overrideTx?: string) => {
     if (!order || !user) return;
     if (isProcessingPaymentRef.current || submittingPayment) return;
+
+    const cleanTx = (overrideTx || transactionId).trim();
+    if (!cleanTx && !screenshotFile) {
+      toast.error("Please enter your 12-digit UPI Reference Number (UTR) from GPay / PhonePe / Paytm.");
+      return;
+    }
+
+    if (cleanTx && cleanTx.length < 6) {
+      toast.error("Please enter a valid UPI Reference Number (UTR).");
+      return;
+    }
+
     isProcessingPaymentRef.current = true;
     setSubmittingPayment(true);
     try {
@@ -284,8 +295,6 @@ export default function OrderDetailPage() {
         paymentProofUrl = newBlob.url;
         toast.dismiss("screenshot-upload");
       }
-
-      const cleanTx = (overrideTx || transactionId).trim();
 
       const res = await fetch("/api/payments", {
         method: "POST",
@@ -326,54 +335,14 @@ export default function OrderDetailPage() {
     }
   };
 
-  // Automated Zero-Click Payment Verification Engine (Real-Time Gateway Detection - 3 Minutes Window)
+  // Payment Status Watcher
   useEffect(() => {
-    if (!showPaymentModal) {
-      setAutoCountdown(180);
-      return;
-    }
-
-    if (order?.paymentStatus === "PAID") {
+    if (showPaymentModal && order?.paymentStatus === "PAID") {
       setShowPaymentModal(false);
       setReportStatus("successful");
       setReportTimestamp(formatReportDateTime());
       setShowReportModal(true);
-      return;
     }
-
-    setAutoCountdown(180);
-
-    // 1. Automatic 3-minute (180s) gateway verification timer (zero user clicks required)
-    const interval = setInterval(() => {
-      setAutoCountdown((prev) => {
-        if (prev <= 1) {
-          clearInterval(interval);
-          if (!isProcessingPaymentRef.current && showPaymentModalRef.current) {
-            handleAutomaticPayment();
-          }
-          return 0;
-        }
-        return prev - 1;
-      });
-    }, 1000);
-
-    // 2. Real-time App-Switch Detection: Fires instantly when returning from GPay/PhonePe/Paytm
-    const handleVisibilityChange = () => {
-      if (
-        document.visibilityState === "visible" &&
-        showPaymentModalRef.current &&
-        !isProcessingPaymentRef.current
-      ) {
-        handleAutomaticPayment();
-      }
-    };
-
-    document.addEventListener("visibilitychange", handleVisibilityChange);
-
-    return () => {
-      clearInterval(interval);
-      document.removeEventListener("visibilitychange", handleVisibilityChange);
-    };
   }, [showPaymentModal, order?.paymentStatus]);
 
   const handlePaymentSubmission = async (e?: React.FormEvent) => {
@@ -894,6 +863,11 @@ export default function OrderDetailPage() {
                 <div>
                   {/* Organization Card Header */}
                   <div className="bg-white rounded-xl p-4 text-[#0B2D6B] text-center shadow-md">
+                    <img
+                      src="/logo.png"
+                      alt="PRINT DOCKER"
+                      className="w-12 h-12 mx-auto object-contain mb-2 rounded-xl"
+                    />
                     <div className="font-extrabold text-lg sm:text-xl tracking-wide uppercase leading-tight font-sans text-blue-600">
                       PRINT DOCKER
                     </div>
@@ -1098,102 +1072,75 @@ export default function OrderDetailPage() {
                     </div>
                   </div>
 
-                  {/* Automated Live Gateway Status Card & Time Sequence */}
-                  <div className="bg-gradient-to-br from-emerald-50 via-teal-50 to-green-50 border border-emerald-300/90 rounded-2xl p-4 my-3 shadow-xs text-left">
-                    <div className="flex items-center justify-between gap-2">
-                      <div className="flex items-center gap-2">
-                        <div className="relative flex h-3.5 w-3.5 shrink-0">
-                          <span className="animate-ping absolute inline-flex h-full w-full rounded-full bg-emerald-400 opacity-75"></span>
-                          <span className="relative inline-flex rounded-full h-3.5 w-3.5 bg-emerald-500"></span>
-                        </div>
-                        <span className="text-xs font-black tracking-wide text-emerald-950 uppercase">
-                          Live Payment Gateway Active
-                        </span>
-                      </div>
-                      <span className="text-[10px] font-bold text-emerald-800 bg-emerald-200/70 border border-emerald-300 px-2 py-0.5 rounded-full">
-                        Session Active
-                      </span>
-                    </div>
-
-                    {/* Auto-Verification Time Sequence Progress Box */}
-                    <div className="mt-3 bg-white/90 backdrop-blur-xs rounded-xl p-3.5 border border-emerald-200/80 shadow-xs">
-                      <div className="flex items-center justify-between text-xs mb-2">
-                        <span className="text-gray-700 font-semibold flex items-center gap-1.5">
-                          {submittingPayment ? (
-                            <>
-                              <RefreshCw className="w-3.5 h-3.5 animate-spin text-emerald-600" />
-                              <span className="text-emerald-900 font-bold">Verifying Payment & Saving...</span>
-                            </>
-                          ) : (
-                            <>
-                              <Clock className="w-3.5 h-3.5 text-emerald-600" />
-                              <span>QR Active • Auto-saving in:</span>
-                            </>
-                          )}
-                        </span>
-                        <span className="font-mono font-black text-sm text-emerald-700 bg-emerald-100/80 px-2.5 py-0.5 rounded-md border border-emerald-200">
-                          {submittingPayment
-                            ? "SYNCING..."
-                            : `${Math.floor(autoCountdown / 60)
-                                .toString()
-                                .padStart(2, "0")}:${(autoCountdown % 60)
-                                .toString()
-                                .padStart(2, "0")}`}
-                        </span>
-                      </div>
-
-                      {/* Smooth Animated Progress Bar for 3 Minutes */}
-                      <div className="w-full bg-emerald-100/80 h-2.5 rounded-full overflow-hidden p-0.5 border border-emerald-200">
-                        <div
-                          className="bg-gradient-to-r from-emerald-500 via-teal-500 to-green-600 h-full transition-all duration-1000 ease-linear rounded-full shadow-xs"
-                          style={{
-                            width: submittingPayment
-                              ? "100%"
-                              : `${Math.max(2, ((180 - autoCountdown) / 180) * 100)}%`,
-                          }}
+                  {/* Project Branded UTR Verification Card */}
+                  <div className="bg-gradient-to-br from-blue-50/70 via-indigo-50/30 to-white border-2 border-blue-200/90 rounded-2xl p-4 sm:p-5 my-3 shadow-xs text-left">
+                    {/* Project Header Banner with Official Logo */}
+                    <div className="flex items-center gap-3 pb-3 border-b border-blue-100">
+                      <div className="w-12 h-12 rounded-2xl bg-white p-1 border border-blue-100 shadow-xs flex items-center justify-center shrink-0">
+                        <img
+                          src="/logo.png"
+                          alt="PRINT DOCKER"
+                          className="w-full h-full object-contain rounded-xl"
                         />
                       </div>
-
-                      <p className="text-[11px] text-gray-600 mt-2.5 leading-relaxed">
-                        You have <strong>3 minutes</strong> to scan and approve ₹{order.totalAmount.toFixed(2)} in your UPI app. Once approved, click below or enter your UTR to instantly record your payment and view your official receipt.
-                      </p>
+                      <div className="flex-1 min-w-0">
+                        <div className="flex items-center gap-1.5">
+                          <span className="font-black text-sm sm:text-base text-[#0B1D3A] tracking-tight block truncate">
+                            PRINT DOCKER
+                          </span>
+                          <span className="text-[9px] font-black text-blue-700 bg-blue-100/90 px-1.5 py-0.5 rounded border border-blue-200 shrink-0 uppercase">
+                            Official
+                          </span>
+                        </div>
+                        <span className="text-[10px] sm:text-[11px] font-bold text-blue-600 uppercase tracking-wider block">
+                          BADAM SUDHEER REDDY
+                        </span>
+                        <span className="text-[10px] text-gray-500 block truncate">
+                          Smart Printing Portal • UPI Verification
+                        </span>
+                      </div>
                     </div>
 
-                    {/* Real 12-Digit UTR Input */}
-                    <div className="mt-3 pt-2.5 border-t border-emerald-200/60">
-                      <label className="block text-[11px] font-bold text-[#0B1D3A] mb-1">
-                        Enter Real 12-Digit UPI Reference No. (UTR) from GPay / PhonePe:
-                      </label>
-                      <div className="flex gap-2">
+                    {/* 12-Digit UTR Input Form */}
+                    <div className="mt-3.5">
+                      <div className="flex items-center justify-between mb-1.5">
+                        <label
+                          htmlFor="upi-utr-input"
+                          className="text-xs font-black text-[#0B1D3A] flex items-center gap-1.5"
+                        >
+                          <span className="flex h-2 w-2 rounded-full bg-blue-600"></span>
+                          Enter 12-Digit UPI Reference No. (UTR):
+                        </label>
+                        <span className="text-[10px] font-bold text-blue-700 font-mono bg-blue-50 px-2 py-0.5 rounded border border-blue-100">
+                          {transactionId.length}/12 Digits
+                        </span>
+                      </div>
+
+                      <div className="relative">
                         <input
+                          id="upi-utr-input"
                           type="text"
+                          inputMode="numeric"
                           maxLength={12}
                           value={transactionId}
                           onChange={(e) => setTransactionId(e.target.value.replace(/\D/g, ""))}
                           placeholder="e.g. 428812345678"
-                          className="flex-1 px-3 py-2 rounded-xl border border-emerald-300 text-xs font-mono font-bold focus:outline-none focus:border-emerald-600 bg-white"
+                          className="w-full px-3.5 py-2.5 rounded-xl border-2 border-blue-300 text-sm font-mono font-bold tracking-wider text-gray-900 placeholder:text-gray-400 placeholder:font-normal focus:outline-none focus:border-blue-600 focus:ring-2 focus:ring-blue-100 bg-white transition-all shadow-xs"
                         />
-                        <button
-                          type="button"
-                          onClick={() => handleAutomaticPayment(transactionId)}
-                          disabled={submittingPayment}
-                          className="px-4 py-2 bg-gradient-to-r from-emerald-600 to-teal-600 hover:opacity-95 text-white rounded-xl text-xs font-bold disabled:opacity-40 transition-all cursor-pointer shadow-sm"
-                        >
-                          {submittingPayment ? <RefreshCw className="w-3.5 h-3.5 animate-spin" /> : "Confirm UTR"}
-                        </button>
                       </div>
-                      <p className="text-[10px] text-gray-500 mt-1">
-                        Your real 12-digit UTR will be saved to your receipt and Admin Payment History.
+
+                      <p className="text-[11px] text-gray-600 mt-2 leading-relaxed">
+                        After paying <strong>₹{order.totalAmount.toFixed(2)}</strong> via GPay, PhonePe, Paytm, or BHIM, copy the <strong>12-digit UTR / UPI Ref ID</strong> from your transaction receipt and enter it above.
                       </p>
                     </div>
                   </div>
 
-                  {/* Primary Instant Action Button */}
+                  {/* Primary UTR Confirmation Action Button */}
                   <button
                     type="button"
                     onClick={() => handleAutomaticPayment(transactionId)}
                     disabled={submittingPayment}
-                    className="w-full py-3.5 bg-gradient-to-r from-emerald-600 via-teal-600 to-green-600 text-white rounded-xl font-black text-sm hover:opacity-95 transition-all shadow-lg shadow-emerald-600/25 flex items-center justify-center gap-2 cursor-pointer disabled:opacity-50"
+                    className="w-full py-3.5 bg-gradient-to-r from-blue-600 via-indigo-600 to-blue-700 text-white rounded-xl font-black text-sm hover:opacity-95 transition-all shadow-lg shadow-blue-600/25 flex items-center justify-center gap-2 cursor-pointer disabled:opacity-50"
                   >
                     {submittingPayment ? (
                       <>
@@ -1201,38 +1148,25 @@ export default function OrderDetailPage() {
                       </>
                     ) : (
                       <>
-                        <CheckCircle className="w-5 h-5" /> I Have Paid — Confirm & Save Transaction
+                        <CheckCircle className="w-5 h-5 text-emerald-300" /> Confirm Payment with UTR & View Receipt
                       </>
                     )}
                   </button>
 
-                  {/* Optional Manual Entry Toggle */}
+                  {/* Optional Screenshot Upload Toggle */}
                   <div className="mt-3 text-center">
                     <button
                       type="button"
                       onClick={() => setShowManualInput(!showManualInput)}
                       className="text-[11px] text-gray-500 hover:text-blue-600 font-semibold underline underline-offset-2 transition-colors cursor-pointer"
                     >
-                      {showManualInput ? "▲ Hide manual input" : "▼ Have a specific UTR number? Enter manually (Optional)"}
+                      {showManualInput ? "▲ Hide screenshot upload" : "▼ Want to attach payment screenshot? (Optional)"}
                     </button>
                   </div>
 
-                  {/* Collapsible Manual Form */}
+                  {/* Collapsible Screenshot Form */}
                   {showManualInput && (
                     <form onSubmit={handlePaymentSubmission} className="space-y-3 pt-3 mt-2 border-t border-gray-100">
-                      <div>
-                        <label className="block text-xs font-bold uppercase tracking-wider text-[#0B1D3A] mb-1">
-                          Custom UPI Transaction ID / UTR <span className="text-gray-400 font-normal">(Optional)</span>
-                        </label>
-                        <input
-                          type="text"
-                          value={transactionId}
-                          onChange={(e) => setTransactionId(e.target.value)}
-                          placeholder="e.g. 412389123456"
-                          className="w-full px-3.5 py-2 rounded-xl border border-gray-300 text-sm focus:outline-none focus:border-blue-500 font-mono transition-all"
-                        />
-                      </div>
-
                       <div>
                         <label className="block text-xs font-bold uppercase tracking-wider text-[#0B1D3A] mb-1">
                           Payment Screenshot <span className="text-gray-400 font-normal">(Optional)</span>
@@ -1259,7 +1193,7 @@ export default function OrderDetailPage() {
                             <img
                               src={screenshotPreview}
                               alt="Screenshot Proof"
-                              className="h-10 w-10 object-cover rounded-lg"
+                              className="h-14 w-auto object-cover rounded-lg border border-gray-200"
                             />
                             <button
                               type="button"
@@ -1267,9 +1201,10 @@ export default function OrderDetailPage() {
                                 setScreenshotFile(null);
                                 setScreenshotPreview(null);
                               }}
-                              className="text-xs text-red-500 hover:text-red-700 px-3 py-1 font-semibold"
+                              className="p-1.5 bg-red-100 text-red-600 rounded-lg hover:bg-red-200 transition-colors mr-2"
+                              title="Remove screenshot"
                             >
-                              Remove
+                              <Trash2 className="w-4 h-4" />
                             </button>
                           </div>
                         )}
@@ -1280,7 +1215,7 @@ export default function OrderDetailPage() {
                         disabled={submittingPayment}
                         className="w-full py-2 bg-blue-600 text-white rounded-xl font-bold text-xs hover:bg-blue-700 transition-colors"
                       >
-                        Submit Custom Details
+                        Submit Screenshot with UTR
                       </button>
                     </form>
                   )}
@@ -1323,9 +1258,11 @@ export default function OrderDetailPage() {
 
                   {/* Print Docker Official Crest */}
                   <div className="flex items-center justify-center gap-2.5 mb-1.5">
-                    <div className="w-10 h-10 rounded-2xl bg-gradient-to-tr from-blue-600 to-indigo-600 flex items-center justify-center text-white shadow-md">
-                      <Printer className="w-5 h-5 text-white" />
-                    </div>
+                    <img
+                      src="/logo.png"
+                      alt="PRINT DOCKER"
+                      className="w-12 h-12 object-contain rounded-2xl bg-white p-1 border border-gray-200 shadow-md"
+                    />
                     <div className="text-left leading-tight">
                       <span className="font-black text-2xl tracking-tight text-[#0B1D3A] font-sans block">
                         PRINT DOCKER
