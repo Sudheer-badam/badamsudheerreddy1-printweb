@@ -424,6 +424,15 @@ export default function OrderDetailPage() {
     merchantName
   )}&am=${order.totalAmount.toFixed(2)}&cu=INR&tn=${encodeURIComponent("Order " + order.orderNumber)}`;
 
+  // Inclusive GST and Base Order calculation logic
+  const effectiveGstRate = typeof order.gstRate === "number" && order.gstRate >= 0 ? order.gstRate : 18.0;
+  const gstAmountCalculated = order.gstAmount && order.gstAmount > 0
+    ? order.gstAmount
+    : effectiveGstRate > 0
+    ? Math.round((order.totalAmount - (order.totalAmount / (1 + effectiveGstRate / 100))) * 100) / 100
+    : 0;
+  const orderBaseAmount = Math.max(0, Math.round((order.totalAmount - gstAmountCalculated) * 100) / 100);
+
   return (
     <>
       <div className="space-y-6 max-w-3xl">
@@ -997,15 +1006,21 @@ export default function OrderDetailPage() {
                     <div className="border-t border-white/20 pt-2.5 space-y-1.5">
                       <div className="flex justify-between items-center text-blue-100">
                         <span>Order Amount</span>
-                        <span className="font-semibold text-white font-mono">₹ {order.totalAmount.toFixed(2)}</span>
+                        <span className="font-semibold text-white font-mono">₹ {orderBaseAmount.toFixed(2)}</span>
                       </div>
                       <div className="flex justify-between items-center text-blue-100">
                         <span>Convenience Fee</span>
                         <span className="font-semibold text-white font-mono">₹ 0.00</span>
                       </div>
+                      {order.discount > 0 && (
+                        <div className="flex justify-between items-center text-emerald-200">
+                          <span>Discount</span>
+                          <span className="font-semibold font-mono">- ₹ {order.discount.toFixed(2)}</span>
+                        </div>
+                      )}
                       <div className="flex justify-between items-center text-blue-100">
-                        <span>Total GST @ 18.00%</span>
-                        <span className="font-semibold text-white font-mono">₹ 0.00</span>
+                        <span>Total GST @ {effectiveGstRate.toFixed(2)}%</span>
+                        <span className="font-semibold text-white font-mono">₹ {gstAmountCalculated.toFixed(2)}</span>
                       </div>
                     </div>
 
