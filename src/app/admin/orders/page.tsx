@@ -24,6 +24,11 @@ import { useAuth } from "@/contexts/AuthContext";
 import { useRouter, useSearchParams } from "next/navigation";
 import { formatCurrency, formatDate, ORDER_STATUS_COLORS, ORDER_STATUS_LABELS, PAYMENT_STATUS_COLORS, formatPaperQuality } from "@/lib/utils";
 import { toast } from "sonner";
+import PaymentReceiptModal, {
+  PaymentReceiptData,
+  formatReceiptDateTime,
+  generateReceiptNumber,
+} from "@/components/PaymentReceiptModal";
 
 interface Order {
   id: string;
@@ -45,6 +50,15 @@ interface Order {
   adminNotes: string | null;
   paymentProofUrl: string | null;
   user: { id: string; name: string; email: string; phone: string };
+  payments?: {
+    id: string;
+    amount: number;
+    status: string;
+    method?: string | null;
+    transactionId?: string | null;
+    paidAt?: string | null;
+    createdAt?: string;
+  }[];
   documents?: any[];
 }
 
@@ -79,6 +93,23 @@ export default function AdminOrdersPage() {
   const [updating, setUpdating] = useState<string | null>(null);
   const [adminNotes, setAdminNotes] = useState("");
   const [newStatus, setNewStatus] = useState("");
+  const [selectedReceipt, setSelectedReceipt] = useState<PaymentReceiptData | null>(null);
+
+  const openOrderReceipt = (o: Order) => {
+    const paidPayment = o.payments?.find((p) => p.status === "PAID") || o.payments?.[0];
+    setSelectedReceipt({
+      orderNumber: o.orderNumber,
+      orderId: o.id,
+      fileName: o.fileName,
+      customerName: o.user?.name || "Customer",
+      customerContact: o.user?.phone || o.user?.email,
+      receiptNumber: generateReceiptNumber(o.orderNumber, paidPayment?.id),
+      transactionId: paidPayment?.transactionId || (o.paymentStatus === "PAID" ? "VERIFIED" : null),
+      amount: paidPayment?.amount || o.totalAmount,
+      status: o.paymentStatus === "PAID" ? "successful" : o.paymentStatus.toLowerCase(),
+      timestamp: formatReceiptDateTime(paidPayment?.paidAt || o.createdAt),
+    });
+  };
 
   useEffect(() => {
     let interval: NodeJS.Timeout;
@@ -410,6 +441,13 @@ export default function AdminOrdersPage() {
                           <Eye className="w-4 h-4" />
                         </button>
                         <button
+                          onClick={() => openOrderReceipt(order)}
+                          className="p-1.5 rounded-lg text-blue-600 hover:text-blue-700 hover:bg-blue-50 transition-all"
+                          title="View Official Payment Receipt"
+                        >
+                          <FileText className="w-4 h-4" />
+                        </button>
+                        <button
                           onClick={() => router.push(`/admin/orders/${order.id}/print`)}
                           className="p-1.5 rounded-lg text-gray-500 hover:text-amber-400 hover:bg-amber-500/10 transition-all"
                           title="Print Room (Acrobat View)"
@@ -586,6 +624,15 @@ export default function AdminOrdersPage() {
                 </div>
               )}
 
+              {/* Payment Receipt Button */}
+              <button
+                type="button"
+                onClick={() => openOrderReceipt(selectedOrder)}
+                className="w-full py-3 bg-gradient-to-r from-blue-600 via-indigo-600 to-blue-700 hover:opacity-95 text-white rounded-xl text-xs font-bold flex items-center justify-center gap-2 shadow-sm transition-all cursor-pointer"
+              >
+                <FileText className="w-4 h-4" /> View Official Payment Receipt
+              </button>
+
               {/* Payment Proof */}
               {selectedOrder.paymentProofUrl && (
                 <div className="glass rounded-2xl p-4 border border-gray-200 mt-4">
@@ -600,6 +647,13 @@ export default function AdminOrdersPage() {
           </motion.div>
         </div>
       )}
+
+      {/* Official Payment Receipt Modal for All Users */}
+      <PaymentReceiptModal
+        isOpen={!!selectedReceipt}
+        onClose={() => setSelectedReceipt(null)}
+        data={selectedReceipt}
+      />
     </div>
   );
 }

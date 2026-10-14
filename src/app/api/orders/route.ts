@@ -56,7 +56,7 @@ export async function GET(req: NextRequest) {
             },
           },
           payments: {
-            select: { id: true, amount: true, status: true, method: true, paidAt: true },
+            select: { id: true, amount: true, status: true, method: true, transactionId: true, paidAt: true, createdAt: true },
           },
           invoice: { select: { id: true, invoiceNumber: true, pdfUrl: true } },
         },

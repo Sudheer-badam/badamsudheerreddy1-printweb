@@ -27,6 +27,11 @@ import { useAuth } from "@/contexts/AuthContext";
 import { formatCurrency, formatDate, PAYMENT_STATUS_COLORS, PAYMENT_STATUS_LABELS } from "@/lib/utils";
 import { toast } from "sonner";
 import Link from "next/link";
+import PaymentReceiptModal, {
+  PaymentReceiptData,
+  formatReceiptDateTime,
+  generateReceiptNumber,
+} from "@/components/PaymentReceiptModal";
 
 interface PaymentRecord {
   id: string;
@@ -73,11 +78,28 @@ export default function AdminPaymentsPage() {
 
   // Action Modals
   const [selectedProofUrl, setSelectedProofUrl] = useState<string | null>(null);
+  const [selectedReceipt, setSelectedReceipt] = useState<PaymentReceiptData | null>(null);
   const [actionPayment, setActionPayment] = useState<PaymentRecord | null>(null);
   const [actionType, setActionType] = useState<"APPROVE" | "REJECT" | "UNDER_REVIEW" | null>(null);
   const [rejectionReason, setRejectionReason] = useState("");
   const [adminNotes, setAdminNotes] = useState("");
   const [processingAction, setProcessingAction] = useState(false);
+
+  const openPaymentReceipt = (p: PaymentRecord) => {
+    setSelectedReceipt({
+      orderNumber: p.order?.orderNumber || "ORD",
+      orderId: p.order?.id,
+      fileName: p.order?.fileName,
+      customerName: p.user?.name || "Customer",
+      customerContact: p.user?.phone || p.user?.email,
+      receiptNumber: generateReceiptNumber(p.order?.orderNumber, p.id),
+      transactionId: p.transactionId,
+      amount: p.amount || p.order?.totalAmount || 0,
+      status: p.status === "PAID" ? "successful" : p.status.toLowerCase(),
+      timestamp: formatReceiptDateTime(p.paidAt || p.createdAt),
+      rejectionReason: p.rejectionReason,
+    });
+  };
 
   useEffect(() => {
     if (user) {
@@ -423,59 +445,71 @@ export default function AdminPaymentsPage() {
 
                       {/* Actions */}
                       <td className="px-4 py-3.5 text-right whitespace-nowrap">
-                        {isPending ? (
-                          <div className="flex items-center justify-end gap-1.5">
-                            {p.status === "SUBMITTED" && (
+                        <div className="flex items-center justify-end gap-1.5">
+                          {/* Official Payment Receipt for All Users */}
+                          <button
+                            type="button"
+                            onClick={() => openPaymentReceipt(p)}
+                            className="px-2.5 py-1.5 bg-blue-50 text-blue-700 hover:bg-blue-100 border border-blue-200 rounded-lg text-xs font-bold flex items-center gap-1 transition-colors shadow-xs cursor-pointer"
+                            title="View Official Payment Receipt"
+                          >
+                            <FileText className="w-3.5 h-3.5" /> Receipt
+                          </button>
+
+                          {isPending ? (
+                            <>
+                              {p.status === "SUBMITTED" && (
+                                <button
+                                  onClick={() => {
+                                    setActionPayment(p);
+                                    setActionType("UNDER_REVIEW");
+                                    handleVerifyAction();
+                                  }}
+                                  className="px-2 py-1.5 bg-purple-50 text-purple-700 hover:bg-purple-100 border border-purple-200 rounded-lg text-xs font-semibold transition-colors"
+                                  title="Mark as reviewing"
+                                >
+                                  Reviewing
+                                </button>
+                              )}
+
                               <button
                                 onClick={() => {
                                   setActionPayment(p);
-                                  setActionType("UNDER_REVIEW");
-                                  handleVerifyAction();
+                                  setActionType("REJECT");
+                                  setRejectionReason("");
                                 }}
-                                className="px-2 py-1 bg-purple-50 text-purple-700 hover:bg-purple-100 border border-purple-200 rounded-lg text-xs font-semibold transition-colors"
-                                title="Mark as reviewing"
+                                className="px-2.5 py-1.5 bg-rose-50 text-rose-600 hover:bg-rose-100 border border-rose-200 rounded-lg text-xs font-semibold flex items-center gap-1 transition-colors"
+                                title="Reject payment"
                               >
-                                Reviewing
+                                <X className="w-3.5 h-3.5" /> Reject
                               </button>
-                            )}
 
-                            <button
-                              onClick={() => {
-                                setActionPayment(p);
-                                setActionType("REJECT");
-                                setRejectionReason("");
-                              }}
-                              className="px-2.5 py-1.5 bg-rose-50 text-rose-600 hover:bg-rose-100 border border-rose-200 rounded-lg text-xs font-semibold flex items-center gap-1 transition-colors"
-                              title="Reject payment"
-                            >
-                              <X className="w-3.5 h-3.5" /> Reject
-                            </button>
-
-                            <button
-                              onClick={() => {
-                                setActionPayment(p);
-                                setActionType("APPROVE");
-                              }}
-                              className="px-3 py-1.5 bg-emerald-600 text-white hover:bg-emerald-700 rounded-lg text-xs font-semibold flex items-center gap-1 shadow-sm transition-colors"
-                              title="Verify and Approve Payment"
-                            >
-                              <Check className="w-3.5 h-3.5" /> Approve
-                            </button>
-                          </div>
-                        ) : (
-                          <div className="text-xs text-gray-400">
-                            {p.status === "PAID" && (
-                              <span className="text-emerald-600 font-medium flex items-center justify-end gap-1">
-                                <CheckCircle className="w-3.5 h-3.5" /> Verified
-                              </span>
-                            )}
-                            {p.status === "REJECTED" && (
-                              <span className="text-rose-500 font-medium flex items-center justify-end gap-1">
-                                <XCircle className="w-3.5 h-3.5" /> Rejected
-                              </span>
-                            )}
-                          </div>
-                        )}
+                              <button
+                                onClick={() => {
+                                  setActionPayment(p);
+                                  setActionType("APPROVE");
+                                }}
+                                className="px-3 py-1.5 bg-emerald-600 text-white hover:bg-emerald-700 rounded-lg text-xs font-semibold flex items-center gap-1 shadow-sm transition-colors"
+                                title="Verify and Approve Payment"
+                              >
+                                <Check className="w-3.5 h-3.5" /> Approve
+                              </button>
+                            </>
+                          ) : (
+                            <div className="text-xs">
+                              {p.status === "PAID" && (
+                                <span className="text-emerald-700 bg-emerald-50 border border-emerald-200 px-2.5 py-1 rounded-lg font-semibold flex items-center gap-1">
+                                  <CheckCircle className="w-3.5 h-3.5 text-emerald-600" /> Verified
+                                </span>
+                              )}
+                              {p.status === "REJECTED" && (
+                                <span className="text-rose-700 bg-rose-50 border border-rose-200 px-2.5 py-1 rounded-lg font-semibold flex items-center gap-1">
+                                  <XCircle className="w-3.5 h-3.5 text-rose-600" /> Rejected
+                                </span>
+                              )}
+                            </div>
+                          )}
+                        </div>
                       </td>
                     </tr>
                   );
@@ -651,6 +685,13 @@ export default function AdminPaymentsPage() {
           </div>
         )}
       </AnimatePresence>
+
+      {/* Official Payment Receipt Modal for All Users */}
+      <PaymentReceiptModal
+        isOpen={!!selectedReceipt}
+        onClose={() => setSelectedReceipt(null)}
+        data={selectedReceipt}
+      />
     </div>
   );
 }

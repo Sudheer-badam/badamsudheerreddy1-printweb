@@ -2,9 +2,14 @@
 
 import { useState, useEffect } from "react";
 import { motion } from "framer-motion";
-import { CreditCard, CheckCircle, XCircle, Clock, TrendingUp } from "lucide-react";
+import { CreditCard, CheckCircle, XCircle, Clock, TrendingUp, FileText } from "lucide-react";
 import { useAuth } from "@/contexts/AuthContext";
 import { formatCurrency, formatDate, PAYMENT_STATUS_COLORS, PAYMENT_STATUS_LABELS } from "@/lib/utils";
+import PaymentReceiptModal, {
+  PaymentReceiptData,
+  formatReceiptDateTime,
+  generateReceiptNumber,
+} from "@/components/PaymentReceiptModal";
 
 interface Payment {
   id: string;
@@ -21,6 +26,21 @@ export default function CustomerPaymentsPage() {
   const { user } = useAuth();
   const [payments, setPayments] = useState<Payment[]>([]);
   const [loading, setLoading] = useState(true);
+  const [selectedReceipt, setSelectedReceipt] = useState<PaymentReceiptData | null>(null);
+
+  const openReceipt = (p: Payment) => {
+    setSelectedReceipt({
+      orderNumber: p.order?.orderNumber || "ORD",
+      orderId: p.id,
+      fileName: p.order?.fileName,
+      customerName: user?.displayName || user?.email?.split("@")[0] || "Customer",
+      receiptNumber: generateReceiptNumber(p.order?.orderNumber, p.id),
+      transactionId: p.transactionId,
+      amount: p.amount,
+      status: p.status === "PAID" ? "successful" : p.status.toLowerCase(),
+      timestamp: formatReceiptDateTime(p.paidAt || p.createdAt),
+    });
+  };
 
   useEffect(() => {
     if (user) fetchPayments();
@@ -105,17 +125,32 @@ export default function CustomerPaymentsPage() {
                     <div className="text-xs text-gray-300 font-mono mt-0.5">TXN: {payment.transactionId}</div>
                   )}
                 </div>
-                <div className="text-right">
+                <div className="text-right flex flex-col items-end gap-1.5">
                   <div className="font-bold text-[#0B1D3A]">{formatCurrency(payment.amount)}</div>
                   <span className={`text-xs px-2.5 py-0.5 rounded-full border font-medium ${PAYMENT_STATUS_COLORS[payment.status] || "bg-gray-100 text-gray-700"}`}>
                     {PAYMENT_STATUS_LABELS[payment.status] || payment.status}
                   </span>
+                  <button
+                    type="button"
+                    onClick={() => openReceipt(payment)}
+                    className="mt-1 px-2.5 py-1 bg-blue-50 text-blue-700 hover:bg-blue-100 border border-blue-200 rounded-lg text-xs font-bold inline-flex items-center gap-1 transition-colors cursor-pointer shadow-xs"
+                    title="View Official Receipt"
+                  >
+                    <FileText className="w-3.5 h-3.5" /> Receipt
+                  </button>
                 </div>
               </motion.div>
             ))}
           </div>
         )}
       </div>
+
+      {/* Official Payment Receipt Modal */}
+      <PaymentReceiptModal
+        isOpen={!!selectedReceipt}
+        onClose={() => setSelectedReceipt(null)}
+        data={selectedReceipt}
+      />
     </div>
   );
 }
