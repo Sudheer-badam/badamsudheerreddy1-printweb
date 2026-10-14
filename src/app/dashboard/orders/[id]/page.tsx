@@ -22,7 +22,6 @@ import {
   QrCode,
   Eye,
   Info,
-  ExternalLink,
 } from "lucide-react";
 import { useAuth } from "@/contexts/AuthContext";
 import { formatCurrency, formatDate, ORDER_STATUS_LABELS, PAYMENT_STATUS_COLORS, PAYMENT_STATUS_LABELS } from "@/lib/utils";
@@ -971,7 +970,7 @@ export default function OrderDetailPage() {
                       Powered by <strong>CCAvenue</strong>
                     </span>
                     <span className="bg-white/20 px-2 py-0.5 rounded text-[10px] font-bold text-white border border-white/20">
-                      HDFC BANK
+                      SBI
                     </span>
                   </div>
                   <div className="flex items-center justify-between gap-1 opacity-80 text-[10px] text-blue-100 font-semibold flex-wrap">
@@ -1101,16 +1100,6 @@ export default function OrderDetailPage() {
                         >
                           <Copy className="w-3.5 h-3.5" />
                         </button>
-                      </div>
-
-                      {/* Direct mobile pay intent */}
-                      <div className="mt-2.5 flex justify-center">
-                        <a
-                          href={dynamicUpiUri}
-                          className="inline-flex md:hidden items-center gap-1.5 px-3.5 py-1.5 bg-green-600 text-white rounded-lg text-xs font-bold hover:bg-green-700 transition-colors shadow-xs"
-                        >
-                          <ExternalLink className="w-3.5 h-3.5" /> Open in UPI App (GPay / PhonePe)
-                        </a>
                       </div>
                     </div>
                   </div>
