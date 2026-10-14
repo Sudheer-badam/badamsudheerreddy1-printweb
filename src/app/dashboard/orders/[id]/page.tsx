@@ -23,7 +23,6 @@ import {
   Eye,
   Info,
   CreditCard,
-  Smartphone,
 } from "lucide-react";
 import { useAuth } from "@/contexts/AuthContext";
 import { formatCurrency, formatDate, ORDER_STATUS_LABELS, PAYMENT_STATUS_COLORS, PAYMENT_STATUS_LABELS } from "@/lib/utils";
@@ -1157,36 +1156,6 @@ export default function OrderDetailPage() {
                         >
                           Standee QR
                         </button>
-                      </div>
-
-                      {/* Merchant UPI ID with Copy */}
-                      <div className="flex items-center justify-center gap-2 mt-2.5">
-                        <span className="text-xs text-gray-500 font-medium">Merchant UPI:</span>
-                        <span className="text-xs font-mono font-bold text-gray-800 bg-gray-100 px-2 py-0.5 rounded border border-gray-200">
-                          {merchantUpiId}
-                        </span>
-                        <button
-                          type="button"
-                          onClick={copyUpiId}
-                          className="p-1 hover:bg-gray-200 rounded text-blue-600 transition-colors"
-                          title="Copy UPI ID"
-                        >
-                          <Copy className="w-3.5 h-3.5" />
-                        </button>
-                      </div>
-
-                      {/* Mobile Instant Pay Button */}
-                      <div className="mt-3.5 pt-3 border-t border-gray-100 flex flex-col items-center">
-                        <a
-                          href={dynamicUpiUri}
-                          className="w-full py-2.5 px-4 bg-gradient-to-r from-blue-600 via-indigo-600 to-blue-700 hover:from-blue-700 hover:to-indigo-800 text-white rounded-xl text-xs sm:text-sm font-extrabold shadow-md shadow-blue-500/20 transition-all flex items-center justify-center gap-2 cursor-pointer"
-                        >
-                          <Smartphone className="w-4 h-4" />
-                          <span>Tap to Open Any UPI App (Mobile)</span>
-                        </a>
-                        <span className="text-[10px] text-gray-400 mt-1">
-                          Directly opens Google Pay, PhonePe, Paytm, or BHIM with ₹{order.totalAmount.toFixed(2)}
-                        </span>
                       </div>
                     </div>
                   </div>
