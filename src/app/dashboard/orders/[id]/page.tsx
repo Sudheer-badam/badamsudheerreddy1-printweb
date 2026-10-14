@@ -955,28 +955,28 @@ export default function OrderDetailPage() {
               {/* LEFT COLUMN: ORDER SUMMARY (DEEP BLUE THEME)        */}
               {/* Visible on md+ desktop, hidden on mobile so QR fits */}
               {/* ---------------------------------------------------- */}
-              <div className="hidden md:flex md:w-[42%] bg-[#0B2D6B] text-white p-6 sm:p-7 flex-col justify-between shrink-0">
+              <div className="hidden md:flex md:w-[42%] bg-[#0B2D6B] text-white p-5 lg:p-6 flex-col justify-between shrink-0 overflow-y-auto">
                 <div>
                   {/* Organization Card Header */}
-                  <div className="bg-white rounded-xl p-4 text-[#0B2D6B] text-center shadow-md">
+                  <div className="bg-white rounded-xl p-3 sm:p-3.5 text-[#0B2D6B] text-center shadow-md">
                     <img
                       src="/logo.png"
                       alt="PRINT DOCKER"
-                      className="w-12 h-12 mx-auto object-contain mb-2 rounded-xl"
+                      className="w-10 h-10 mx-auto object-contain mb-1.5 rounded-xl"
                     />
-                    <div className="font-extrabold text-lg sm:text-xl tracking-wide uppercase leading-tight font-sans text-blue-600">
+                    <div className="font-extrabold text-base sm:text-lg tracking-wide uppercase leading-tight font-sans text-blue-600">
                       PRINT DOCKER
                     </div>
-                    <div className="font-bold text-xs sm:text-sm tracking-wider uppercase leading-tight mt-1 text-[#0B1D3A]">
+                    <div className="font-bold text-xs tracking-wider uppercase leading-tight mt-0.5 text-[#0B1D3A]">
                       BADAM SUDHEER REDDY
                     </div>
-                    <div className="text-[10px] text-gray-500 font-bold tracking-normal mt-1.5 border-t border-gray-100 pt-1">
+                    <div className="text-[9px] text-gray-500 font-bold tracking-normal mt-1 border-t border-gray-100 pt-0.5">
                       SMART PRINTING PORTAL • VIJAYAWADA
                     </div>
                   </div>
 
                   {/* Order Details List */}
-                  <div className="space-y-4 my-6 text-xs sm:text-sm">
+                  <div className="space-y-2.5 sm:space-y-3 my-4 text-xs sm:text-sm">
                     <div>
                       <span className="text-blue-200 text-xs block font-medium">Order ID</span>
                       <span className="font-mono font-bold text-white text-sm sm:text-base tracking-wide">
@@ -991,7 +991,7 @@ export default function OrderDetailPage() {
                       </span>
                     </div>
 
-                    <div className="border-t border-white/20 pt-3 space-y-2">
+                    <div className="border-t border-white/20 pt-2.5 space-y-1.5">
                       <div className="flex justify-between items-center text-blue-100">
                         <span>Order Amount</span>
                         <span className="font-semibold text-white font-mono">₹ {order.totalAmount.toFixed(2)}</span>
@@ -1006,22 +1006,22 @@ export default function OrderDetailPage() {
                       </div>
                     </div>
 
-                    <div className="border-t-2 border-white/30 pt-3 flex justify-between items-baseline">
+                    <div className="border-t-2 border-white/30 pt-2 flex justify-between items-baseline">
                       <span className="font-bold text-sm text-white">Total Payable</span>
-                      <span className="font-black text-2xl text-white font-mono">
+                      <span className="font-black text-xl sm:text-2xl text-white font-mono">
                         ₹ {order.totalAmount.toFixed(2)}
                       </span>
                     </div>
 
-                    <p className="text-[11px] text-blue-200/90 leading-relaxed bg-white/10 rounded-xl p-2.5 border border-white/10">
+                    <p className="text-[10px] text-blue-200/90 leading-relaxed bg-white/10 rounded-xl p-2 border border-white/10 mt-2">
                       No convenience fee or service charge is payable by the customer on Debit card / UPI transactions.
                     </p>
                   </div>
                 </div>
 
                 {/* Powered By & Trust Badges */}
-                <div className="border-t border-white/15 pt-4 mt-2">
-                  <div className="flex items-center justify-between text-[11px] text-blue-200 mb-2">
+                <div className="border-t border-white/15 pt-3 mt-2 pb-2">
+                  <div className="flex items-center justify-between text-[11px] text-blue-200 mb-1.5">
                     <span>
                       Accepted via <strong>UPI Apps</strong>
                     </span>
@@ -1029,17 +1029,17 @@ export default function OrderDetailPage() {
                       Zero Fees
                     </span>
                   </div>
-                  <div className="flex items-center gap-1.5 flex-wrap mb-2.5">
+                  <div className="flex items-center gap-1.5 flex-wrap mb-2">
                     {PAYMENT_APPS.map((app) => (
                       <div
                         key={app.name}
-                        className="bg-white rounded-lg px-2 py-1 flex items-center justify-center border border-white/30 shadow-xs"
+                        className="bg-white rounded-lg px-2 py-0.5 flex items-center justify-center border border-white/30 shadow-xs"
                         title={app.name}
                       >
                         <img
                           src={app.src}
                           alt={app.alt}
-                          className="h-3.5 w-auto max-w-[42px] object-contain"
+                          className="h-3.5 w-auto max-w-[40px] object-contain"
                         />
                       </div>
                     ))}
