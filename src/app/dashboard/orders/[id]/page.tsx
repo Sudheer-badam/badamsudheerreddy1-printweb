@@ -463,16 +463,6 @@ export default function OrderDetailPage() {
               </div>
 
               <div className="flex items-center gap-2 flex-wrap justify-end">
-                {(order.paymentStatus === "PENDING" || order.paymentStatus === "REJECTED") && !isCancelled && (
-                  <button
-                    onClick={() => setShowPaymentModal(true)}
-                    className="px-4 py-2.5 bg-gradient-to-r from-[#0B2D6B] to-blue-700 text-white rounded-xl text-xs sm:text-sm font-semibold hover:opacity-95 transition-all flex items-center gap-2 shadow-lg shadow-blue-900/20"
-                  >
-                    <QrCode className="w-4 h-4" />
-                    {order.paymentStatus === "REJECTED" ? "Resubmit UPI Payment" : "Pay with UPI (QR)"}
-                  </button>
-                )}
-
                 {(order.paymentStatus !== "PENDING" || latestPayment) && (
                   <button
                     onClick={() => {
