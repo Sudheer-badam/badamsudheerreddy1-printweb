@@ -603,6 +603,21 @@ export default function AdminSettingsPage() {
             />
             <span className="text-xs font-mono font-bold text-gray-800">{business.upiId}</span>
             <span className="text-[11px] text-gray-500">{business.merchantName}</span>
+
+            {/* Supported Payment Logos */}
+            <div className="flex items-center gap-1.5 mt-3 pt-2.5 border-t border-gray-100 flex-wrap justify-center">
+              {[
+                { name: "Google Pay", src: "/payment-logos/gpay.jpeg", h: "h-3" },
+                { name: "PhonePe", src: "/payment-logos/phonepe.webp", h: "h-3" },
+                { name: "Paytm", src: "/payment-logos/paytm.jpeg", h: "h-2.5" },
+                { name: "BHIM", src: "/payment-logos/bhim.png", h: "h-2.5" },
+                { name: "UPI", src: "/payment-logos/upi.jpeg", h: "h-2.5" },
+              ].map((app) => (
+                <div key={app.name} className="bg-white border border-gray-200 rounded px-1.5 py-0.5 shadow-2xs" title={app.name}>
+                  <img src={app.src} alt={app.name} className={`${app.h} w-auto max-w-[32px] object-contain`} />
+                </div>
+              ))}
+            </div>
           </div>
         </div>
 

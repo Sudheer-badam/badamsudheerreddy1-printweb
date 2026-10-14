@@ -22,11 +22,21 @@ import {
   QrCode,
   Eye,
   Info,
+  CreditCard,
+  Smartphone,
 } from "lucide-react";
 import { useAuth } from "@/contexts/AuthContext";
 import { formatCurrency, formatDate, ORDER_STATUS_LABELS, PAYMENT_STATUS_COLORS, PAYMENT_STATUS_LABELS } from "@/lib/utils";
 import { toast } from "sonner";
 import { upload } from "@vercel/blob/client";
+
+const PAYMENT_APPS = [
+  { name: "Google Pay", src: "/payment-logos/gpay.jpeg", alt: "Google Pay", hClass: "h-5 sm:h-6" },
+  { name: "PhonePe", src: "/payment-logos/phonepe.webp", alt: "PhonePe", hClass: "h-5 sm:h-6" },
+  { name: "Paytm", src: "/payment-logos/paytm.jpeg", alt: "Paytm", hClass: "h-4 sm:h-5" },
+  { name: "BHIM", src: "/payment-logos/bhim.png", alt: "BHIM UPI", hClass: "h-4 sm:h-5" },
+  { name: "UPI", src: "/payment-logos/upi.jpeg", alt: "UPI", hClass: "h-4 sm:h-5" },
+];
 
 interface OrderDetail {
   id: string;
@@ -682,19 +692,49 @@ export default function OrderDetailPage() {
 
         {/* 4. PAYMENT PENDING NOTICE */}
         {order.paymentStatus === "PENDING" && !isCancelled && (
-          <div className="bg-amber-50 border border-amber-200 rounded-2xl p-4 flex items-center justify-between gap-3 text-amber-800 text-sm">
-            <div className="flex items-center gap-3">
-              <Info className="w-5 h-5 text-amber-600 shrink-0" />
-              <span>
-                Please complete payment of <strong>{formatCurrency(order.totalAmount)}</strong> via Google Pay / UPI QR to proceed with printing.
-              </span>
+          <div className="bg-gradient-to-r from-amber-50 via-orange-50/40 to-white border-2 border-amber-200/90 rounded-2xl p-4 sm:p-5 shadow-xs">
+            <div className="flex flex-col md:flex-row items-start md:items-center justify-between gap-4">
+              <div className="flex items-start gap-3">
+                <div className="w-10 h-10 rounded-xl bg-amber-500/15 flex items-center justify-center shrink-0 mt-0.5 border border-amber-200">
+                  <CreditCard className="w-5 h-5 text-amber-600" />
+                </div>
+                <div>
+                  <div className="flex items-center gap-2 mb-1">
+                    <span className="font-extrabold text-amber-900 text-sm sm:text-base">
+                      Payment Required to Commence Printing
+                    </span>
+                    <span className="bg-amber-100 text-amber-800 text-[10px] font-black uppercase px-2 py-0.5 rounded-full border border-amber-300">
+                      Pending
+                    </span>
+                  </div>
+                  <p className="text-xs text-amber-800/90 leading-relaxed">
+                    Please complete payment of <strong>{formatCurrency(order.totalAmount)}</strong> via Google Pay, PhonePe, Paytm, BHIM, or UPI to proceed with printing.
+                  </p>
+                  {/* Logos strip in pending banner */}
+                  <div className="flex items-center gap-1.5 mt-2.5 flex-wrap">
+                    <span className="text-[10px] font-bold text-gray-500 uppercase tracking-wider mr-1">Pay via:</span>
+                    {PAYMENT_APPS.map((app) => (
+                      <button
+                        type="button"
+                        key={app.name}
+                        onClick={() => setShowPaymentModal(true)}
+                        className="bg-white border border-gray-200 hover:border-amber-400 rounded-lg px-2 py-1 shadow-2xs flex items-center justify-center cursor-pointer transition-transform hover:scale-105"
+                        title={`Pay with ${app.name}`}
+                      >
+                        <img src={app.src} alt={app.name} className="h-4 w-auto max-w-[48px] object-contain" />
+                      </button>
+                    ))}
+                  </div>
+                </div>
+              </div>
+              <button
+                onClick={() => setShowPaymentModal(true)}
+                className="w-full md:w-auto px-5 py-2.5 bg-gradient-to-r from-amber-600 to-orange-600 hover:from-amber-700 hover:to-orange-700 text-white rounded-xl text-xs sm:text-sm font-extrabold transition-all shadow-md shadow-amber-600/20 shrink-0 flex items-center justify-center gap-2 cursor-pointer"
+              >
+                <QrCode className="w-4 h-4" />
+                Pay {formatCurrency(order.totalAmount)}
+              </button>
             </div>
-            <button
-              onClick={() => setShowPaymentModal(true)}
-              className="px-3.5 py-1.5 bg-amber-600 text-white rounded-lg text-xs font-bold hover:bg-amber-700 transition-colors shrink-0"
-            >
-              Pay Now
-            </button>
           </div>
         )}
 
@@ -810,6 +850,33 @@ export default function OrderDetailPage() {
                 </div>
                 <span className="text-xl font-extrabold text-blue-600">{formatCurrency(order.totalAmount)}</span>
               </div>
+              {order.paymentStatus === "PENDING" && !isCancelled && (
+                <div className="mt-4 pt-3 border-t border-gray-100">
+                  <div className="flex items-center justify-between text-xs text-gray-500 mb-2">
+                    <span className="font-semibold text-gray-600">Accepted UPI Apps:</span>
+                    <button
+                      type="button"
+                      onClick={() => setShowPaymentModal(true)}
+                      className="text-blue-600 font-bold hover:underline"
+                    >
+                      Pay Now →
+                    </button>
+                  </div>
+                  <div
+                    onClick={() => setShowPaymentModal(true)}
+                    className="flex items-center justify-between gap-1.5 p-2 bg-blue-50/40 hover:bg-blue-50 rounded-xl border border-blue-100 hover:border-blue-300 transition-all cursor-pointer"
+                  >
+                    <div className="flex items-center gap-1.5 flex-wrap">
+                      {PAYMENT_APPS.map((app) => (
+                        <div key={app.name} className="bg-white border border-gray-200 rounded-md px-1.5 py-0.5">
+                          <img src={app.src} alt={app.name} className="h-3.5 w-auto max-w-[42px] object-contain" />
+                        </div>
+                      ))}
+                    </div>
+                    <span className="text-xs font-bold text-blue-700 whitespace-nowrap">Scan & Pay</span>
+                  </div>
+                </div>
+              )}
             </div>
           </div>
         </div>
@@ -967,22 +1034,33 @@ export default function OrderDetailPage() {
                 <div className="border-t border-white/15 pt-4 mt-2">
                   <div className="flex items-center justify-between text-[11px] text-blue-200 mb-2">
                     <span>
-                      Powered by <strong>CCAvenue</strong>
+                      Accepted via <strong>UPI Apps</strong>
                     </span>
                     <span className="bg-white/20 px-2 py-0.5 rounded text-[10px] font-bold text-white border border-white/20">
-                      SBI
+                      Zero Fees
                     </span>
                   </div>
+                  <div className="flex items-center gap-1.5 flex-wrap mb-2.5">
+                    {PAYMENT_APPS.map((app) => (
+                      <div
+                        key={app.name}
+                        className="bg-white rounded-lg px-2 py-1 flex items-center justify-center border border-white/30 shadow-xs"
+                        title={app.name}
+                      >
+                        <img
+                          src={app.src}
+                          alt={app.alt}
+                          className="h-3.5 w-auto max-w-[42px] object-contain"
+                        />
+                      </div>
+                    ))}
+                  </div>
                   <div className="flex items-center justify-between gap-1 opacity-80 text-[10px] text-blue-100 font-semibold flex-wrap">
-                    <span>Mastercard SecureCode</span>
+                    <span>Instant UPI Verification</span>
                     <span>•</span>
-                    <span>Verified by VISA</span>
+                    <span>Direct Merchant Settlement</span>
                     <span>•</span>
-                    <span>RuPay</span>
-                    <span>•</span>
-                    <span>UPI</span>
-                    <span>•</span>
-                    <span>PCI-DSS</span>
+                    <span>100% Secure</span>
                   </div>
                 </div>
               </div>
@@ -1023,25 +1101,30 @@ export default function OrderDetailPage() {
                       <h4 className="font-extrabold text-base text-[#0B1D3A]">Scan and Pay</h4>
                       <p className="text-xs text-gray-500 mt-0.5">Scan the QR code using any UPI app</p>
 
-                      {/* Brand Logos Strip (GPay, PhonePe, Paytm, UPI, BHIM) */}
-                      <div className="flex items-center justify-center gap-1.5 sm:gap-2.5 my-3 flex-wrap">
-                        <div className="flex items-center gap-1 bg-white px-2.5 py-1 rounded-md border border-gray-200 shadow-xs text-xs font-bold text-gray-700">
-                          <span className="text-blue-600 font-extrabold">G</span>
-                          <span className="text-red-500">P</span>
-                          <span className="text-yellow-500">a</span>
-                          <span className="text-green-600">y</span>
+                      {/* Brand Logos Strip (Google Pay, PhonePe, Paytm, BHIM, UPI) */}
+                      <div className="my-3">
+                        <div className="text-[10px] font-extrabold text-gray-400 uppercase tracking-widest mb-1.5">
+                          Supported UPI Apps
                         </div>
-                        <div className="flex items-center gap-1 bg-purple-50 px-2.5 py-1 rounded-md border border-purple-200 shadow-xs text-xs font-bold text-purple-700">
-                          <span>PhonePe</span>
-                        </div>
-                        <div className="flex items-center gap-1 bg-sky-50 px-2.5 py-1 rounded-md border border-sky-200 shadow-xs text-xs font-bold text-sky-700">
-                          <span>Paytm</span>
-                        </div>
-                        <div className="flex items-center gap-1 bg-orange-50 px-2.5 py-1 rounded-md border border-orange-200 shadow-xs text-xs font-bold text-orange-700">
-                          <span>BHIM</span>
-                        </div>
-                        <div className="flex items-center gap-1 bg-green-50 px-2.5 py-1 rounded-md border border-green-200 shadow-xs text-xs font-bold text-green-700">
-                          <span>UPI</span>
+                        <div className="flex items-center justify-center gap-2 sm:gap-2.5 flex-wrap">
+                          {PAYMENT_APPS.map((app) => (
+                            <div
+                              key={app.name}
+                              className="flex items-center gap-1.5 bg-white px-2.5 py-1.5 rounded-xl border border-gray-200/90 shadow-2xs hover:border-blue-400 hover:shadow-xs transition-all group"
+                              title={`Pay using ${app.name}`}
+                            >
+                              <div className="h-6 w-7 flex items-center justify-center shrink-0">
+                                <img
+                                  src={app.src}
+                                  alt={app.alt}
+                                  className={`${app.hClass} w-auto max-w-[56px] object-contain transition-transform group-hover:scale-105`}
+                                />
+                              </div>
+                              <span className="text-[11px] font-bold text-gray-700">
+                                {app.name}
+                              </span>
+                            </div>
+                          ))}
                         </div>
                       </div>
 
@@ -1100,6 +1183,20 @@ export default function OrderDetailPage() {
                         >
                           <Copy className="w-3.5 h-3.5" />
                         </button>
+                      </div>
+
+                      {/* Mobile Instant Pay Button */}
+                      <div className="mt-3.5 pt-3 border-t border-gray-100 flex flex-col items-center">
+                        <a
+                          href={dynamicUpiUri}
+                          className="w-full py-2.5 px-4 bg-gradient-to-r from-blue-600 via-indigo-600 to-blue-700 hover:from-blue-700 hover:to-indigo-800 text-white rounded-xl text-xs sm:text-sm font-extrabold shadow-md shadow-blue-500/20 transition-all flex items-center justify-center gap-2 cursor-pointer"
+                        >
+                          <Smartphone className="w-4 h-4" />
+                          <span>Tap to Open Any UPI App (Mobile)</span>
+                        </a>
+                        <span className="text-[10px] text-gray-400 mt-1">
+                          Directly opens Google Pay, PhonePe, Paytm, or BHIM with ₹{order.totalAmount.toFixed(2)}
+                        </span>
                       </div>
                     </div>
                   </div>
@@ -1161,9 +1258,23 @@ export default function OrderDetailPage() {
                         />
                       </div>
 
-                      <p className="text-[11px] text-gray-600 mt-2 leading-relaxed">
-                        After paying <strong>₹{order.totalAmount.toFixed(2)}</strong> via GPay, PhonePe, Paytm, or BHIM, copy the <strong>12-digit UTR / UPI Ref ID</strong> from your transaction receipt and enter it above.
-                      </p>
+                      <div className="mt-2.5 bg-blue-50/60 rounded-xl p-2.5 border border-blue-100 text-[11px] text-gray-600 leading-relaxed">
+                        <div className="flex items-center gap-1.5 font-bold text-[#0B1D3A] mb-1">
+                          <span>Pay via any UPI app:</span>
+                        </div>
+                        <div className="flex items-center gap-1.5 flex-wrap mb-1.5">
+                          {PAYMENT_APPS.map((app) => (
+                            <span
+                              key={app.name}
+                              className="inline-flex items-center gap-1 bg-white px-2 py-0.5 rounded-md border border-blue-100 text-[10px] font-semibold text-gray-700 shadow-2xs"
+                            >
+                              <img src={app.src} alt={app.name} className="h-3 w-auto object-contain" />
+                              <span>{app.name}</span>
+                            </span>
+                          ))}
+                        </div>
+                        After paying <strong>₹{order.totalAmount.toFixed(2)}</strong>, copy the <strong>12-digit UTR / UPI Ref ID</strong> from your transaction receipt and enter it above.
+                      </div>
                     </div>
                   </div>
 

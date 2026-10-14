@@ -67,9 +67,25 @@ export default function CustomerPaymentsPage() {
 
   return (
     <div className="space-y-6">
-      <div>
-        <h1 className="text-2xl font-bold text-[#0B1D3A]">Payments</h1>
-        <p className="text-gray-500 mt-1">Your payment history</p>
+      <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-3">
+        <div>
+          <h1 className="text-2xl font-bold text-[#0B1D3A]">Payments</h1>
+          <p className="text-gray-500 mt-1">Your payment history</p>
+        </div>
+        <div className="flex items-center gap-2 bg-white px-3 py-1.5 rounded-xl border border-gray-200/90 shadow-2xs self-start sm:self-auto flex-wrap">
+          <span className="text-[10px] font-bold text-gray-500 uppercase tracking-wider">Accepted:</span>
+          {[
+            { name: "Google Pay", src: "/payment-logos/gpay.jpeg", h: "h-3.5" },
+            { name: "PhonePe", src: "/payment-logos/phonepe.webp", h: "h-3.5" },
+            { name: "Paytm", src: "/payment-logos/paytm.jpeg", h: "h-3" },
+            { name: "BHIM", src: "/payment-logos/bhim.png", h: "h-3" },
+            { name: "UPI", src: "/payment-logos/upi.jpeg", h: "h-3" },
+          ].map((app) => (
+            <div key={app.name} className="px-1 py-0.5" title={app.name}>
+              <img src={app.src} alt={app.name} className={`${app.h} w-auto max-w-[36px] object-contain`} />
+            </div>
+          ))}
+        </div>
       </div>
 
       {/* Summary */}

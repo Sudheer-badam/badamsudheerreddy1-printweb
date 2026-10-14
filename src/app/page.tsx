@@ -215,6 +215,25 @@ export default function HomePage() {
                 </div>
                 <h3 className="text-lg font-bold mb-2" style={{ color: "#0B1D3A" }}>{f.title}</h3>
                 <p className="text-sm leading-relaxed" style={{ color: "#6B7280" }}>{f.description}</p>
+                {f.title === "Multiple Payments" && (
+                  <div className="flex items-center gap-1.5 mt-4 pt-3.5 border-t border-gray-100 flex-wrap">
+                    {[
+                      { name: "Google Pay", src: "/payment-logos/gpay.jpeg", h: "h-4" },
+                      { name: "PhonePe", src: "/payment-logos/phonepe.webp", h: "h-4" },
+                      { name: "Paytm", src: "/payment-logos/paytm.jpeg", h: "h-3.5" },
+                      { name: "BHIM", src: "/payment-logos/bhim.png", h: "h-3.5" },
+                      { name: "UPI", src: "/payment-logos/upi.jpeg", h: "h-3.5" },
+                    ].map((app) => (
+                      <div
+                        key={app.name}
+                        className="bg-white border border-gray-200/90 rounded-lg px-2 py-1 shadow-2xs flex items-center justify-center hover:border-blue-400 transition-colors"
+                        title={app.name}
+                      >
+                        <img src={app.src} alt={app.name} className={`${app.h} w-auto max-w-[46px] object-contain`} />
+                      </div>
+                    ))}
+                  </div>
+                )}
               </motion.div>
             ))}
           </div>

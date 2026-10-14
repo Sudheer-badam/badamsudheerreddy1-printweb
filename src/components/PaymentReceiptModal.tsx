@@ -190,6 +190,30 @@ export default function PaymentReceiptModal({ isOpen, onClose, data }: PaymentRe
                   <span>Payment record saved to Print Docker portal for verification</span>
                 )}
               </div>
+
+              {/* Verified UPI Payment Gateways */}
+              <div className="mt-4 pt-3 border-t border-[#b6dec0]/60 flex items-center justify-between gap-2 flex-wrap">
+                <span className="text-[10px] font-bold text-gray-600 uppercase tracking-wider">
+                  Supported via UPI
+                </span>
+                <div className="flex items-center gap-1.5 flex-wrap">
+                  {[
+                    { name: "Google Pay", src: "/payment-logos/gpay.jpeg", h: "h-3.5" },
+                    { name: "PhonePe", src: "/payment-logos/phonepe.webp", h: "h-3.5" },
+                    { name: "Paytm", src: "/payment-logos/paytm.jpeg", h: "h-3" },
+                    { name: "BHIM", src: "/payment-logos/bhim.png", h: "h-3" },
+                    { name: "UPI", src: "/payment-logos/upi.jpeg", h: "h-3" },
+                  ].map((app) => (
+                    <div
+                      key={app.name}
+                      className="bg-white border border-[#b6dec0] rounded px-1.5 py-0.5 shadow-2xs"
+                      title={app.name}
+                    >
+                      <img src={app.src} alt={app.name} className={`${app.h} w-auto max-w-[36px] object-contain`} />
+                    </div>
+                  ))}
+                </div>
+              </div>
             </div>
           </div>
 
