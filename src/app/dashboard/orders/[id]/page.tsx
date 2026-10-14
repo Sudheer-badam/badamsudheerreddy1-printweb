@@ -424,12 +424,12 @@ export default function OrderDetailPage() {
     merchantName
   )}&am=${order.totalAmount.toFixed(2)}&cu=INR&tn=${encodeURIComponent("Order " + order.orderNumber)}`;
 
-  // Inclusive GST and Base Order calculation logic
+  // GST calculation logic: 18% of Total Price (e.g. ₹ 1.00 -> ₹ 0.18 GST)
   const effectiveGstRate = typeof order.gstRate === "number" && order.gstRate >= 0 ? order.gstRate : 18.0;
   const gstAmountCalculated = order.gstAmount && order.gstAmount > 0
     ? order.gstAmount
     : effectiveGstRate > 0
-    ? Math.round((order.totalAmount - (order.totalAmount / (1 + effectiveGstRate / 100))) * 100) / 100
+    ? Math.round(order.totalAmount * (effectiveGstRate / 100) * 100) / 100
     : 0;
   const orderBaseAmount = Math.max(0, Math.round((order.totalAmount - gstAmountCalculated) * 100) / 100);
 
