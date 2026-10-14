@@ -264,121 +264,7 @@ export default function OrderDetailPage() {
     window.print();
   };
 
-  const loadRazorpayScript = (): Promise<boolean> => {
-    return new Promise((resolve) => {
-      if (typeof window !== "undefined" && (window as any).Razorpay) {
-        resolve(true);
-        return;
-      }
-      const script = document.createElement("script");
-      script.src = "https://checkout.razorpay.com/v1/checkout.js";
-      script.async = true;
-      script.onload = () => resolve(true);
-      script.onerror = () => resolve(false);
-      document.body.appendChild(script);
-    });
-  };
 
-  const handleRazorpayPayment = async () => {
-    if (!order || !user) return;
-    setSubmittingPayment(true);
-    toast.loading("Connecting to Live Bank Gateway...", { id: "rzp-init" });
-    try {
-      const resOrder = await fetch("/api/payments/razorpay/order", {
-        method: "POST",
-        headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({ orderId: order.id, uid: user.uid }),
-      });
-
-      const orderData = await resOrder.json();
-      toast.dismiss("rzp-init");
-
-      if (!resOrder.ok) {
-        if (orderData.isConfigured === false) {
-          toast.error("Razorpay Gateway Keys not yet configured in Admin Settings. Please use Direct UPI below.", { duration: 5000 });
-          return;
-        }
-        toast.error(orderData.error || "Failed to initialize live gateway.");
-        return;
-      }
-
-      const scriptLoaded = await loadRazorpayScript();
-      if (!scriptLoaded) {
-        toast.error("Could not load gateway SDK. Please check your internet connection.");
-        return;
-      }
-
-      const options = {
-        key: orderData.keyId,
-        amount: orderData.amount,
-        currency: orderData.currency || "INR",
-        name: "PRINT DOCKER",
-        description: `Order #${order.orderNumber} • Badam Sudheer Reddy`,
-        image: "/icon.png",
-        order_id: orderData.orderId,
-        prefill: {
-          name: user.displayName || user.email?.split("@")[0] || "",
-          email: user.email || "",
-          contact: user.phoneNumber || "",
-        },
-        theme: {
-          color: "#0B1D3A",
-        },
-        handler: async function (response: any) {
-          toast.loading("Payment received from bank! Finalizing receipt...", { id: "rzp-verify" });
-          try {
-            const verifyRes = await fetch("/api/payments/razorpay/verify", {
-              method: "POST",
-              headers: { "Content-Type": "application/json" },
-              body: JSON.stringify({
-                orderId: order.id,
-                uid: user.uid,
-                razorpay_payment_id: response.razorpay_payment_id,
-                razorpay_order_id: response.razorpay_order_id,
-                razorpay_signature: response.razorpay_signature,
-              }),
-            });
-
-            const verifyData = await verifyRes.json();
-            toast.dismiss("rzp-verify");
-
-            if (verifyRes.ok) {
-              const realTx = verifyData.transactionId || response.razorpay_payment_id;
-              setAutoSavedTx(realTx);
-              setShowPaymentModal(false);
-              setReportStatus("successful");
-              setReportTimestamp(formatReportDateTime());
-              setShowReportModal(true);
-              fetchOrder();
-              toast.success("Payment verified successfully via Bank Gateway!");
-            } else {
-              toast.error(verifyData.error || "Verification failed");
-            }
-          } catch {
-            toast.dismiss("rzp-verify");
-            toast.error("Error verifying payment with gateway");
-          }
-        },
-        modal: {
-          ondismiss: function () {
-            toast.info("Payment session dismissed.");
-          },
-        },
-      };
-
-      const rzp = new (window as any).Razorpay(options);
-      rzp.on("payment.failed", function (response: any) {
-        toast.error(response.error?.description || "Payment failed at bank.");
-      });
-      rzp.open();
-    } catch (err: any) {
-      console.error("Razorpay launch error:", err);
-      toast.dismiss("rzp-init");
-      toast.error("Failed to connect to Payment Gateway.");
-    } finally {
-      setSubmittingPayment(false);
-    }
-  };
 
   const handleAutomaticPayment = async (overrideTx?: string) => {
     if (!order || !user) return;
@@ -1212,76 +1098,113 @@ export default function OrderDetailPage() {
                     </div>
                   </div>
 
-                  {/* Live Bank Gateway Banner (Real Webhook & Real UTR) */}
-                  <div className="bg-gradient-to-r from-[#0B1D3A] via-slate-900 to-indigo-950 text-white rounded-2xl p-4 mb-3 border border-blue-400/30 shadow-md">
-                    <div className="flex items-center justify-between mb-1.5">
-                      <span className="text-[10px] font-black uppercase tracking-wider bg-blue-500/20 text-blue-300 border border-blue-400/30 px-2 py-0.5 rounded-full">
-                        Recommended • Auto-Capture
-                      </span>
-                      <span className="text-[11px] font-bold text-emerald-400 flex items-center gap-1.5">
-                        <span className="w-2 h-2 rounded-full bg-emerald-400 animate-pulse"></span> 100% Real UTR
-                      </span>
-                    </div>
-                    <div className="text-xs font-bold text-white">Live Bank Gateway (Razorpay UPI)</div>
-                    <p className="text-[11px] text-gray-300 mt-1 leading-relaxed">
-                      Scans any UPI app (GPay / PhonePe / Paytm). Real-time bank webhook detects credit in &lt; 1s and redirects automatically with the <strong>exact same UTR number</strong>.
-                    </p>
-                    <button
-                      type="button"
-                      onClick={handleRazorpayPayment}
-                      disabled={submittingPayment}
-                      className="mt-3 w-full py-2.5 bg-gradient-to-r from-emerald-500 via-teal-500 to-green-600 hover:opacity-95 text-white font-extrabold text-xs rounded-xl shadow-md flex items-center justify-center gap-2 cursor-pointer disabled:opacity-50 transition-all"
-                    >
-                      <ExternalLink className="w-3.5 h-3.5" /> Launch Live Bank UPI Gateway
-                    </button>
-                  </div>
-
-                  {/* Divider */}
-                  <div className="relative flex py-1 items-center">
-                    <div className="flex-grow border-t border-gray-200"></div>
-                    <span className="flex-shrink mx-3 text-[10px] font-bold text-gray-400 uppercase tracking-widest">
-                      Or Direct Merchant UPI (₹0 Fee)
-                    </span>
-                    <div className="flex-grow border-t border-gray-200"></div>
-                  </div>
-
-                  {/* Direct UPI Verification Card */}
-                  <div className="bg-white border border-gray-200 rounded-2xl p-4 my-2 shadow-xs text-left">
-                    <div className="flex items-center justify-between text-xs mb-2">
-                      <span className="text-gray-700 font-semibold flex items-center gap-1.5">
-                        <Clock className="w-3.5 h-3.5 text-blue-600" />
-                        <span>QR Session Active:</span>
-                      </span>
-                      <span className="font-mono font-black text-xs text-blue-700 bg-blue-50 px-2 py-0.5 rounded border border-blue-200">
-                        {Math.floor(autoCountdown / 60).toString().padStart(2, "0")}:{(autoCountdown % 60).toString().padStart(2, "0")}
+                  {/* Automated Live Gateway Status Card & Time Sequence */}
+                  <div className="bg-gradient-to-br from-emerald-50 via-teal-50 to-green-50 border border-emerald-300/90 rounded-2xl p-4 my-3 shadow-xs text-left">
+                    <div className="flex items-center justify-between gap-2">
+                      <div className="flex items-center gap-2">
+                        <div className="relative flex h-3.5 w-3.5 shrink-0">
+                          <span className="animate-ping absolute inline-flex h-full w-full rounded-full bg-emerald-400 opacity-75"></span>
+                          <span className="relative inline-flex rounded-full h-3.5 w-3.5 bg-emerald-500"></span>
+                        </div>
+                        <span className="text-xs font-black tracking-wide text-emerald-950 uppercase">
+                          Live Payment Gateway Active
+                        </span>
+                      </div>
+                      <span className="text-[10px] font-bold text-emerald-800 bg-emerald-200/70 border border-emerald-300 px-2 py-0.5 rounded-full">
+                        Session Active
                       </span>
                     </div>
 
-                    <label className="block text-[11px] font-bold text-[#0B1D3A] mb-1">
-                      Enter Real 12-Digit UPI Reference No. (UTR) from GPay / PhonePe:
-                    </label>
-                    <div className="flex gap-2">
-                      <input
-                        type="text"
-                        maxLength={12}
-                        value={transactionId}
-                        onChange={(e) => setTransactionId(e.target.value.replace(/\D/g, ""))}
-                        placeholder="e.g. 428812345678"
-                        className="flex-1 px-3 py-2 rounded-xl border border-gray-300 text-xs font-mono font-bold focus:outline-none focus:border-blue-500"
-                      />
-                      <button
-                        type="button"
-                        onClick={() => handleAutomaticPayment(transactionId)}
-                        disabled={submittingPayment || transactionId.trim().length < 6}
-                        className="px-4 py-2 bg-blue-600 hover:bg-blue-700 text-white rounded-xl text-xs font-bold disabled:opacity-40 transition-colors cursor-pointer"
-                      >
-                        {submittingPayment ? <RefreshCw className="w-3.5 h-3.5 animate-spin" /> : "Confirm UTR"}
-                      </button>
+                    {/* Auto-Verification Time Sequence Progress Box */}
+                    <div className="mt-3 bg-white/90 backdrop-blur-xs rounded-xl p-3.5 border border-emerald-200/80 shadow-xs">
+                      <div className="flex items-center justify-between text-xs mb-2">
+                        <span className="text-gray-700 font-semibold flex items-center gap-1.5">
+                          {submittingPayment ? (
+                            <>
+                              <RefreshCw className="w-3.5 h-3.5 animate-spin text-emerald-600" />
+                              <span className="text-emerald-900 font-bold">Verifying Payment & Saving...</span>
+                            </>
+                          ) : (
+                            <>
+                              <Clock className="w-3.5 h-3.5 text-emerald-600" />
+                              <span>QR Active • Auto-saving in:</span>
+                            </>
+                          )}
+                        </span>
+                        <span className="font-mono font-black text-sm text-emerald-700 bg-emerald-100/80 px-2.5 py-0.5 rounded-md border border-emerald-200">
+                          {submittingPayment
+                            ? "SYNCING..."
+                            : `${Math.floor(autoCountdown / 60)
+                                .toString()
+                                .padStart(2, "0")}:${(autoCountdown % 60)
+                                .toString()
+                                .padStart(2, "0")}`}
+                        </span>
+                      </div>
+
+                      {/* Smooth Animated Progress Bar for 3 Minutes */}
+                      <div className="w-full bg-emerald-100/80 h-2.5 rounded-full overflow-hidden p-0.5 border border-emerald-200">
+                        <div
+                          className="bg-gradient-to-r from-emerald-500 via-teal-500 to-green-600 h-full transition-all duration-1000 ease-linear rounded-full shadow-xs"
+                          style={{
+                            width: submittingPayment
+                              ? "100%"
+                              : `${Math.max(2, ((180 - autoCountdown) / 180) * 100)}%`,
+                          }}
+                        />
+                      </div>
+
+                      <p className="text-[11px] text-gray-600 mt-2.5 leading-relaxed">
+                        You have <strong>3 minutes</strong> to scan and approve ₹{order.totalAmount.toFixed(2)} in your UPI app. Once approved, click below or enter your UTR to instantly record your payment and view your official receipt.
+                      </p>
                     </div>
-                    <p className="text-[10px] text-gray-400 mt-1.5">
-                      Your exact 12-digit UTR will be recorded on the official receipt and saved to the admin payment history.
-                    </p>
+
+                    {/* Real 12-Digit UTR Input */}
+                    <div className="mt-3 pt-2.5 border-t border-emerald-200/60">
+                      <label className="block text-[11px] font-bold text-[#0B1D3A] mb-1">
+                        Enter Real 12-Digit UPI Reference No. (UTR) from GPay / PhonePe:
+                      </label>
+                      <div className="flex gap-2">
+                        <input
+                          type="text"
+                          maxLength={12}
+                          value={transactionId}
+                          onChange={(e) => setTransactionId(e.target.value.replace(/\D/g, ""))}
+                          placeholder="e.g. 428812345678"
+                          className="flex-1 px-3 py-2 rounded-xl border border-emerald-300 text-xs font-mono font-bold focus:outline-none focus:border-emerald-600 bg-white"
+                        />
+                        <button
+                          type="button"
+                          onClick={() => handleAutomaticPayment(transactionId)}
+                          disabled={submittingPayment}
+                          className="px-4 py-2 bg-gradient-to-r from-emerald-600 to-teal-600 hover:opacity-95 text-white rounded-xl text-xs font-bold disabled:opacity-40 transition-all cursor-pointer shadow-sm"
+                        >
+                          {submittingPayment ? <RefreshCw className="w-3.5 h-3.5 animate-spin" /> : "Confirm UTR"}
+                        </button>
+                      </div>
+                      <p className="text-[10px] text-gray-500 mt-1">
+                        Your real 12-digit UTR will be saved to your receipt and Admin Payment History.
+                      </p>
+                    </div>
                   </div>
+
+                  {/* Primary Instant Action Button */}
+                  <button
+                    type="button"
+                    onClick={() => handleAutomaticPayment(transactionId)}
+                    disabled={submittingPayment}
+                    className="w-full py-3.5 bg-gradient-to-r from-emerald-600 via-teal-600 to-green-600 text-white rounded-xl font-black text-sm hover:opacity-95 transition-all shadow-lg shadow-emerald-600/25 flex items-center justify-center gap-2 cursor-pointer disabled:opacity-50"
+                  >
+                    {submittingPayment ? (
+                      <>
+                        <RefreshCw className="w-4 h-4 animate-spin" /> Verifying & Saving Transaction...
+                      </>
+                    ) : (
+                      <>
+                        <CheckCircle className="w-5 h-5" /> I Have Paid — Confirm & Save Transaction
+                      </>
+                    )}
+                  </button>
 
                   {/* Optional Manual Entry Toggle */}
                   <div className="mt-3 text-center">

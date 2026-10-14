@@ -588,11 +588,6 @@ export default function AdminSettingsPage() {
               value={business.merchantQrImage}
               onChange={(v) => setBusiness({ ...business, merchantQrImage: v })}
             />
-            <TextField
-              label="Razorpay Key ID (For Live UPI Gateway Auto-Redirect)"
-              value={business.razorpayKey || ""}
-              onChange={(v) => setBusiness({ ...business, razorpayKey: v })}
-            />
             <p className="text-xs text-gray-500 leading-relaxed">
               Default QR image is stored in <code className="bg-gray-100 px-1 py-0.5 rounded font-mono">public/payments/gpay-merchant-qr.png</code>.
               Payments sent to this UPI ID will be verified by the admin in the Payments tab.
