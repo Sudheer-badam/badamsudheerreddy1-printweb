@@ -265,17 +265,17 @@ export default function OrderDetailPage() {
 
 
 
-  const handleAutomaticPayment = async (overrideTx?: string) => {
+  const handleAutomaticPayment = async (overrideTx?: string, isQrAcceptance: boolean = false) => {
     if (!order || !user) return;
     if (isProcessingPaymentRef.current || submittingPayment) return;
 
     const cleanTx = (overrideTx || transactionId).trim();
-    if (!cleanTx && !screenshotFile) {
-      toast.error("Please enter your 12-digit UPI Reference Number (UTR) from GPay / PhonePe / Paytm.");
+    if (!isQrAcceptance && !cleanTx && !screenshotFile) {
+      toast.error("Please enter your 12-digit UPI Reference Number (UTR), or click the green button above if you scanned the QR code.");
       return;
     }
 
-    if (cleanTx && cleanTx.length < 6) {
+    if (cleanTx && cleanTx.length > 0 && cleanTx.length < 6) {
       toast.error("Please enter a valid UPI Reference Number (UTR).");
       return;
     }
@@ -296,13 +296,16 @@ export default function OrderDetailPage() {
         toast.dismiss("screenshot-upload");
       }
 
+      const defaultQrTx = `UPI-QR-${(order.orderNumber || "").replace(/[^A-Za-z0-9]/g, "")}`;
+      const finalTx = cleanTx || (isQrAcceptance ? defaultQrTx : undefined);
+
       const res = await fetch("/api/payments", {
         method: "POST",
         headers: { "Content-Type": "application/json" },
         body: JSON.stringify({
           uid: user.uid,
           orderId: order.id,
-          transactionId: cleanTx || undefined,
+          transactionId: finalTx,
           paymentProofUrl,
           method: "UPI",
           upiId: merchantUpiId,
@@ -312,9 +315,9 @@ export default function OrderDetailPage() {
       const data = await res.json();
 
       if (res.ok) {
-        const assignedTx = data.payment?.transactionId || cleanTx || "null";
+        const assignedTx = data.payment?.transactionId || finalTx || defaultQrTx;
         setAutoSavedTx(assignedTx);
-        toast.success("Payment recorded successfully!");
+        toast.success("Payment accepted and recorded successfully!");
         setShowPaymentModal(false);
         setReportStatus("successful");
         setReportTimestamp(formatReportDateTime());
@@ -849,17 +852,58 @@ export default function OrderDetailPage() {
       {/* ============================================================ */}
       <AnimatePresence>
         {showPaymentModal && (
-          <div className="fixed inset-0 z-50 flex items-center justify-center p-3 sm:p-5 bg-black/70 backdrop-blur-sm overflow-y-auto">
+          <div className="fixed inset-0 z-50 flex items-center justify-center p-2 sm:p-4 md:p-5 bg-black/75 backdrop-blur-sm overflow-y-auto">
             <motion.div
               initial={{ opacity: 0, scale: 0.96, y: 12 }}
               animate={{ opacity: 1, scale: 1, y: 0 }}
               exit={{ opacity: 0, scale: 0.96 }}
-              className="bg-white rounded-3xl w-full max-w-4xl max-h-[92vh] overflow-hidden shadow-2xl flex flex-col md:flex-row border border-gray-100 my-auto"
+              className="bg-white rounded-2xl sm:rounded-3xl w-full max-w-4xl max-h-[96vh] overflow-y-auto md:overflow-hidden shadow-2xl flex flex-col md:flex-row border border-gray-100 my-auto"
             >
               {/* ---------------------------------------------------- */}
-              {/* LEFT COLUMN: ORDER SUMMARY (DEEP BLUE THEME)        */}
+              {/* MOBILE COMPACT HEADER (MOBILE ONLY, < md screens)    */}
+              {/* Ensures QR code is immediately visible at the top!  */}
               {/* ---------------------------------------------------- */}
-              <div className="w-full md:w-[42%] bg-[#0B2D6B] text-white p-6 sm:p-7 flex flex-col justify-between shrink-0">
+              <div className="md:hidden bg-[#0B2D6B] text-white p-3.5 flex items-center justify-between border-b border-blue-900 shrink-0">
+                <div className="flex items-center gap-2.5">
+                  <img
+                    src="/logo.png"
+                    alt="PRINT DOCKER"
+                    className="w-9 h-9 object-contain rounded-xl bg-white p-1"
+                  />
+                  <div>
+                    <div className="font-extrabold text-xs tracking-wide uppercase leading-tight text-white font-sans">
+                      PRINT DOCKER
+                    </div>
+                    <div className="text-[10px] text-blue-200 font-mono mt-0.5">
+                      {order.orderNumber}
+                    </div>
+                  </div>
+                </div>
+                <div className="flex items-center gap-3">
+                  <div className="text-right">
+                    <span className="text-[9px] text-blue-200 block uppercase font-bold leading-none">
+                      Payable
+                    </span>
+                    <span className="font-black text-base text-white font-mono leading-tight">
+                      ₹ {order.totalAmount.toFixed(2)}
+                    </span>
+                  </div>
+                  <button
+                    type="button"
+                    onClick={handleAbortPayment}
+                    className="p-1 hover:bg-white/10 rounded-full text-white/80 hover:text-white transition-colors"
+                    title="Cancel"
+                  >
+                    <XCircle className="w-5 h-5" />
+                  </button>
+                </div>
+              </div>
+
+              {/* ---------------------------------------------------- */}
+              {/* LEFT COLUMN: ORDER SUMMARY (DEEP BLUE THEME)        */}
+              {/* Visible on md+ desktop, hidden on mobile so QR fits */}
+              {/* ---------------------------------------------------- */}
+              <div className="hidden md:flex md:w-[42%] bg-[#0B2D6B] text-white p-6 sm:p-7 flex-col justify-between shrink-0">
                 <div>
                   {/* Organization Card Header */}
                   <div className="bg-white rounded-xl p-4 text-[#0B2D6B] text-center shadow-md">
@@ -950,7 +994,7 @@ export default function OrderDetailPage() {
               {/* ---------------------------------------------------- */}
               {/* RIGHT COLUMN: UPI PAYMENT (NO CARDS, NO NETBANKING) */}
               {/* ---------------------------------------------------- */}
-              <div className="w-full md:w-[58%] bg-white p-6 sm:p-7 flex flex-col justify-between overflow-y-auto">
+              <div className="w-full md:w-[58%] bg-white p-4 sm:p-6 md:p-7 flex flex-col justify-between overflow-y-auto">
                 <div>
                   {/* Top Header */}
                   <div className="flex items-center justify-between border-b border-gray-100 pb-3 mb-4">
@@ -1010,13 +1054,13 @@ export default function OrderDetailPage() {
                         <img
                           src={
                             qrType === "DYNAMIC"
-                              ? `https://api.qrserver.com/v1/create-qr-code/?size=200x200&data=${encodeURIComponent(
+                              ? `https://api.qrserver.com/v1/create-qr-code/?size=220x220&data=${encodeURIComponent(
                                   dynamicUpiUri
                                 )}`
                               : merchantQrImage
                           }
                           alt="UPI QR Code"
-                          className="w-40 h-40 object-contain mx-auto rounded-lg"
+                          className="w-44 h-44 sm:w-48 sm:h-48 object-contain mx-auto rounded-lg"
                         />
                       </div>
 
@@ -1063,12 +1107,33 @@ export default function OrderDetailPage() {
                       </div>
 
                       {/* Direct mobile pay intent */}
-                      <a
-                        href={dynamicUpiUri}
-                        className="inline-flex md:hidden items-center gap-1.5 mt-2.5 px-3 py-1 bg-green-600 text-white rounded-lg text-xs font-bold hover:bg-green-700 transition-colors shadow-xs"
-                      >
-                        <ExternalLink className="w-3.5 h-3.5" /> Open in UPI App (GPay / PhonePe)
-                      </a>
+                      <div className="mt-2.5 flex flex-col items-center gap-2">
+                        <a
+                          href={dynamicUpiUri}
+                          className="inline-flex md:hidden items-center gap-1.5 px-3.5 py-1.5 bg-green-600 text-white rounded-lg text-xs font-bold hover:bg-green-700 transition-colors shadow-xs"
+                        >
+                          <ExternalLink className="w-3.5 h-3.5" /> Open in UPI App (GPay / PhonePe)
+                        </a>
+
+                        {/* VERIFICATION BUTTON 1: FOR DIRECT QR SCAN & PAY ACCEPTANCE */}
+                        <button
+                          type="button"
+                          onClick={() => handleAutomaticPayment(undefined, true)}
+                          disabled={submittingPayment}
+                          className="w-full mt-2 py-3 px-4 bg-gradient-to-r from-emerald-600 via-teal-600 to-green-600 hover:from-emerald-700 hover:to-green-700 text-white rounded-xl font-black text-xs sm:text-sm flex items-center justify-center gap-2 shadow-md shadow-emerald-600/25 transition-all cursor-pointer disabled:opacity-50"
+                        >
+                          {submittingPayment ? (
+                            <>
+                              <RefreshCw className="w-4 h-4 animate-spin" /> Verifying & Accepting Payment...
+                            </>
+                          ) : (
+                            <>
+                              <CheckCircle className="w-4 h-4 text-emerald-200" />
+                              I Have Scanned & Paid ₹{order.totalAmount.toFixed(2)} — Accept Payment
+                            </>
+                          )}
+                        </button>
+                      </div>
                     </div>
                   </div>
 
@@ -1135,12 +1200,12 @@ export default function OrderDetailPage() {
                     </div>
                   </div>
 
-                  {/* Primary UTR Confirmation Action Button */}
+                  {/* VERIFICATION BUTTON 2: FOR 12-DIGIT UTR CONFIRMATION */}
                   <button
                     type="button"
-                    onClick={() => handleAutomaticPayment(transactionId)}
+                    onClick={() => handleAutomaticPayment(transactionId, false)}
                     disabled={submittingPayment}
-                    className="w-full py-3.5 bg-gradient-to-r from-blue-600 via-indigo-600 to-blue-700 text-white rounded-xl font-black text-sm hover:opacity-95 transition-all shadow-lg shadow-blue-600/25 flex items-center justify-center gap-2 cursor-pointer disabled:opacity-50"
+                    className="w-full py-3.5 bg-gradient-to-r from-blue-600 via-indigo-600 to-blue-700 text-white rounded-xl font-black text-xs sm:text-sm hover:opacity-95 transition-all shadow-lg shadow-blue-600/25 flex items-center justify-center gap-2 cursor-pointer disabled:opacity-50"
                   >
                     {submittingPayment ? (
                       <>
@@ -1148,7 +1213,7 @@ export default function OrderDetailPage() {
                       </>
                     ) : (
                       <>
-                        <CheckCircle className="w-5 h-5 text-emerald-300" /> Confirm Payment with UTR & View Receipt
+                        <CheckCircle className="w-5 h-5 text-emerald-300" /> Confirm 12-Digit UTR — Accept Payment & View Receipt
                       </>
                     )}
                   </button>

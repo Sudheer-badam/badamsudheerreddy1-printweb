@@ -90,6 +90,35 @@ export async function PATCH(
       },
     });
 
+    if (paymentStatus === "PAID") {
+      const existingPayments = await prisma.payment.findMany({ where: { orderId: id } });
+      if (existingPayments.length > 0) {
+        await prisma.payment.updateMany({
+          where: { orderId: id },
+          data: {
+            status: "PAID",
+            paidAt: new Date(),
+            verifiedBy: user.email || user.name || "ADMIN",
+            verifiedAt: new Date(),
+          },
+        });
+      } else {
+        await prisma.payment.create({
+          data: {
+            orderId: id,
+            userId: existingOrder.userId,
+            amount: existingOrder.totalAmount,
+            method: "UPI",
+            status: "PAID",
+            paidAt: new Date(),
+            verifiedBy: user.email || user.name || "ADMIN",
+            verifiedAt: new Date(),
+            adminNotes: "Payment accepted by Admin",
+          },
+        });
+      }
+    }
+
     // Add status history if status changed
     if (status) {
       await prisma.orderStatusHistory.create({

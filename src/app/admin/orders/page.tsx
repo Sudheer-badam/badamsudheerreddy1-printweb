@@ -418,6 +418,20 @@ export default function AdminOrdersPage() {
                             <option key={s} value={s} className="bg-white text-[#0B1D3A]">{s}</option>
                           ))}
                         </select>
+                        {order.paymentStatus !== "PAID" && (
+                          <button
+                            type="button"
+                            onClick={(e) => {
+                              e.stopPropagation();
+                              updatePaymentStatus(order.id, "PAID");
+                            }}
+                            disabled={updating === order.id}
+                            className="px-2 py-0.5 bg-emerald-100 text-emerald-800 hover:bg-emerald-200 border border-emerald-300 rounded text-[10px] font-bold transition-colors flex items-center gap-1 cursor-pointer"
+                            title="Accept payment and mark as PAID"
+                          >
+                            <CheckCircle className="w-3 h-3 text-emerald-600" /> Accept Payment
+                          </button>
+                        )}
                         {(order.paymentStatus === "SUBMITTED" || order.paymentStatus === "UNDER_REVIEW") && (
                           <Link
                             href="/admin/payments"
@@ -622,6 +636,21 @@ export default function AdminOrdersPage() {
                     Verify in Payments →
                   </Link>
                 </div>
+              )}
+
+              {/* Accept Payment Action in Modal */}
+              {selectedOrder.paymentStatus !== "PAID" && (
+                <button
+                  type="button"
+                  onClick={async () => {
+                    await updatePaymentStatus(selectedOrder.id, "PAID");
+                    setSelectedOrder({ ...selectedOrder, paymentStatus: "PAID" });
+                  }}
+                  disabled={updating === selectedOrder.id}
+                  className="w-full py-2.5 bg-emerald-600 hover:bg-emerald-700 text-white rounded-xl text-xs font-bold flex items-center justify-center gap-2 shadow-sm transition-all cursor-pointer"
+                >
+                  <CheckCircle className="w-4 h-4" /> Accept Payment (Mark as PAID)
+                </button>
               )}
 
               {/* Payment Receipt Button */}

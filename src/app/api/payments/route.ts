@@ -121,7 +121,7 @@ export async function POST(req: NextRequest) {
     );
 
     // 6. Check if transaction ID was already used in a PAID payment elsewhere
-    if (cleanTransactionId) {
+    if (cleanTransactionId && !cleanTransactionId.startsWith("UPI-QR")) {
       const duplicateTx = await prisma.payment.findFirst({
         where: {
           transactionId: cleanTransactionId,
