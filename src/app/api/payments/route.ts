@@ -84,17 +84,7 @@ export async function POST(req: NextRequest) {
       return NextResponse.json({ error: "User ID and Order ID are required" }, { status: 400 });
     }
 
-    // Generate automatic 12-digit UPI UTR if not manually entered (like ERP automated gateway)
-    const generateAutoUtr = () => {
-      const yearPrefix = "4";
-      const randomDigits = Math.floor(10000000000 + Math.random() * 90000000000).toString();
-      return yearPrefix + randomDigits.slice(1);
-    };
-
-    let cleanTransactionId = (transactionId || "").trim();
-    if (!cleanTransactionId) {
-      cleanTransactionId = generateAutoUtr();
-    }
+    const cleanTransactionId = (transactionId || "").trim() || null;
 
     // 2. Authenticate customer
     const user = await prisma.user.findUnique({ where: { firebaseUid: uid } });
@@ -141,14 +131,10 @@ export async function POST(req: NextRequest) {
       });
 
       if (duplicateTx) {
-        if (!transactionId) {
-          cleanTransactionId = generateAutoUtr();
-        } else {
-          return NextResponse.json(
-            { error: "This transaction reference number has already been used for another verified payment." },
-            { status: 400 }
-          );
-        }
+        return NextResponse.json(
+          { error: "This transaction reference number has already been used for another verified payment." },
+          { status: 400 }
+        );
       }
     }
 

@@ -49,6 +49,7 @@ export default function AdminSettingsPage() {
     merchantName: "SUDHEER REDDY PRINTING SHOP",
     upiId: "gpay-12208028036@okbizaxis",
     merchantQrImage: "/payments/gpay-merchant-qr.png",
+    razorpayKey: "",
     ownerName: "",
     phone: "",
     whatsapp: "",
@@ -98,6 +99,7 @@ export default function AdminSettingsPage() {
         merchantName: data.merchantName || "SUDHEER REDDY PRINTING SHOP",
         upiId: data.upiId || "gpay-12208028036@okbizaxis",
         merchantQrImage: data.merchantQrImage || "/payments/gpay-merchant-qr.png",
+        razorpayKey: data.razorpayKey || "",
         ownerName: data.ownerName || "",
         phone: data.phone || "",
         whatsapp: data.whatsapp || "",
@@ -585,6 +587,11 @@ export default function AdminSettingsPage() {
               label="Merchant QR Asset Path / URL"
               value={business.merchantQrImage}
               onChange={(v) => setBusiness({ ...business, merchantQrImage: v })}
+            />
+            <TextField
+              label="Razorpay Key ID (For Live UPI Gateway Auto-Redirect)"
+              value={business.razorpayKey || ""}
+              onChange={(v) => setBusiness({ ...business, razorpayKey: v })}
             />
             <p className="text-xs text-gray-500 leading-relaxed">
               Default QR image is stored in <code className="bg-gray-100 px-1 py-0.5 rounded font-mono">public/payments/gpay-merchant-qr.png</code>.
