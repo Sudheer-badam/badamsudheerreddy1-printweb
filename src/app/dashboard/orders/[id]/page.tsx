@@ -265,13 +265,13 @@ export default function OrderDetailPage() {
 
 
 
-  const handleAutomaticPayment = async (overrideTx?: string, isQrAcceptance: boolean = false) => {
+  const handleAutomaticPayment = async (overrideTx?: string) => {
     if (!order || !user) return;
     if (isProcessingPaymentRef.current || submittingPayment) return;
 
     const cleanTx = (overrideTx || transactionId).trim();
-    if (!isQrAcceptance && !cleanTx && !screenshotFile) {
-      toast.error("Please enter your 12-digit UPI Reference Number (UTR), or click the green button above if you scanned the QR code.");
+    if (!cleanTx && !screenshotFile) {
+      toast.error("Please enter your 12-digit UPI Reference Number (UTR) from your payment app.");
       return;
     }
 
@@ -296,16 +296,13 @@ export default function OrderDetailPage() {
         toast.dismiss("screenshot-upload");
       }
 
-      const defaultQrTx = `UPI-QR-${(order.orderNumber || "").replace(/[^A-Za-z0-9]/g, "")}`;
-      const finalTx = cleanTx || (isQrAcceptance ? defaultQrTx : undefined);
-
       const res = await fetch("/api/payments", {
         method: "POST",
         headers: { "Content-Type": "application/json" },
         body: JSON.stringify({
           uid: user.uid,
           orderId: order.id,
-          transactionId: finalTx,
+          transactionId: cleanTx || undefined,
           paymentProofUrl,
           method: "UPI",
           upiId: merchantUpiId,
@@ -315,9 +312,9 @@ export default function OrderDetailPage() {
       const data = await res.json();
 
       if (res.ok) {
-        const assignedTx = data.payment?.transactionId || finalTx || defaultQrTx;
+        const assignedTx = data.payment?.transactionId || cleanTx || "null";
         setAutoSavedTx(assignedTx);
-        toast.success("Payment accepted and recorded successfully!");
+        toast.success("Payment recorded successfully!");
         setShowPaymentModal(false);
         setReportStatus("successful");
         setReportTimestamp(formatReportDateTime());
@@ -1107,32 +1104,13 @@ export default function OrderDetailPage() {
                       </div>
 
                       {/* Direct mobile pay intent */}
-                      <div className="mt-2.5 flex flex-col items-center gap-2">
+                      <div className="mt-2.5 flex justify-center">
                         <a
                           href={dynamicUpiUri}
                           className="inline-flex md:hidden items-center gap-1.5 px-3.5 py-1.5 bg-green-600 text-white rounded-lg text-xs font-bold hover:bg-green-700 transition-colors shadow-xs"
                         >
                           <ExternalLink className="w-3.5 h-3.5" /> Open in UPI App (GPay / PhonePe)
                         </a>
-
-                        {/* VERIFICATION BUTTON 1: FOR DIRECT QR SCAN & PAY ACCEPTANCE */}
-                        <button
-                          type="button"
-                          onClick={() => handleAutomaticPayment(undefined, true)}
-                          disabled={submittingPayment}
-                          className="w-full mt-2 py-3 px-4 bg-gradient-to-r from-emerald-600 via-teal-600 to-green-600 hover:from-emerald-700 hover:to-green-700 text-white rounded-xl font-black text-xs sm:text-sm flex items-center justify-center gap-2 shadow-md shadow-emerald-600/25 transition-all cursor-pointer disabled:opacity-50"
-                        >
-                          {submittingPayment ? (
-                            <>
-                              <RefreshCw className="w-4 h-4 animate-spin" /> Verifying & Accepting Payment...
-                            </>
-                          ) : (
-                            <>
-                              <CheckCircle className="w-4 h-4 text-emerald-200" />
-                              I Have Scanned & Paid ₹{order.totalAmount.toFixed(2)} — Accept Payment
-                            </>
-                          )}
-                        </button>
                       </div>
                     </div>
                   </div>
@@ -1200,10 +1178,10 @@ export default function OrderDetailPage() {
                     </div>
                   </div>
 
-                  {/* VERIFICATION BUTTON 2: FOR 12-DIGIT UTR CONFIRMATION */}
+                  {/* Primary UTR Confirmation Action Button */}
                   <button
                     type="button"
-                    onClick={() => handleAutomaticPayment(transactionId, false)}
+                    onClick={() => handleAutomaticPayment(transactionId)}
                     disabled={submittingPayment}
                     className="w-full py-3.5 bg-gradient-to-r from-blue-600 via-indigo-600 to-blue-700 text-white rounded-xl font-black text-xs sm:text-sm hover:opacity-95 transition-all shadow-lg shadow-blue-600/25 flex items-center justify-center gap-2 cursor-pointer disabled:opacity-50"
                   >
@@ -1213,7 +1191,7 @@ export default function OrderDetailPage() {
                       </>
                     ) : (
                       <>
-                        <CheckCircle className="w-5 h-5 text-emerald-300" /> Confirm 12-Digit UTR — Accept Payment & View Receipt
+                        <CheckCircle className="w-5 h-5 text-emerald-300" /> Confirm 12-Digit UTR & View Receipt
                       </>
                     )}
                   </button>
