@@ -64,7 +64,20 @@ export async function GET(req: NextRequest) {
             },
           },
           payments: {
-            select: { id: true, amount: true, status: true, method: true, transactionId: true, paidAt: true, createdAt: true },
+            select: {
+              id: true,
+              amount: true,
+              status: true,
+              method: true,
+              transactionId: true,
+              paidAt: true,
+              createdAt: true,
+              paymentLatitude: true,
+              paymentLongitude: true,
+              paymentLocationAccuracy: true,
+              paymentLocationAddress: true,
+              paymentLocationCity: true,
+            },
           },
           invoice: { select: { id: true, invoiceNumber: true, pdfUrl: true } },
         },
@@ -122,6 +135,11 @@ export async function POST(req: NextRequest) {
       pageSizing = "FIT",
       saveInk = false,
       documents = null, // Array of documents if multi-document order
+      orderLatitude,
+      orderLongitude,
+      orderLocationAccuracy,
+      orderLocationAddress,
+      orderLocationCity,
     } = body;
 
     if (!uid) {
@@ -164,6 +182,13 @@ export async function POST(req: NextRequest) {
     // Generate unique order number
     const orderNumber = `AGP-${Date.now().toString(36).toUpperCase()}-${Math.random().toString(36).substring(2, 5).toUpperCase()}`;
 
+    // Resolve exact location at time of ordering
+    const finalOrderLatitude = typeof orderLatitude === "number" ? orderLatitude : user.latitude;
+    const finalOrderLongitude = typeof orderLongitude === "number" ? orderLongitude : user.longitude;
+    const finalOrderAccuracy = typeof orderLocationAccuracy === "number" ? orderLocationAccuracy : user.locationAccuracy;
+    const finalOrderAddress = orderLocationAddress || user.locationAddress;
+    const finalOrderCity = orderLocationCity || user.locationCity;
+
     const order = await prisma.order.create({
       data: {
         orderNumber,
@@ -201,6 +226,11 @@ export async function POST(req: NextRequest) {
         saveInk,
         status: "UPLOADED",
         paymentStatus: "PENDING",
+        orderLatitude: finalOrderLatitude,
+        orderLongitude: finalOrderLongitude,
+        orderLocationAccuracy: finalOrderAccuracy,
+        orderLocationAddress: finalOrderAddress,
+        orderLocationCity: finalOrderCity,
       },
     });
 

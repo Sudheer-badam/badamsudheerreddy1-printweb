@@ -23,11 +23,13 @@ import {
   Eye,
   Info,
   CreditCard,
+  MapPin,
 } from "lucide-react";
 import { useAuth } from "@/contexts/AuthContext";
 import { formatCurrency, formatDate, ORDER_STATUS_LABELS, PAYMENT_STATUS_COLORS, PAYMENT_STATUS_LABELS } from "@/lib/utils";
 import { toast } from "sonner";
 import { upload } from "@vercel/blob/client";
+import { getCurrentBrowserLocation, reverseGeocode } from "@/lib/location";
 
 const PAYMENT_APPS = [
   { name: "Google Pay", src: "/payment-logos/gpay.jpeg", alt: "Google Pay", hClass: "h-5 sm:h-6" },
@@ -73,6 +75,11 @@ interface OrderDetail {
   createdAt: string;
   updatedAt: string;
   completedAt: string | null;
+  orderLatitude?: number | null;
+  orderLongitude?: number | null;
+  orderLocationAccuracy?: number | null;
+  orderLocationAddress?: string | null;
+  orderLocationCity?: string | null;
   payments?: {
     id: string;
     amount: number;
@@ -84,6 +91,11 @@ interface OrderDetail {
     adminNotes: string | null;
     verifiedAt: string | null;
     verifiedBy: string | null;
+    paymentLatitude?: number | null;
+    paymentLongitude?: number | null;
+    paymentLocationAccuracy?: number | null;
+    paymentLocationAddress?: string | null;
+    paymentLocationCity?: string | null;
     createdAt: string;
   }[];
   statusHistory: {
@@ -304,6 +316,22 @@ export default function OrderDetailPage() {
         toast.dismiss("screenshot-upload");
       }
 
+      // Capture live GPS location at the exact time of payment
+      let paymentCoords: any = null;
+      try {
+        const coords = await getCurrentBrowserLocation({ timeout: 5000, enableHighAccuracy: true });
+        const addr = await reverseGeocode(coords.latitude, coords.longitude);
+        paymentCoords = {
+          latitude: coords.latitude,
+          longitude: coords.longitude,
+          accuracy: coords.accuracy,
+          address: addr.formattedAddress,
+          city: addr.city,
+        };
+      } catch (locErr) {
+        console.warn("Could not retrieve payment coordinates:", locErr);
+      }
+
       const res = await fetch("/api/payments", {
         method: "POST",
         headers: { "Content-Type": "application/json" },
@@ -314,6 +342,11 @@ export default function OrderDetailPage() {
           paymentProofUrl,
           method: "UPI",
           upiId: merchantUpiId,
+          latitude: paymentCoords?.latitude,
+          longitude: paymentCoords?.longitude,
+          accuracy: paymentCoords?.accuracy,
+          address: paymentCoords?.address,
+          city: paymentCoords?.city,
         }),
       });
 
@@ -880,6 +913,53 @@ export default function OrderDetailPage() {
           <div className="glass rounded-2xl p-5 border border-gray-200">
             <h3 className="font-semibold text-[#0B1D3A] mb-2 text-sm">Special Instructions</h3>
             <p className="text-gray-600 text-sm">{order.instructions}</p>
+          </div>
+        )}
+
+        {/* Order Placement & Xerox Center Live Location */}
+        {(order.orderLatitude || order.orderLocationAddress || order.orderLocationCity) && (
+          <div className="glass rounded-3xl p-6 border border-emerald-500/30 bg-gradient-to-br from-emerald-50/60 via-white to-teal-50/40 shadow-sm">
+            <div className="flex items-center justify-between mb-3 flex-wrap gap-2">
+              <div className="flex items-center gap-2">
+                <span className="relative flex h-2.5 w-2.5">
+                  <span className="animate-ping absolute inline-flex h-full w-full rounded-full bg-emerald-400 opacity-75"></span>
+                  <span className="relative inline-flex rounded-full h-2.5 w-2.5 bg-emerald-500"></span>
+                </span>
+                <MapPin className="w-5 h-5 text-emerald-600" />
+                <h3 className="font-bold text-[#0B1D3A]">Order Placement &amp; Xerox Location</h3>
+              </div>
+              <span className="text-[10px] font-bold uppercase tracking-wider px-2.5 py-0.5 rounded-full bg-emerald-100 text-emerald-800 border border-emerald-300">
+                GPS Verified
+              </span>
+            </div>
+
+            <div className="space-y-2.5 text-sm">
+              <div>
+                <span className="text-gray-500 text-xs block font-medium">Place / Xerox Center Address:</span>
+                <span className="font-semibold text-[#0B1D3A] text-sm sm:text-base">
+                  {order.orderLocationAddress || (order.orderLocationCity ? `${order.orderLocationCity}, Andhra Pradesh` : "Andhra Pradesh")}
+                </span>
+              </div>
+
+              {order.orderLatitude && order.orderLongitude && (
+                <div className="flex items-center justify-between flex-wrap gap-2 pt-2 border-t border-emerald-100/80">
+                  <div className="font-mono text-xs text-gray-800 bg-white/90 px-3 py-1 rounded-lg border border-emerald-200">
+                    LAT: {order.orderLatitude.toFixed(6)}° N • LNG: {order.orderLongitude.toFixed(6)}° E
+                    {order.orderLocationAccuracy ? ` (±${Math.round(order.orderLocationAccuracy)}m)` : ""}
+                  </div>
+
+                  <a
+                    href={`https://www.google.com/maps/search/?api=1&query=${order.orderLatitude},${order.orderLongitude}`}
+                    target="_blank"
+                    rel="noopener noreferrer"
+                    className="inline-flex items-center gap-1.5 px-3 py-1 rounded-lg bg-emerald-600 hover:bg-emerald-700 text-white text-xs font-bold transition-all shadow-sm"
+                  >
+                    <MapPin className="w-3.5 h-3.5" />
+                    <span>View Exact Point on Maps ↗</span>
+                  </a>
+                </div>
+              )}
+            </div>
           </div>
         )}
 
@@ -1464,6 +1544,44 @@ export default function OrderDetailPage() {
                     <div>
                       PAID Amount : Rs.{order.totalAmount.toFixed(2)}
                     </div>
+
+                    {/* Exact Xerox Place & Location Coordinates */}
+                    {((order.orderLatitude && order.orderLongitude) || latestPayment?.paymentLatitude || order.orderLocationAddress || order.orderLocationCity) && (
+                      <div className="pt-2.5 mt-2 border-t border-[#b6dec0]/80">
+                        <div className="flex items-center gap-1.5 text-xs font-bold text-gray-800 mb-1">
+                          <MapPin className="w-3.5 h-3.5 text-red-600 flex-shrink-0 animate-bounce" />
+                          <span>Exact Xerox / Order Location (GPS Verified):</span>
+                        </div>
+                        {(order.orderLocationAddress || latestPayment?.paymentLocationAddress) ? (
+                          <div className="text-xs font-semibold text-gray-900 leading-snug">
+                            {order.orderLocationAddress || latestPayment?.paymentLocationAddress}
+                          </div>
+                        ) : (order.orderLocationCity || latestPayment?.paymentLocationCity) ? (
+                          <div className="text-xs font-semibold text-gray-900">
+                            {order.orderLocationCity || latestPayment?.paymentLocationCity}, Andhra Pradesh
+                          </div>
+                        ) : null}
+
+                        {(order.orderLatitude || latestPayment?.paymentLatitude) && (
+                          <div className="mt-1 flex items-center gap-2 flex-wrap text-[11px] font-mono font-bold text-gray-700">
+                            <span className="bg-white/90 px-2 py-0.5 rounded border border-[#b6dec0]">
+                              LAT: {(order.orderLatitude || latestPayment?.paymentLatitude)?.toFixed(6)}° N
+                            </span>
+                            <span className="bg-white/90 px-2 py-0.5 rounded border border-[#b6dec0]">
+                              LNG: {(order.orderLongitude || latestPayment?.paymentLongitude)?.toFixed(6)}° E
+                            </span>
+                            <a
+                              href={`https://www.google.com/maps/search/?api=1&query=${order.orderLatitude || latestPayment?.paymentLatitude},${order.orderLongitude || latestPayment?.paymentLongitude}`}
+                              target="_blank"
+                              rel="noopener noreferrer"
+                              className="text-blue-700 hover:text-blue-900 underline font-sans text-[10px] ml-1 print:hidden"
+                            >
+                              View on Maps ↗
+                            </a>
+                          </div>
+                        )}
+                      </div>
+                    )}
                   </div>
 
                   {/* Record Update Note */}

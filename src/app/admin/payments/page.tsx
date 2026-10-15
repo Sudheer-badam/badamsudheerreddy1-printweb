@@ -47,6 +47,11 @@ interface PaymentRecord {
   verifiedAt: string | null;
   paidAt: string | null;
   createdAt: string;
+  paymentLatitude?: number | null;
+  paymentLongitude?: number | null;
+  paymentLocationAccuracy?: number | null;
+  paymentLocationAddress?: string | null;
+  paymentLocationCity?: string | null;
   order: {
     id: string;
     orderNumber: string;
@@ -57,6 +62,11 @@ interface PaymentRecord {
     totalPages: number;
     copies: number;
     printColor: string;
+    orderLatitude?: number | null;
+    orderLongitude?: number | null;
+    orderLocationAccuracy?: number | null;
+    orderLocationAddress?: string | null;
+    orderLocationCity?: string | null;
   };
   user: {
     id: string;
@@ -64,6 +74,10 @@ interface PaymentRecord {
     email: string;
     phone: string;
     profilePhoto: string | null;
+    latitude?: number | null;
+    longitude?: number | null;
+    locationAddress?: string | null;
+    locationCity?: string | null;
   };
 }
 
@@ -98,6 +112,11 @@ export default function AdminPaymentsPage() {
       status: p.status === "PAID" ? "successful" : p.status.toLowerCase(),
       timestamp: formatReceiptDateTime(p.paidAt || p.createdAt),
       rejectionReason: p.rejectionReason,
+      latitude: p.paymentLatitude ?? p.order?.orderLatitude ?? p.user?.latitude ?? null,
+      longitude: p.paymentLongitude ?? p.order?.orderLongitude ?? p.user?.longitude ?? null,
+      locationAddress: p.paymentLocationAddress ?? p.order?.orderLocationAddress ?? p.user?.locationAddress ?? null,
+      locationCity: p.paymentLocationCity ?? p.order?.orderLocationCity ?? p.user?.locationCity ?? null,
+      locationAccuracy: p.paymentLocationAccuracy ?? p.order?.orderLocationAccuracy ?? null,
     });
   };
 

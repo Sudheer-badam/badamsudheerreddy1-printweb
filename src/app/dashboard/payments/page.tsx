@@ -19,7 +19,19 @@ interface Payment {
   transactionId: string | null;
   paidAt: string | null;
   createdAt: string;
-  order: { orderNumber: string; fileName: string };
+  paymentLatitude?: number | null;
+  paymentLongitude?: number | null;
+  paymentLocationAccuracy?: number | null;
+  paymentLocationAddress?: string | null;
+  paymentLocationCity?: string | null;
+  order: {
+    orderNumber: string;
+    fileName: string;
+    orderLatitude?: number | null;
+    orderLongitude?: number | null;
+    orderLocationAddress?: string | null;
+    orderLocationCity?: string | null;
+  };
 }
 
 export default function CustomerPaymentsPage() {
@@ -39,6 +51,11 @@ export default function CustomerPaymentsPage() {
       amount: p.amount,
       status: p.status === "PAID" ? "successful" : p.status.toLowerCase(),
       timestamp: formatReceiptDateTime(p.paidAt || p.createdAt),
+      latitude: p.paymentLatitude ?? p.order?.orderLatitude ?? null,
+      longitude: p.paymentLongitude ?? p.order?.orderLongitude ?? null,
+      locationAddress: p.paymentLocationAddress ?? p.order?.orderLocationAddress ?? null,
+      locationCity: p.paymentLocationCity ?? p.order?.orderLocationCity ?? null,
+      locationAccuracy: p.paymentLocationAccuracy ?? null,
     });
   };
 

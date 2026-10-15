@@ -188,6 +188,13 @@ model Order {
   adminNotes      String?
   rejectionReason String?
 
+  // Order Placement Location (Captured at exact time and xerox place of order)
+  orderLatitude         Float?
+  orderLongitude        Float?
+  orderLocationAccuracy Float?
+  orderLocationAddress  String?
+  orderLocationCity     String?
+
   createdAt   DateTime  @default(now())
   updatedAt   DateTime  @updatedAt
   completedAt DateTime?
@@ -235,6 +242,13 @@ model Payment {
   verifiedBy    String?
   verifiedAt    DateTime?
   adminNotes    String?
+
+  // Payment Location (Captured at exact time and place of payment)
+  paymentLatitude         Float?
+  paymentLongitude        Float?
+  paymentLocationAccuracy Float?
+  paymentLocationAddress  String?
+  paymentLocationCity     String?
 
   paidAt    DateTime?
   createdAt DateTime  @default(now())

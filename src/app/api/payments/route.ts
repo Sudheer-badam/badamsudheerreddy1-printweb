@@ -44,6 +44,11 @@ export async function GET(req: NextRequest) {
             copies: true,
             printColor: true,
             printSide: true,
+            orderLatitude: true,
+            orderLongitude: true,
+            orderLocationAccuracy: true,
+            orderLocationAddress: true,
+            orderLocationCity: true,
           },
         },
         user: {
@@ -53,6 +58,10 @@ export async function GET(req: NextRequest) {
             email: true,
             phone: true,
             profilePhoto: true,
+            latitude: true,
+            longitude: true,
+            locationAddress: true,
+            locationCity: true,
           },
         },
       },
@@ -77,6 +86,11 @@ export async function POST(req: NextRequest) {
       paymentProofUrl,
       method = "GOOGLEPAY",
       upiId,
+      latitude,
+      longitude,
+      accuracy,
+      address,
+      city,
     } = body;
 
     // 1. Validate required fields
@@ -101,6 +115,13 @@ export async function POST(req: NextRequest) {
     if (user.role !== "ADMIN" && order.userId !== user.id) {
       return NextResponse.json({ error: "Unauthorized access to this order" }, { status: 403 });
     }
+
+    // Resolve exact location at time of payment
+    const finalPaymentLatitude = typeof latitude === "number" ? latitude : user.latitude;
+    const finalPaymentLongitude = typeof longitude === "number" ? longitude : user.longitude;
+    const finalPaymentAccuracy = typeof accuracy === "number" ? accuracy : user.locationAccuracy;
+    const finalPaymentAddress = address || user.locationAddress;
+    const finalPaymentCity = city || user.locationCity;
 
     // 4. Check if order is already paid (idempotent response)
     if (order.paymentStatus === "PAID") {
@@ -159,6 +180,11 @@ export async function POST(req: NextRequest) {
           verifiedAt: new Date(),
           rejectionReason: null,
           adminNotes: "Successful UPI payment confirmed",
+          paymentLatitude: finalPaymentLatitude,
+          paymentLongitude: finalPaymentLongitude,
+          paymentLocationAccuracy: finalPaymentAccuracy,
+          paymentLocationAddress: finalPaymentAddress,
+          paymentLocationCity: finalPaymentCity,
         },
       });
     } else {
@@ -177,6 +203,11 @@ export async function POST(req: NextRequest) {
           paymentProofUrl: paymentProofUrl || null,
           upiId: upiId || null,
           adminNotes: "Successful UPI payment confirmed",
+          paymentLatitude: finalPaymentLatitude,
+          paymentLongitude: finalPaymentLongitude,
+          paymentLocationAccuracy: finalPaymentAccuracy,
+          paymentLocationAddress: finalPaymentAddress,
+          paymentLocationCity: finalPaymentCity,
         },
       });
     }
@@ -188,6 +219,13 @@ export async function POST(req: NextRequest) {
         paymentStatus: "PAID",
         status: newOrderStatus,
         ...(paymentProofUrl ? { paymentProofUrl } : {}),
+        ...(!order.orderLatitude && finalPaymentLatitude ? {
+          orderLatitude: finalPaymentLatitude,
+          orderLongitude: finalPaymentLongitude,
+          orderLocationAccuracy: finalPaymentAccuracy,
+          orderLocationAddress: finalPaymentAddress,
+          orderLocationCity: finalPaymentCity,
+        } : {}),
       },
     });
 

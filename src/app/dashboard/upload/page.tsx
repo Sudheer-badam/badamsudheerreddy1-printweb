@@ -13,13 +13,15 @@ import {
   CheckCircle,
   AlertCircle,
   IndianRupee,
-  FileImage
+  FileImage,
+  MapPin,
 } from "lucide-react";
 import { useAuth } from "@/contexts/AuthContext";
 import { useRouter } from "next/navigation";
 import { toast } from "sonner";
 import { formatCurrency, formatFileSize } from "@/lib/utils";
 import { upload } from '@vercel/blob/client';
+import { getCurrentBrowserLocation, reverseGeocode, FullLocationData } from "@/lib/location";
 
 interface Pricing {
   colorPrice: number;
@@ -158,6 +160,31 @@ export default function UploadPage() {
   const [uploadProgress, setUploadProgress] = useState(0);
   const [analyzing, setAnalyzing] = useState(false);
   const [submitted, setSubmitted] = useState(false);
+  const [orderLocation, setOrderLocation] = useState<FullLocationData | null>(null);
+
+  // Fetch live GPS location for the print/xerox order
+  useEffect(() => {
+    let isMounted = true;
+    getCurrentBrowserLocation({ enableHighAccuracy: true, timeout: 8000 })
+      .then(async (coords) => {
+        if (!isMounted) return;
+        const addr = await reverseGeocode(coords.latitude, coords.longitude);
+        if (!isMounted) return;
+        setOrderLocation({
+          ...coords,
+          address: addr.formattedAddress,
+          city: addr.city,
+          state: addr.state,
+          country: addr.country,
+        });
+      })
+      .catch((err) => {
+        console.warn("Could not retrieve current location for order:", err);
+      });
+    return () => {
+      isMounted = false;
+    };
+  }, []);
 
   useEffect(() => {
     return () => {
@@ -519,9 +546,15 @@ export default function UploadPage() {
           documents: uploadedDocuments,
           subtotal: totalSubtotal,
           totalAmount: totalAmount,
-          // We provide a fallback for root fields if needed
+          // Fallback root fields
           fileName: uploadedDocuments.length > 1 ? "Multiple Files" : uploadedDocuments[0].fileName,
           fileUrl: uploadedDocuments[0].fileUrl,
+          // Exact live location of ordering & Xerox place
+          orderLatitude: orderLocation?.latitude ?? null,
+          orderLongitude: orderLocation?.longitude ?? null,
+          orderLocationAccuracy: orderLocation?.accuracy ?? null,
+          orderLocationAddress: orderLocation?.address ?? null,
+          orderLocationCity: orderLocation?.city ?? null,
         }),
       });
 
@@ -945,6 +978,34 @@ export default function UploadPage() {
                     </div>
                   </div>
                 )}
+
+                {/* Xerox Ordering Place & Live GPS Location Badge */}
+                <div className="p-3.5 rounded-2xl bg-emerald-50/80 border border-emerald-200 text-xs">
+                  <div className="flex items-center justify-between gap-1 mb-1.5">
+                    <span className="flex items-center gap-1.5 font-bold text-emerald-800">
+                      <span className="relative flex h-2 w-2">
+                        <span className="animate-ping absolute inline-flex h-full w-full rounded-full bg-emerald-400 opacity-75"></span>
+                        <span className="relative inline-flex rounded-full h-2 w-2 bg-emerald-500"></span>
+                      </span>
+                      <MapPin className="w-3.5 h-3.5 text-emerald-600" />
+                      <span>Xerox Ordering Location</span>
+                    </span>
+                    <span className="text-[10px] uppercase font-bold text-emerald-700 bg-emerald-100 px-1.5 py-0.5 rounded border border-emerald-300">
+                      GPS Active
+                    </span>
+                  </div>
+                  <p className="text-gray-800 font-medium text-[11px] leading-snug">
+                    {orderLocation?.address || orderLocation?.city || "Detecting live location..."}
+                  </p>
+                  {orderLocation?.latitude && orderLocation?.longitude && (
+                    <div className="mt-1 font-mono text-[10px] font-semibold text-emerald-800">
+                      Lat: {orderLocation.latitude.toFixed(6)}° N • Lng: {orderLocation.longitude.toFixed(6)}° E
+                    </div>
+                  )}
+                  <div className="mt-1 text-[10px] text-gray-500 italic">
+                    * This exact place and GPS coordinates will be printed on your Xerox payment receipt.
+                  </div>
+                </div>
 
                 <button
                   onClick={handleSubmit}

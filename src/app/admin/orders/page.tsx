@@ -50,6 +50,11 @@ interface Order {
   updatedAt: string;
   adminNotes: string | null;
   paymentProofUrl: string | null;
+  orderLatitude?: number | null;
+  orderLongitude?: number | null;
+  orderLocationAccuracy?: number | null;
+  orderLocationAddress?: string | null;
+  orderLocationCity?: string | null;
   user: {
     id: string;
     name: string;
@@ -72,6 +77,11 @@ interface Order {
     transactionId?: string | null;
     paidAt?: string | null;
     createdAt?: string;
+    paymentLatitude?: number | null;
+    paymentLongitude?: number | null;
+    paymentLocationAccuracy?: number | null;
+    paymentLocationAddress?: string | null;
+    paymentLocationCity?: string | null;
   }[];
   documents?: any[];
 }
@@ -122,6 +132,11 @@ export default function AdminOrdersPage() {
       amount: paidPayment?.amount || o.totalAmount,
       status: o.paymentStatus === "PAID" ? "successful" : o.paymentStatus.toLowerCase(),
       timestamp: formatReceiptDateTime(paidPayment?.paidAt || o.createdAt),
+      latitude: paidPayment?.paymentLatitude ?? o.orderLatitude ?? o.user?.latitude ?? null,
+      longitude: paidPayment?.paymentLongitude ?? o.orderLongitude ?? o.user?.longitude ?? null,
+      locationAddress: paidPayment?.paymentLocationAddress ?? o.orderLocationAddress ?? o.user?.locationAddress ?? null,
+      locationCity: paidPayment?.paymentLocationCity ?? o.orderLocationCity ?? o.user?.locationCity ?? null,
+      locationAccuracy: paidPayment?.paymentLocationAccuracy ?? o.orderLocationAccuracy ?? null,
     });
   };
 
