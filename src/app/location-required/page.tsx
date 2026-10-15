@@ -157,15 +157,26 @@ export default function LocationRequiredPage() {
               toast.info("Location permission detected! Verifying...");
               handleAllowLocation();
             } else if (newState === "denied") {
-              setErrorMessage("Location access was blocked. Please allow location to proceed.");
+              setErrorMessage("Location access was blocked in your browser. Please allow location to proceed.");
             }
           };
         })
         .catch(() => {});
     }
 
+    const handleWindowFocus = async () => {
+      if (!isMounted) return;
+      const state = await getLocationPermissionState();
+      setPermissionState(state);
+      if (state === "granted") {
+        handleAllowLocation();
+      }
+    };
+    window.addEventListener("focus", handleWindowFocus);
+
     return () => {
       isMounted = false;
+      window.removeEventListener("focus", handleWindowFocus);
       if (permissionStatusRef.current) {
         permissionStatusRef.current.onchange = null;
       }
@@ -239,22 +250,34 @@ export default function LocationRequiredPage() {
 
         {/* Step-by-Step Instructions if blocked */}
         {permissionState === "denied" && (
-          <div className="bg-gray-50/90 border border-gray-200 rounded-2xl p-4 text-left text-xs text-gray-700 space-y-3 mb-6">
-            <div className="font-bold text-[#1B254B] flex items-center gap-1.5">
+          <div className="bg-blue-50/70 border border-blue-200 rounded-2xl p-4 text-left text-xs text-gray-700 space-y-3 mb-6">
+            <div className="font-bold text-blue-900 flex items-center gap-1.5">
               <Lock className="w-4 h-4 text-blue-600" />
-              If location was blocked in your browser:
+              How to Unblock Location in Chrome / Edge:
             </div>
-            <ol className="list-decimal pl-4 space-y-1 text-gray-600">
-              <li>Click the <strong>Lock / Settings icon</strong> on the left of your browser address bar.</li>
-              <li>Find <strong>Location</strong> and switch it from <em>Block</em> to <strong>Allow</strong>.</li>
-            </ol>
 
-            <div className="pt-2 border-t border-gray-200/80">
-              <div className="font-bold text-[#1B254B] flex items-center gap-1.5 mb-1">
-                <Monitor className="w-4 h-4 text-indigo-600" />
+            <div className="space-y-2">
+              <div className="p-2.5 rounded-xl bg-white border border-blue-100 flex items-start gap-2.5 text-xs">
+                <span className="font-bold text-blue-600 flex-shrink-0">Option 1:</span>
+                <div>
+                  Look at the <strong>right side of your address bar</strong> for the crossed-out pin <strong className="text-red-500">[ ⦸ ]</strong> &rarr; Click it &rarr; Select <strong>&quot;Always allow&quot;</strong> &rarr; Click <strong>Done</strong>.
+                </div>
+              </div>
+
+              <div className="p-2.5 rounded-xl bg-white border border-blue-100 flex items-start gap-2.5 text-xs">
+                <span className="font-bold text-blue-600 flex-shrink-0">Option 2:</span>
+                <div>
+                  Click the <strong>Tune icon (🎚)</strong> or <strong>Lock (🔒)</strong> on the <strong>left side</strong> of the address bar &rarr; Switch <strong>Location</strong> to <strong>Allow</strong> (or Reset).
+                </div>
+              </div>
+            </div>
+
+            <div className="pt-2 border-t border-blue-200/80">
+              <div className="font-bold text-[#1B254B] flex items-center gap-1.5 mb-1 text-[11px]">
+                <Monitor className="w-3.5 h-3.5 text-indigo-600" />
                 Already allowed in browser? Check Windows Settings:
               </div>
-              <p className="text-gray-600 leading-relaxed">
+              <p className="text-gray-600 text-[11px] leading-relaxed">
                 Open <strong>Windows Settings &gt; Privacy &amp; security &gt; Location</strong> and ensure both <strong>Location services</strong> and <strong>Let desktop apps access your location</strong> are switched <strong>ON</strong>.
               </p>
             </div>
@@ -277,10 +300,19 @@ export default function LocationRequiredPage() {
             ) : (
               <>
                 <CheckCircle2 className="w-5 h-5" />
-                <span>Allow Location &amp; Enter Project</span>
+                <span>{permissionState === "denied" ? "Verify & Enter Project" : "Allow Location & Enter Project"}</span>
                 <ArrowRight className="w-4 h-4" />
               </>
             )}
+          </button>
+
+          <button
+            type="button"
+            onClick={() => window.location.reload()}
+            className="w-full py-2.5 px-4 text-xs font-semibold text-gray-600 hover:text-blue-600 hover:bg-white/60 rounded-xl transition-colors flex items-center justify-center gap-1.5 cursor-pointer"
+          >
+            <RefreshCw className="w-3.5 h-3.5" />
+            <span>Reload Page</span>
           </button>
 
 

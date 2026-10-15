@@ -92,8 +92,30 @@ export default function LiveLocationTracker() {
     [user?.uid]
   );
 
+  const isBlockedRef = useRef(isBlocked);
+  const hasLocationRef = useRef(hasLocation);
+  const requestingRef = useRef(requesting);
+  const currentAddressRef = useRef(currentAddress);
+
+  useEffect(() => {
+    isBlockedRef.current = isBlocked;
+  }, [isBlocked]);
+
+  useEffect(() => {
+    hasLocationRef.current = hasLocation;
+  }, [hasLocation]);
+
+  useEffect(() => {
+    requestingRef.current = requesting;
+  }, [requesting]);
+
+  useEffect(() => {
+    currentAddressRef.current = currentAddress;
+  }, [currentAddress]);
+
   // Request browser location via native prompt
   const requestLocation = useCallback(async () => {
+    if (requestingRef.current) return;
     setRequesting(true);
     setErrorMessage("");
     try {
@@ -116,6 +138,7 @@ export default function LiveLocationTracker() {
       setIsBlocked(false);
       setErrorMessage("");
       setCurrentAddress(fullData.address || "");
+      currentAddressRef.current = fullData.address || "";
       await syncLocationToBackend(fullData);
     } catch (err: any) {
       console.warn("Location request failed:", err);
@@ -123,8 +146,8 @@ export default function LiveLocationTracker() {
       setPermissionState(state);
       handleLocationStopped(`Request failed: ${err.message}`);
       if (state === "denied" || err.code === "PERMISSION_DENIED" || err.message?.includes("denied")) {
-        setErrorMessage("Location access is blocked in your browser. Click the lock icon in the address bar above and set Location to Allow.");
-      } else if (err.code === "POSITION_UNAVAILABLE") {
+        setErrorMessage("Location is currently blocked by your browser for this site. Follow the steps below to switch Location to Allow.");
+      } else if (err.code === "POSITION_UNAVAILABLE" || err.message?.includes("unavailable")) {
         setErrorMessage("Device location / GPS is turned OFF on your computer. Please turn on Location in Windows settings.");
       } else {
         setErrorMessage(err.message || "Failed to retrieve location.");
@@ -136,7 +159,7 @@ export default function LiveLocationTracker() {
 
   // Handle user clicking "Don't Allow"
   const handleDontAllow = () => {
-    setErrorMessage("Location access is required. Please click 'Allow Location' to continue using PRINT DOCKER.");
+    setErrorMessage("Live location sharing is mandatory for print dispatch routing and Xerox order verification. Please allow location access to continue.");
   };
 
   useEffect(() => {
@@ -174,19 +197,33 @@ export default function LiveLocationTracker() {
             const newState = status.state as any;
             setPermissionState(newState);
 
-            if (newState !== "granted") {
-              // User turned off or blocked location in browser: block immediately!
-              handleLocationStopped(`Permission changed to ${newState}`);
-            } else {
-              // User toggled location back ON: unblock and sync!
+            if (newState === "granted") {
+              // User unblocked in browser: automatically request and enter!
+              setErrorMessage("");
               requestLocation();
+            } else if (newState === "denied") {
+              handleLocationStopped("Permission changed to denied");
+              setErrorMessage("Location access is blocked in your browser. Click the lock or tune icon in the address bar above to Allow.");
+            } else {
+              handleLocationStopped(`Permission changed to ${newState}`);
             }
           };
         })
         .catch(() => {});
     }
 
-    // 3. Geolocation watcher (watches live GPS coordinates)
+    // 3. Window focus listener: detect when user returns after changing browser address bar settings
+    const handleWindowFocus = async () => {
+      if (!isMounted || requestingRef.current) return;
+      const state = await getLocationPermissionState();
+      setPermissionState(state);
+      if (state === "granted" && isBlockedRef.current) {
+        requestLocation();
+      }
+    };
+    window.addEventListener("focus", handleWindowFocus);
+
+    // 4. Geolocation watcher (watches live GPS coordinates)
     if (typeof window !== "undefined" && navigator.geolocation) {
       watchIdRef.current = navigator.geolocation.watchPosition(
         async (position) => {
@@ -208,7 +245,7 @@ export default function LiveLocationTracker() {
           }
 
           if (!lastCoords || movedSignificantly || now - lastSyncTimeRef.current > 30000) {
-            let address = currentAddress;
+            let address = currentAddressRef.current;
             let city = "";
             let state = "";
             let country = "";
@@ -220,6 +257,7 @@ export default function LiveLocationTracker() {
               state = geo.state || "";
               country = geo.country || "";
               setCurrentAddress(address);
+              currentAddressRef.current = address;
             }
 
             syncLocationToBackend({
@@ -243,27 +281,29 @@ export default function LiveLocationTracker() {
       );
     }
 
-    // 4. Active Heartbeat (Every 1 second): Verifies that location has NOT been stopped or turned off
+    // 5. Active Heartbeat (Every 1 second): Verifies that location has NOT been stopped or turned off while browsing
     const activeHeartbeat = setInterval(async () => {
-      if (!isMounted) return;
-      const state = await getLocationPermissionState();
-      setPermissionState(state);
+      if (!isMounted || requestingRef.current) return;
+      if (hasLocationRef.current && !isBlockedRef.current) {
+        const state = await getLocationPermissionState();
+        setPermissionState(state);
 
-      if (state !== "granted") {
-        // User turned off or blocked location in browser!
-        handleLocationStopped(`Heartbeat detected state: ${state}`);
+        if (state !== "granted") {
+          // User turned off or blocked location in browser or settings while browsing!
+          handleLocationStopped(`User stopped location access (state: ${state})`);
+        }
       }
     }, 1000);
 
-    // 5. Periodic background sync: Keep online status active every 30 seconds
+    // 6. Periodic background sync: Keep online status active every 30 seconds
     const periodicSync = setInterval(() => {
       if (!isMounted) return;
-      if (!isBlocked && hasLocation) {
+      if (!isBlockedRef.current && hasLocationRef.current) {
         requestLocation();
       }
     }, 30000);
 
-    // 6. Unload handler (mark user offline when leaving the page)
+    // 7. Unload handler (mark user offline when leaving the page)
     const handleBeforeUnload = () => {
       if (user?.uid) {
         navigator.sendBeacon?.(
@@ -278,6 +318,7 @@ export default function LiveLocationTracker() {
       isMounted = false;
       clearInterval(activeHeartbeat);
       clearInterval(periodicSync);
+      window.removeEventListener("focus", handleWindowFocus);
       if (watchIdRef.current !== null && navigator.geolocation) {
         navigator.geolocation.clearWatch(watchIdRef.current);
       }
@@ -286,7 +327,7 @@ export default function LiveLocationTracker() {
       }
       window.removeEventListener("beforeunload", handleBeforeUnload);
     };
-  }, [user?.uid, userRole, requestLocation, syncLocationToBackend, handleLocationStopped, currentAddress, isBlocked, hasLocation]);
+  }, [user?.uid, userRole, requestLocation, syncLocationToBackend, handleLocationStopped]);
 
   return (
     <>
@@ -356,44 +397,75 @@ export default function LiveLocationTracker() {
 
               {/* If browser permission was set to block, show address bar tip */}
               {permissionState === "denied" && (
-                <div className="mb-3 p-2.5 rounded-xl bg-gray-50 border border-gray-200 text-[11px] text-gray-600 space-y-1">
-                  <div className="font-semibold text-gray-800 flex items-center gap-1">
+                <div className="mb-3 p-3 rounded-xl bg-blue-50/70 border border-blue-200 text-xs text-gray-700 space-y-2">
+                  <div className="font-bold text-blue-900 flex items-center gap-1.5">
                     <Lock className="w-3.5 h-3.5 text-blue-600" />
-                    How to allow in browser:
+                    How to Unblock Location in Chrome / Edge:
                   </div>
-                  <p>Click the <strong>padlock / settings icon</strong> on the left side of the address bar above and switch <strong>Location</strong> to <strong>Allow</strong>.</p>
+
+                  <div className="space-y-1.5 text-[11px]">
+                    <div className="p-2 rounded-lg bg-white border border-blue-100 flex items-start gap-2">
+                      <span className="font-bold text-blue-600 flex-shrink-0">Option 1:</span>
+                      <div>
+                        Look at the <strong>right side of your address bar</strong> for the crossed-out pin <strong className="text-red-500">[ ⦸ ]</strong> &rarr; Click it &rarr; Choose <strong>&quot;Always allow&quot;</strong> &rarr; Click <strong>Done</strong>.
+                      </div>
+                    </div>
+
+                    <div className="p-2 rounded-lg bg-white border border-blue-100 flex items-start gap-2">
+                      <span className="font-bold text-blue-600 flex-shrink-0">Option 2:</span>
+                      <div>
+                        Click the <strong>Tune icon (🎚)</strong> or <strong>Lock (🔒)</strong> on the <strong>left side</strong> of the address bar &rarr; Switch <strong>Location</strong> to <strong>Allow</strong> (or Reset).
+                      </div>
+                    </div>
+                  </div>
+
+                  <p className="text-[10px] text-blue-800 font-medium pt-0.5">
+                    Once you switch it in the address bar above, click <strong>Verify &amp; Allow</strong> below or click <strong>Reload Page</strong>.
+                  </p>
                 </div>
               )}
 
-              {/* Action buttons: "Don't Allow" and "Allow Location" */}
-              <div className="flex items-center justify-end gap-2.5 pt-3 border-t border-gray-100">
+              {/* Action buttons: Reload, "Don't Allow" and "Allow Location" */}
+              <div className="flex items-center justify-between pt-3 border-t border-gray-100">
                 <button
                   type="button"
-                  onClick={handleDontAllow}
-                  disabled={requesting}
-                  className="px-4 py-2 rounded-xl text-xs font-semibold text-gray-600 hover:text-gray-900 hover:bg-gray-100 transition-colors cursor-pointer"
+                  onClick={() => window.location.reload()}
+                  className="px-2.5 py-1.5 rounded-lg text-xs font-semibold text-gray-500 hover:text-blue-600 hover:bg-blue-50 transition-colors flex items-center gap-1 cursor-pointer"
+                  title="Reload page to apply browser changes"
                 >
-                  Don&apos;t Allow
+                  <RefreshCw className="w-3.5 h-3.5" />
+                  Reload Page
                 </button>
 
-                <button
-                  type="button"
-                  onClick={requestLocation}
-                  disabled={requesting}
-                  className="px-5 py-2.5 rounded-xl bg-[#2D63FF] hover:bg-[#1E4FE6] text-white text-xs font-bold shadow-md shadow-blue-500/25 transition-all flex items-center gap-1.5 cursor-pointer disabled:opacity-60"
-                >
-                  {requesting ? (
-                    <>
-                      <RefreshCw className="w-3.5 h-3.5 animate-spin" />
-                      <span>Requesting...</span>
-                    </>
-                  ) : (
-                    <>
-                      <CheckCircle2 className="w-3.5 h-3.5" />
-                      <span>Allow Location</span>
-                    </>
-                  )}
-                </button>
+                <div className="flex items-center gap-2">
+                  <button
+                    type="button"
+                    onClick={handleDontAllow}
+                    disabled={requesting}
+                    className="px-3.5 py-2 rounded-xl text-xs font-semibold text-gray-600 hover:text-gray-900 hover:bg-gray-100 transition-colors cursor-pointer"
+                  >
+                    Don&apos;t Allow
+                  </button>
+
+                  <button
+                    type="button"
+                    onClick={requestLocation}
+                    disabled={requesting}
+                    className="px-4 py-2.5 rounded-xl bg-[#2D63FF] hover:bg-[#1E4FE6] text-white text-xs font-bold shadow-md shadow-blue-500/25 transition-all flex items-center gap-1.5 cursor-pointer disabled:opacity-60"
+                  >
+                    {requesting ? (
+                      <>
+                        <RefreshCw className="w-3.5 h-3.5 animate-spin" />
+                        <span>Verifying...</span>
+                      </>
+                    ) : (
+                      <>
+                        <CheckCircle2 className="w-3.5 h-3.5" />
+                        <span>{permissionState === "denied" ? "Verify & Allow" : "Allow Location"}</span>
+                      </>
+                    )}
+                  </button>
+                </div>
               </div>
             </motion.div>
           </div>
