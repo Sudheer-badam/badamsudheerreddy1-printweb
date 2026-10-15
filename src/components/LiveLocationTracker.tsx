@@ -210,6 +210,24 @@ export default function LiveLocationTracker() {
 
     let isMounted = true;
 
+    // Check if user has already granted/verified location in this browser
+    const isAlreadyVerified =
+      typeof window !== "undefined" &&
+      (localStorage.getItem("print_user_location_verified") === "true" ||
+        sessionStorage.getItem("user_last_location") !== null);
+
+    if (isAlreadyVerified) {
+      setHasLocation(true);
+      setIsBlocked(false);
+      try {
+        const cached = JSON.parse(sessionStorage.getItem("user_last_location") || "{}");
+        if (cached?.address) {
+          setCurrentAddress(cached.address);
+          currentAddressRef.current = cached.address;
+        }
+      } catch {}
+    }
+
     // 1. Hydrate from DB for this user's Gmail account immediately
     fetch(`/api/user/location?uid=${user.uid}`)
       .then((res) => res.json())
@@ -230,6 +248,7 @@ export default function LiveLocationTracker() {
           currentAddressRef.current = loc.address || "";
           if (typeof window !== "undefined") {
             sessionStorage.setItem("user_last_location", JSON.stringify(loc));
+            localStorage.setItem("print_user_location_verified", "true");
           }
           syncLocationToFirebase({
             uid: user.uid,
@@ -252,15 +271,12 @@ export default function LiveLocationTracker() {
     getLocationPermissionState().then((state) => {
       if (!isMounted) return;
       setPermissionState(state);
-      if (state === "granted") {
-        // Already allowed on device: start live streaming immediately
+      if (state === "granted" || isAlreadyVerified) {
+        // Already allowed or verified: never show modal again!
         setIsBlocked(false);
         requestLocation();
       } else {
-        // Not granted yet ('prompt' or 'denied'): show permission prompt on screen!
-        if (typeof window !== "undefined") {
-          localStorage.removeItem("print_user_location_verified");
-        }
+        // Only show if user has never allowed location before
         setIsBlocked(true);
       }
     });
