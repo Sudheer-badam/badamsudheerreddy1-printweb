@@ -92,7 +92,22 @@ export async function POST(req: NextRequest) {
       }).catch((e: any) => console.warn("Failed to write location log:", e));
     }
 
-    return NextResponse.json({ role: user.role, userId: user.id });
+    return NextResponse.json({
+      role: user.role,
+      userId: user.id,
+      user: {
+        id: user.id,
+        email: user.email,
+        name: user.name,
+        latitude: user.latitude,
+        longitude: user.longitude,
+        locationAccuracy: user.locationAccuracy,
+        locationAddress: user.locationAddress,
+        locationCity: user.locationCity,
+        locationState: user.locationState,
+        locationCountry: user.locationCountry,
+      },
+    });
   } catch (error) {
     console.error("Auth sync error:", error);
     return NextResponse.json({ error: "Internal server error" }, { status: 500 });

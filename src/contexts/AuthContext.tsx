@@ -75,6 +75,19 @@ export function AuthProvider({ children }: { children: ReactNode }) {
           if (res.ok) {
             const data = await res.json();
             setUserRole(data.role);
+            if (data.user?.latitude && data.user?.longitude && typeof window !== "undefined") {
+              const savedLoc = {
+                latitude: data.user.latitude,
+                longitude: data.user.longitude,
+                accuracy: data.user.locationAccuracy || 100,
+                address: data.user.locationAddress || "Saved Location",
+                city: data.user.locationCity || "",
+                state: data.user.locationState || "",
+                country: data.user.locationCountry || "India",
+              };
+              sessionStorage.setItem("user_last_location", JSON.stringify(savedLoc));
+              localStorage.setItem("print_user_location_verified", "true");
+            }
           }
         } catch (error) {
           console.error("Failed to sync user:", error);

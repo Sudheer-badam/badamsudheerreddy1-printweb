@@ -185,16 +185,31 @@ export default function LiveLocationTracker() {
 
     let isMounted = true;
 
-    // 1. Initial permission check on mount
+    // 1. Initial check on mount: check if user already has verified location from their Gmail account
+    const hasVerifiedSaved = typeof window !== "undefined" && 
+      (localStorage.getItem("print_user_location_verified") === "true" || sessionStorage.getItem("user_last_location") !== null);
+
+    if (hasVerifiedSaved) {
+      setHasLocation(true);
+      setIsBlocked(false);
+      try {
+        const cached = JSON.parse(sessionStorage.getItem("user_last_location") || "{}");
+        if (cached?.address) {
+          setCurrentAddress(cached.address);
+          currentAddressRef.current = cached.address;
+        }
+      } catch {}
+    }
+
     getLocationPermissionState().then((state) => {
       if (!isMounted) return;
       setPermissionState(state);
 
-      if (state === "granted") {
-        requestLocation();
+      if (state === "denied") {
+        handleLocationStopped("Permission denied in browser");
       } else {
-        // Show top popup to request permission
-        handleLocationStopped(`Initial state: ${state}`);
+        // If granted or prompt, request live location
+        requestLocation();
       }
     });
 
