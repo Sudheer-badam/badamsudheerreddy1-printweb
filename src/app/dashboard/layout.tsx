@@ -45,13 +45,17 @@ export default function DashboardLayout({ children }: { children: React.ReactNod
       } else if (userRole === "ADMIN") {
         router.push("/admin");
       } else {
-        // Customer: enforce location permission
-        getLocationPermissionState().then((state) => {
-          const storedLoc = typeof window !== "undefined" ? sessionStorage.getItem("user_last_location") : null;
-          if (state === "denied" && !storedLoc) {
-            router.replace("/location-required");
-          }
-        });
+        // Customer: enforce location permission only if never verified
+        const storedLoc = typeof window !== "undefined" ? sessionStorage.getItem("user_last_location") : null;
+        const isVerified = typeof window !== "undefined" ? localStorage.getItem("print_user_location_verified") === "true" : false;
+
+        if (!storedLoc && !isVerified) {
+          getLocationPermissionState().then((state) => {
+            if (state !== "granted") {
+              router.replace("/location-required");
+            }
+          });
+        }
       }
     }
   }, [user, userRole, loading, router]);

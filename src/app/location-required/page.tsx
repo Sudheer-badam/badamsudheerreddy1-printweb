@@ -34,6 +34,7 @@ export default function LocationRequiredPage() {
     try {
       if (typeof window !== "undefined") {
         sessionStorage.setItem("user_last_location", JSON.stringify(loc));
+        localStorage.setItem("print_user_location_verified", "true");
       }
       await fetch("/api/user/location", {
         method: "POST",

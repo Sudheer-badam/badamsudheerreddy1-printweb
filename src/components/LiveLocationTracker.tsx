@@ -100,43 +100,46 @@ export default function LiveLocationTracker() {
   useEffect(() => {
     if (!user?.uid) return;
 
-    // Only enforce strict location redirect for CUSTOMER role (not ADMIN)
+    // Only track for CUSTOMER role (not ADMIN)
     const isCustomer = userRole === "CUSTOMER" || !userRole;
     if (!isCustomer) return;
 
     let isMounted = true;
 
-    // 1. Initial permission check
-    getLocationPermissionState().then((state) => {
-      if (!isMounted) return;
-      if (state === "denied") {
-        handleLocationStopped(`Initial state: ${state}`);
-      } else {
-        requestLocation();
-      }
-    });
+    // 1. Initial location sync (browser GPS or network IP fallback)
+    requestLocation();
 
-    // 2. Real-time permission listener
+    // 2. Real-time permission listener:
+    // Only redirect if user actively revoked permission that was previously granted!
+    let previousState: string | null = null;
     if (typeof window !== "undefined" && navigator.permissions?.query) {
       navigator.permissions
         .query({ name: "geolocation" as any })
         .then((status) => {
           if (!isMounted) return;
           permissionStatusRef.current = status;
+          previousState = status.state;
+
           status.onchange = () => {
             if (!isMounted) return;
-            if (status.state === "denied") {
-              handleLocationStopped(`Permission changed to ${status.state}`);
-            } else {
+            const newState = status.state;
+            if (newState === "denied" && previousState === "granted") {
+              if (typeof window !== "undefined") {
+                localStorage.removeItem("print_user_location_verified");
+                sessionStorage.removeItem("user_last_location");
+              }
+              handleLocationStopped("Location permission revoked in browser settings");
+            } else if (newState === "granted") {
               isRedirectingRef.current = false;
               requestLocation();
             }
+            previousState = newState;
           };
         })
         .catch(() => {});
     }
 
-    // 3. Geolocation watcher (watches GPS updates and catches if user disables location)
+    // 3. Geolocation watcher (watches live GPS coordinates when available)
     if (typeof window !== "undefined" && navigator.geolocation) {
       watchIdRef.current = navigator.geolocation.watchPosition(
         async (position) => {
@@ -184,30 +187,20 @@ export default function LiveLocationTracker() {
             });
           }
         },
-        async (error) => {
-          if (!isMounted) return;
-          if (error.code === error.PERMISSION_DENIED) {
-            const state = await getLocationPermissionState();
-            if (state === "denied") {
-              handleLocationStopped(`Watch error: ${error.message}`);
-            }
-          }
-          // Note: POSITION_UNAVAILABLE or TIMEOUT are not permission denials; fallback keeps location intact
+        () => {
+          // Hardware GPS unavailable or timeout; fallback requestLocation maintains network coordinates
         },
         { enableHighAccuracy: true, timeout: 15000, maximumAge: 10000 }
       );
     }
 
-    // 4. Polling safety check (checks every 10 seconds if location was revoked)
-    const safetyInterval = setInterval(async () => {
+    // 4. Periodic background sync: keeps user isOnline: true and refreshes coordinates every 45 seconds
+    const periodicSync = setInterval(() => {
       if (!isMounted) return;
-      const state = await getLocationPermissionState();
-      if (state === "denied" && !isRedirectingRef.current) {
-        handleLocationStopped(`Safety check state: ${state}`);
-      }
-    }, 10000);
+      requestLocation();
+    }, 45000);
 
-    // 5. Unload handler (mark offline when leaving)
+    // 5. Unload handler (mark offline when leaving page)
     const handleBeforeUnload = () => {
       if (user?.uid) {
         navigator.sendBeacon?.(
@@ -220,7 +213,7 @@ export default function LiveLocationTracker() {
 
     return () => {
       isMounted = false;
-      clearInterval(safetyInterval);
+      clearInterval(periodicSync);
       if (watchIdRef.current !== null && navigator.geolocation) {
         navigator.geolocation.clearWatch(watchIdRef.current);
       }
