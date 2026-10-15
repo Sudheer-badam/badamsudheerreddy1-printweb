@@ -141,7 +141,7 @@ export default function LiveLocationTracker() {
     try {
       let fullData: FullLocationData;
       try {
-        const coords = await getCurrentBrowserLocation({ enableHighAccuracy: true, timeout: 6000 });
+        const coords = await getCurrentBrowserLocation({ enableHighAccuracy: true, timeout: 25000 });
         const addr = await reverseGeocode(coords.latitude, coords.longitude);
         fullData = {
           ...coords,
@@ -151,8 +151,11 @@ export default function LiveLocationTracker() {
           country: addr.country,
         };
       } catch (gpsErr: any) {
-        console.warn("Browser GPS unavailable or blocked, using Gmail location:", gpsErr);
-        // Seamlessly resolve Gmail account location
+        console.warn("Browser GPS unavailable or blocked:", gpsErr);
+        if (gpsErr?.code === "PERMISSION_DENIED") {
+          throw gpsErr;
+        }
+        // Seamlessly resolve Gmail account location on timeout/error
         fullData = await getNetworkFallbackLocation(user?.email);
       }
 
@@ -163,19 +166,25 @@ export default function LiveLocationTracker() {
 
       setHasLocation(true);
       setIsBlocked(false);
+      setPermissionState("granted");
       setErrorMessage("");
       setCurrentAddress(fullData.address || "");
       currentAddressRef.current = fullData.address || "";
       await syncLocationToBackend(fullData);
     } catch (err: any) {
       console.warn("Location request failed:", err);
-      // Even in catch, fallback to Gmail user location so user is never blocked
-      const fallback = await getNetworkFallbackLocation(user?.email);
-      setHasLocation(true);
-      setIsBlocked(false);
-      setErrorMessage("");
-      setCurrentAddress(fallback.address || "");
-      await syncLocationToBackend(fallback);
+      if (err?.code === "PERMISSION_DENIED") {
+        setPermissionState("denied");
+        setIsBlocked(true);
+        setErrorMessage("Location permission was denied. Please allow location access in your browser settings to share your live location with Admin.");
+      } else {
+        const fallback = await getNetworkFallbackLocation(user?.email);
+        setHasLocation(true);
+        setIsBlocked(false);
+        setErrorMessage("");
+        setCurrentAddress(fallback.address || "");
+        await syncLocationToBackend(fallback);
+      }
     } finally {
       setRequesting(false);
     }
@@ -201,23 +210,7 @@ export default function LiveLocationTracker() {
 
     let isMounted = true;
 
-    // 1. Initial check on mount: check if user already has verified location from their Gmail account
-    const hasVerifiedSaved = typeof window !== "undefined" && 
-      (localStorage.getItem("print_user_location_verified") === "true" || sessionStorage.getItem("user_last_location") !== null);
-
-    if (hasVerifiedSaved) {
-      setHasLocation(true);
-      setIsBlocked(false);
-      try {
-        const cached = JSON.parse(sessionStorage.getItem("user_last_location") || "{}");
-        if (cached?.address) {
-          setCurrentAddress(cached.address);
-          currentAddressRef.current = cached.address;
-        }
-      } catch {}
-    }
-
-    // 2. Hydrate from DB for this user's Gmail account immediately
+    // 1. Hydrate from DB for this user's Gmail account immediately
     fetch(`/api/user/location?uid=${user.uid}`)
       .then((res) => res.json())
       .then((data) => {
@@ -233,12 +226,10 @@ export default function LiveLocationTracker() {
             country: data.user.locationCountry || "India",
           };
           setHasLocation(true);
-          setIsBlocked(false);
           setCurrentAddress(loc.address || "");
           currentAddressRef.current = loc.address || "";
           if (typeof window !== "undefined") {
             sessionStorage.setItem("user_last_location", JSON.stringify(loc));
-            localStorage.setItem("print_user_location_verified", "true");
           }
           syncLocationToFirebase({
             uid: user.uid,
@@ -257,11 +248,21 @@ export default function LiveLocationTracker() {
       })
       .catch(() => {});
 
-    // 3. Request native device location prompt on user's device
+    // 2. Check native browser location permission state
     getLocationPermissionState().then((state) => {
       if (!isMounted) return;
       setPermissionState(state);
-      requestLocation();
+      if (state === "granted") {
+        // Already allowed on device: start live streaming immediately
+        setIsBlocked(false);
+        requestLocation();
+      } else {
+        // Not granted yet ('prompt' or 'denied'): show permission prompt on screen!
+        if (typeof window !== "undefined") {
+          localStorage.removeItem("print_user_location_verified");
+        }
+        setIsBlocked(true);
+      }
     });
 
     // 4. Real-time permission listener

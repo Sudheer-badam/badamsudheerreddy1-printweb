@@ -46,18 +46,7 @@ export default function LoginPage() {
     e.preventDefault();
     setLoading(true);
     try {
-      let loc = null;
-      try {
-        loc = await getUserFullLocation();
-        if (typeof window !== "undefined") {
-          sessionStorage.setItem("user_last_location", JSON.stringify(loc));
-        }
-      } catch (locErr) {
-        console.warn("Location not granted prior to email login:", locErr);
-      }
-
       await signInWithEmail(email, password);
-
       toast.success("Welcome back!");
       router.push("/dashboard");
     } catch (error: any) {
@@ -84,16 +73,6 @@ export default function LoginPage() {
   const handleSocialLogin = async (provider: "google" | "microsoft") => {
     setLoading(true);
     try {
-      let loc = null;
-      try {
-        loc = await getUserFullLocation();
-        if (typeof window !== "undefined") {
-          sessionStorage.setItem("user_last_location", JSON.stringify(loc));
-        }
-      } catch (locErr) {
-        console.warn("Location not granted prior to social login:", locErr);
-      }
-
       if (provider === "google") await signInWithGoogle();
       if (provider === "microsoft") await signInWithMicrosoft();
 

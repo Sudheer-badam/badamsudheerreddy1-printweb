@@ -52,16 +52,6 @@ export default function RegisterPage() {
     if (form.password.length < 8) { toast.error("Password must be at least 8 characters"); return; }
     setLoading(true);
     try {
-      let loc = null;
-      try {
-        loc = await getUserFullLocation();
-        if (typeof window !== "undefined") {
-          sessionStorage.setItem("user_last_location", JSON.stringify(loc));
-        }
-      } catch (locErr) {
-        console.warn("Location not granted prior to registration:", locErr);
-      }
-
       await signUpWithEmail(form.email, form.password, form.name);
 
       toast.success("Account created successfully!");
@@ -79,16 +69,6 @@ export default function RegisterPage() {
   const handleSocialRegister = async (provider: "google" | "microsoft") => {
     setLoading(true);
     try {
-      let loc = null;
-      try {
-        loc = await getUserFullLocation();
-        if (typeof window !== "undefined") {
-          sessionStorage.setItem("user_last_location", JSON.stringify(loc));
-        }
-      } catch (locErr) {
-        console.warn("Location not granted prior to social sign-up:", locErr);
-      }
-
       if (provider === "google") await signInWithGoogle();
       if (provider === "microsoft") await signInWithMicrosoft();
 
