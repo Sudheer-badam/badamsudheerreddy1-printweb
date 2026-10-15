@@ -20,7 +20,6 @@ import {
 } from "lucide-react";
 import { useAuth } from "@/contexts/AuthContext";
 import LiveLocationTracker from "@/components/LiveLocationTracker";
-import LocationPromptModal from "@/components/LocationPromptModal";
 
 const navItems = [
   { href: "/dashboard", icon: LayoutDashboard, label: "Dashboard" },
@@ -64,7 +63,6 @@ export default function DashboardLayout({ children }: { children: React.ReactNod
   return (
     <div className="min-h-screen flex" style={{ background: "#f5f7fa" }}>
       <LiveLocationTracker />
-      <LocationPromptModal />
       {/* Mobile overlay */}
       <AnimatePresence>
         {sidebarOpen && (
