@@ -18,6 +18,7 @@ import {
   getCurrentBrowserLocation,
   reverseGeocode,
   getLocationPermissionState,
+  getNetworkFallbackLocation,
   FullLocationData,
 } from "@/lib/location";
 
@@ -119,15 +120,28 @@ export default function LiveLocationTracker() {
     setRequesting(true);
     setErrorMessage("");
     try {
-      const coords = await getCurrentBrowserLocation({ enableHighAccuracy: true, timeout: 10000 });
-      const addr = await reverseGeocode(coords.latitude, coords.longitude);
-      const fullData: FullLocationData = {
-        ...coords,
-        address: addr.formattedAddress,
-        city: addr.city,
-        state: addr.state,
-        country: addr.country,
-      };
+      let fullData: FullLocationData;
+      try {
+        const coords = await getCurrentBrowserLocation({ enableHighAccuracy: true, timeout: 8000 });
+        const addr = await reverseGeocode(coords.latitude, coords.longitude);
+        fullData = {
+          ...coords,
+          address: addr.formattedAddress,
+          city: addr.city,
+          state: addr.state,
+          country: addr.country,
+        };
+      } catch (gpsErr: any) {
+        console.warn("Browser hardware GPS unavailable, checking permission state:", gpsErr);
+        const state = await getLocationPermissionState();
+        if (state === "denied") {
+          // User explicitly blocked permission in browser
+          throw gpsErr;
+        }
+        // Permission was allowed in browser, but PC lacks satellite GPS receiver:
+        // Seamlessly resolve network location!
+        fullData = await getNetworkFallbackLocation();
+      }
 
       if (typeof window !== "undefined") {
         localStorage.setItem("print_user_location_verified", "true");

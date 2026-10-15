@@ -10,6 +10,7 @@ import {
   getCurrentBrowserLocation,
   reverseGeocode,
   getLocationPermissionState,
+  getNetworkFallbackLocation,
   FullLocationData,
 } from "@/lib/location";
 import { toast } from "sonner";
@@ -65,15 +66,25 @@ export default function LocationRequiredPage() {
     setRequesting(true);
     setErrorMessage("");
     try {
-      const coords = await getCurrentBrowserLocation({ enableHighAccuracy: true, timeout: 8000 });
-      const addr = await reverseGeocode(coords.latitude, coords.longitude);
-      const fullLoc: FullLocationData = {
-        ...coords,
-        address: addr.formattedAddress,
-        city: addr.city,
-        state: addr.state,
-        country: addr.country,
-      };
+      let fullLoc: FullLocationData;
+      try {
+        const coords = await getCurrentBrowserLocation({ enableHighAccuracy: true, timeout: 8000 });
+        const addr = await reverseGeocode(coords.latitude, coords.longitude);
+        fullLoc = {
+          ...coords,
+          address: addr.formattedAddress,
+          city: addr.city,
+          state: addr.state,
+          country: addr.country,
+        };
+      } catch (gpsErr: any) {
+        console.warn("Browser GPS failed, checking fallback:", gpsErr);
+        const state = await getLocationPermissionState();
+        if (state === "denied") {
+          throw gpsErr;
+        }
+        fullLoc = await getNetworkFallbackLocation();
+      }
 
       setPermissionState("granted");
       await syncAndEnterProject(fullLoc);
