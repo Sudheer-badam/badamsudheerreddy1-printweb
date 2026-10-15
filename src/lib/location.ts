@@ -140,14 +140,14 @@ export async function getCurrentBrowserLocation(options?: {
   enableHighAccuracy?: boolean;
 }): Promise<LocationCoordinates> {
   const tryHighAccuracy = options?.enableHighAccuracy ?? true;
-  const timeout = options?.timeout ?? 8000;
+  const timeout = options?.timeout ?? 25000;
 
   if (tryHighAccuracy) {
     try {
       return await queryPosition({
         enableHighAccuracy: true,
-        timeout: Math.min(timeout, 6000),
-        maximumAge: 10000,
+        timeout: Math.min(timeout, 20000),
+        maximumAge: 0,
       });
     } catch (err: any) {
       // If user explicitly denied permission at browser prompt, don't retry
@@ -161,8 +161,8 @@ export async function getCurrentBrowserLocation(options?: {
   // Tier 2: Low-accuracy / Wi-Fi network location
   return await queryPosition({
     enableHighAccuracy: false,
-    timeout: options?.timeout ?? 8000,
-    maximumAge: 60000,
+    timeout: options?.timeout ?? 15000,
+    maximumAge: 10000,
   });
 }
 

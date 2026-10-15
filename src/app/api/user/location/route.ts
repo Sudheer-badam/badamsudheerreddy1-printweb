@@ -115,9 +115,8 @@ export async function GET(req: NextRequest) {
       return NextResponse.json({ error: "Forbidden: Admin privileges required" }, { status: 403 });
     }
 
-    // Base query for customers with locations
+    // Base query for all users with locations (customers and admin accounts)
     const where: any = {
-      role: "CUSTOMER",
       latitude: { not: null },
       longitude: { not: null },
     };
@@ -176,10 +175,9 @@ export async function GET(req: NextRequest) {
       };
     });
 
-    // Compute stats
+    // Compute stats across all located users
     const totalWithLocation = await prisma.user.count({
       where: {
-        role: "CUSTOMER",
         latitude: { not: null },
         longitude: { not: null },
       },
@@ -187,7 +185,6 @@ export async function GET(req: NextRequest) {
 
     const onlineCount = await prisma.user.count({
       where: {
-        role: "CUSTOMER",
         isOnline: true,
         lastLocationUpdate: { gte: fiveMinutesAgo },
       },
@@ -197,7 +194,6 @@ export async function GET(req: NextRequest) {
     startOfToday.setHours(0, 0, 0, 0);
     const activeTodayCount = await prisma.user.count({
       where: {
-        role: "CUSTOMER",
         lastLocationUpdate: { gte: startOfToday },
       },
     });

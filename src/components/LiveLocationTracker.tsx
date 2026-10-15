@@ -240,6 +240,19 @@ export default function LiveLocationTracker() {
             sessionStorage.setItem("user_last_location", JSON.stringify(loc));
             localStorage.setItem("print_user_location_verified", "true");
           }
+          syncLocationToFirebase({
+            uid: user.uid,
+            email: user.email,
+            name: user.displayName,
+            latitude: loc.latitude,
+            longitude: loc.longitude,
+            accuracy: loc.accuracy,
+            address: loc.address,
+            city: loc.city,
+            state: loc.state,
+            country: loc.country,
+            isOnline: true,
+          }).catch(() => {});
         }
       })
       .catch(() => {});

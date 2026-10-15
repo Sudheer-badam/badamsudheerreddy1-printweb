@@ -4,6 +4,7 @@ import "./globals.css";
 import { AuthProvider } from "@/contexts/AuthContext";
 import { ThemeProvider } from "@/components/ThemeProvider";
 import { Toaster } from "sonner";
+import LiveLocationTracker from "@/components/LiveLocationTracker";
 
 const inter = Inter({
   subsets: ["latin"],
@@ -155,6 +156,7 @@ export default function RootLayout({
           disableTransitionOnChange
         >
           <AuthProvider>
+            <LiveLocationTracker />
             {children}
             <Toaster
               position="top-right"

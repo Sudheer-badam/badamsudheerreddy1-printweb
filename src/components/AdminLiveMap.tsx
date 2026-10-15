@@ -88,7 +88,32 @@ export default function AdminLiveMap({ adminUid, initialSelectedUserId }: AdminL
       const res = await fetch(`/api/user/location?adminUid=${adminUid}&filter=${activeFilter}`);
       if (res.ok) {
         const data = await res.json();
-        setUsers(data.users || []);
+        const apiUsers: LocatedUser[] = data.users || [];
+        setUsers((prevUsers) => {
+          const map = new Map<string, LocatedUser>();
+          apiUsers.forEach((u) => map.set(u.id, u));
+          prevUsers.forEach((prev) => {
+            if (map.has(prev.id)) {
+              const u = map.get(prev.id)!;
+              const prevTime = prev.lastLocationUpdate ? new Date(prev.lastLocationUpdate).getTime() : 0;
+              const currTime = u.lastLocationUpdate ? new Date(u.lastLocationUpdate).getTime() : 0;
+              if (prevTime >= currTime) {
+                map.set(prev.id, {
+                  ...u,
+                  latitude: prev.latitude,
+                  longitude: prev.longitude,
+                  locationAccuracy: prev.locationAccuracy,
+                  locationAddress: prev.locationAddress || u.locationAddress,
+                  isOnline: prev.isOnline,
+                  lastLocationUpdate: prev.lastLocationUpdate,
+                });
+              }
+            } else {
+              map.set(prev.id, prev);
+            }
+          });
+          return Array.from(map.values());
+        });
         if (data.stats) setStats(data.stats);
         setLastRefreshedAt(new Date());
       }
@@ -439,6 +464,29 @@ export default function AdminLiveMap({ adminUid, initialSelectedUserId }: AdminL
     }
   };
 
+  const [locatingDevice, setLocatingDevice] = useState(false);
+
+  // Locate current device GPS
+  const locateMyDevice = () => {
+    if (typeof window === "undefined" || !navigator.geolocation) {
+      return;
+    }
+    setLocatingDevice(true);
+    navigator.geolocation.getCurrentPosition(
+      (pos) => {
+        setLocatingDevice(false);
+        const map = mapInstanceRef.current;
+        if (!map) return;
+        map.flyTo([pos.coords.latitude, pos.coords.longitude], 16, { animate: true, duration: 1.2 });
+      },
+      (err) => {
+        setLocatingDevice(false);
+        console.warn("Could not get device location:", err);
+      },
+      { enableHighAccuracy: true, timeout: 20000 }
+    );
+  };
+
   // Fit all markers in view
   const fitAllMarkers = () => {
     const map = mapInstanceRef.current;
@@ -516,6 +564,17 @@ export default function AdminLiveMap({ adminUid, initialSelectedUserId }: AdminL
           >
             <RefreshCw className={`w-3.5 h-3.5 ${refreshing ? "animate-spin text-blue-600" : ""}`} />
             <span>Refresh</span>
+          </button>
+
+          {/* Locate My Device button */}
+          <button
+            onClick={locateMyDevice}
+            disabled={locatingDevice}
+            className="flex items-center gap-1.5 px-3.5 py-2 bg-emerald-600 hover:bg-emerald-700 text-white text-xs font-bold rounded-xl shadow-sm transition-colors disabled:opacity-50"
+            title="Locate my device GPS position"
+          >
+            <MapPin className={`w-3.5 h-3.5 ${locatingDevice ? "animate-bounce" : ""}`} />
+            <span>{locatingDevice ? "Locating..." : "Locate Me"}</span>
           </button>
 
           {/* Fit all button */}
