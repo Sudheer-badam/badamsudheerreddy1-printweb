@@ -323,3 +323,18 @@
 @media print {
   .no-print { display: none !important; }
 }
+
+/* ── Leaflet Live Marker Smooth Movement ── */
+.leaflet-marker-icon.custom-user-marker {
+  transition: transform 0.6s cubic-bezier(0.25, 1, 0.5, 1) !important;
+}
+.custom-leaflet-popup .leaflet-popup-content-wrapper {
+  border-radius: 16px;
+  box-shadow: 0 10px 30px rgba(0, 0, 0, 0.15);
+  padding: 0;
+  overflow: hidden;
+}
+.custom-leaflet-popup .leaflet-popup-content {
+  margin: 0;
+}
+

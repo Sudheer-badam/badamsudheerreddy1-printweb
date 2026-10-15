@@ -35,6 +35,10 @@ export interface LocatedUser {
   lastLogin: string | null;
   registrationDate: string;
   _count?: { orders: number };
+  speed?: number | null;
+  heading?: number | null;
+  isMoving?: boolean;
+  deviceOs?: string | null;
 }
 
 interface AdminLiveMapProps {
@@ -68,6 +72,8 @@ export default function AdminLiveMap({ adminUid, initialSelectedUserId }: AdminL
   const mapInstanceRef = useRef<L.Map | null>(null);
   const markersRef = useRef<Map<string, L.Marker>>(new Map());
   const circlesRef = useRef<Map<string, L.Circle>>(new Map());
+  const polylinesRef = useRef<Map<string, L.Polyline>>(new Map());
+  const trailPointsRef = useRef<Map<string, [number, number][]>>(new Map());
   const activeTileLayerRef = useRef<L.TileLayer | null>(null);
 
   const [users, setUsers] = useState<LocatedUser[]>([]);
@@ -77,9 +83,20 @@ export default function AdminLiveMap({ adminUid, initialSelectedUserId }: AdminL
   const [activeFilter, setActiveFilter] = useState<"all" | "online" | "today">("all");
   const [searchQuery, setSearchQuery] = useState("");
   const [selectedUser, setSelectedUser] = useState<LocatedUser | null>(null);
-  const [autoRefreshInterval, setAutoRefreshInterval] = useState<number>(15); // seconds (0 = off)
+  const [followingUserId, setFollowingUserId] = useState<string | null>(null);
+  const [autoRefreshInterval, setAutoRefreshInterval] = useState<number>(10); // 10s default
   const [currentTileLayer, setCurrentTileLayer] = useState<keyof typeof TILE_LAYERS>("googleRoads");
   const [lastRefreshedAt, setLastRefreshedAt] = useState<Date>(new Date());
+
+  // Global window handler for popup "Follow Live Movement" button
+  useEffect(() => {
+    (window as any).__toggleFollowUser = (userId: string) => {
+      setFollowingUserId((prev) => (prev === userId ? null : userId));
+    };
+    return () => {
+      delete (window as any).__toggleFollowUser;
+    };
+  }, []);
 
   // Fetch users with live locations
   const fetchLocations = useCallback(async (isSilent = false) => {
@@ -106,6 +123,10 @@ export default function AdminLiveMap({ adminUid, initialSelectedUserId }: AdminL
                   locationAddress: prev.locationAddress || u.locationAddress,
                   isOnline: prev.isOnline,
                   lastLocationUpdate: prev.lastLocationUpdate,
+                  speed: prev.speed,
+                  heading: prev.heading,
+                  isMoving: prev.isMoving,
+                  deviceOs: prev.deviceOs,
                 });
               }
             } else {
@@ -139,39 +160,64 @@ export default function AdminLiveMap({ adminUid, initialSelectedUserId }: AdminL
     return () => clearInterval(interval);
   }, [autoRefreshInterval, fetchLocations]);
 
-  // Real-time Firebase Firestore listener for cross-website live locations
+  // Real-time Firebase Firestore listener for instant live movement stream
   useEffect(() => {
     const unsubscribe = subscribeToFirebaseLocations((firebaseLocations) => {
       if (!firebaseLocations || firebaseLocations.length === 0) return;
       setUsers((prevUsers) => {
         const merged = [...prevUsers];
         firebaseLocations.forEach((fbUser) => {
+          const fbId = fbUser.uid || fbUser.user_id || fbUser.id || "";
+          const userSpeed = fbUser.speed !== undefined && fbUser.speed !== null ? Number(fbUser.speed) : null;
+          const userHeading = fbUser.heading !== undefined && fbUser.heading !== null ? Number(fbUser.heading) : null;
+          const isMoving = Boolean(
+            (userSpeed && userSpeed > 0.3) ||
+            fbUser.is_moving ||
+            fbUser.isMoving
+          );
+
           const idx = merged.findIndex(
             (u) =>
-              (fbUser.uid && u.firebaseUid === fbUser.uid) ||
+              (fbId && (u.firebaseUid === fbId || u.id === fbId)) ||
               (fbUser.email && u.email && u.email.toLowerCase() === fbUser.email.toLowerCase())
           );
+
           if (idx !== -1) {
-            // Update live coordinates from Firebase
+            const oldLat = merged[idx].latitude;
+            const oldLng = merged[idx].longitude;
+            const newLat = Number(fbUser.latitude) || oldLat;
+            const newLng = Number(fbUser.longitude) || oldLng;
+            const moved = Math.abs(newLat - oldLat) > 0.00003 || Math.abs(newLng - oldLng) > 0.00003;
+
+            // Auto-pan if Admin is following this user
+            if (followingUserId && (merged[idx].id === followingUserId || merged[idx].firebaseUid === followingUserId)) {
+              mapInstanceRef.current?.panTo([newLat, newLng], { animate: true, duration: 0.8 });
+            }
+
+            // Update live coordinates from Firebase in real-time
             merged[idx] = {
               ...merged[idx],
-              latitude: Number(fbUser.latitude) || merged[idx].latitude,
-              longitude: Number(fbUser.longitude) || merged[idx].longitude,
+              latitude: newLat,
+              longitude: newLng,
               locationAccuracy: fbUser.accuracy || merged[idx].locationAccuracy,
               locationAddress: fbUser.address || merged[idx].locationAddress,
               locationCity: fbUser.city || merged[idx].locationCity,
-              isOnline: fbUser.isOnline !== undefined ? Boolean(fbUser.isOnline) : merged[idx].isOnline,
-              lastLocationUpdate: fbUser.updatedAt || fbUser.lastLocationUpdate || merged[idx].lastLocationUpdate,
+              isOnline: fbUser.is_online !== undefined ? Boolean(fbUser.is_online) : (fbUser.isOnline !== undefined ? Boolean(fbUser.isOnline) : merged[idx].isOnline),
+              lastLocationUpdate: fbUser.last_updated || fbUser.updatedAt || fbUser.lastLocationUpdate || new Date().toISOString(),
+              speed: userSpeed,
+              heading: userHeading,
+              isMoving: isMoving || moved,
+              deviceOs: fbUser.device_os || merged[idx].deviceOs,
             };
           } else if (fbUser.latitude && fbUser.longitude) {
-            // Include user active from other websites
+            // Include user active from other websites / Capstone
             merged.push({
-              id: fbUser.id || fbUser.uid || `fb-${Date.now()}`,
-              firebaseUid: fbUser.uid || fbUser.id || "",
-              name: fbUser.name || fbUser.email || "Live User",
+              id: fbId || `fb-${Date.now()}`,
+              firebaseUid: fbId,
+              name: fbUser.user_name || fbUser.name || fbUser.email || "Live User",
               email: fbUser.email || null,
               phone: fbUser.phone || null,
-              profilePhoto: fbUser.photoURL || null,
+              profilePhoto: fbUser.photoURL || fbUser.photo_url || null,
               latitude: Number(fbUser.latitude),
               longitude: Number(fbUser.longitude),
               locationAccuracy: fbUser.accuracy || 100,
@@ -179,10 +225,14 @@ export default function AdminLiveMap({ adminUid, initialSelectedUserId }: AdminL
               locationCity: fbUser.city || null,
               locationState: fbUser.state || null,
               locationCountry: fbUser.country || "India",
-              isOnline: fbUser.isOnline !== undefined ? Boolean(fbUser.isOnline) : true,
-              lastLocationUpdate: fbUser.updatedAt || new Date().toISOString(),
+              isOnline: fbUser.is_online !== undefined ? Boolean(fbUser.is_online) : true,
+              lastLocationUpdate: fbUser.last_updated || fbUser.updatedAt || new Date().toISOString(),
               lastLogin: fbUser.lastLogin || null,
               registrationDate: fbUser.createdAt || new Date().toISOString(),
+              speed: userSpeed,
+              heading: userHeading,
+              isMoving,
+              deviceOs: fbUser.device_os || "Device",
             });
           }
         });
@@ -191,7 +241,7 @@ export default function AdminLiveMap({ adminUid, initialSelectedUserId }: AdminL
     });
 
     return () => unsubscribe();
-  }, []);
+  }, [followingUserId]);
 
   // Initialize Map
   useEffect(() => {
@@ -248,14 +298,25 @@ export default function AdminLiveMap({ adminUid, initialSelectedUserId }: AdminL
       user.lastLocationUpdate &&
       Date.now() - new Date(user.lastLocationUpdate).getTime() <= 5 * 60 * 1000
     );
+    const isMoving = Boolean(
+      user.isMoving ||
+      (user.speed && user.speed > 0.3) ||
+      (user.lastLocationUpdate && Date.now() - new Date(user.lastLocationUpdate).getTime() <= 30 * 1000)
+    );
     const initial = (user.name || user.email || "U").charAt(0).toUpperCase();
 
     const avatarHtml = user.profilePhoto
       ? `<img src="${user.profilePhoto}" class="w-full h-full object-cover rounded-full" alt="" onerror="this.onerror=null;this.src='https://ui-avatars.com/api/?name=${encodeURIComponent(user.name || 'User')}&background=0B1D3A&color=fff&size=128';" />`
       : `<span class="font-bold text-xs text-white">${initial}</span>`;
 
-    const pulseRing = isOnline
+    const pulseRing = isMoving
+      ? `<span class="absolute -inset-2.5 rounded-full bg-emerald-400 opacity-75 animate-ping"></span><span class="absolute -inset-1 rounded-full bg-emerald-300 opacity-60 animate-pulse"></span>`
+      : isOnline
       ? `<span class="absolute -inset-1.5 rounded-full bg-emerald-400 opacity-60 animate-ping"></span>`
+      : "";
+
+    const movingBadge = isMoving
+      ? `<span class="absolute -top-3.5 px-1.5 py-0.2 rounded-full bg-emerald-600 border border-white text-[8px] text-white font-black shadow-md flex items-center gap-0.5 whitespace-nowrap z-20"><span>●</span> MOVING</span>`
       : "";
 
     const statusBadge = isOnline
@@ -269,6 +330,7 @@ export default function AdminLiveMap({ adminUid, initialSelectedUserId }: AdminL
     const html = `
       <div class="relative flex items-center justify-center transition-transform duration-200 cursor-pointer ${selectionBorder}">
         ${pulseRing}
+        ${movingBadge}
         <div class="w-10 h-10 rounded-full bg-[#0B1D3A] border-2 ${isOnline ? 'border-emerald-500' : 'border-blue-400'} flex items-center justify-center shadow-lg overflow-hidden">
           ${avatarHtml}
         </div>
@@ -291,6 +353,11 @@ export default function AdminLiveMap({ adminUid, initialSelectedUserId }: AdminL
       user.isOnline &&
       user.lastLocationUpdate &&
       Date.now() - new Date(user.lastLocationUpdate).getTime() <= 5 * 60 * 1000
+    );
+    const isMoving = Boolean(
+      user.isMoving ||
+      (user.speed && user.speed > 0.3) ||
+      (user.lastLocationUpdate && Date.now() - new Date(user.lastLocationUpdate).getTime() <= 30 * 1000)
     );
     const timeAgo = user.lastLocationUpdate
       ? formatDistanceToNow(new Date(user.lastLocationUpdate), { addSuffix: true })
@@ -315,20 +382,38 @@ export default function AdminLiveMap({ adminUid, initialSelectedUserId }: AdminL
          </a>`
       : "";
 
+    const speedInfo = user.speed && user.speed > 0.3
+      ? `<span class="px-2 py-0.5 rounded-md bg-emerald-50 text-emerald-700 text-[11px] font-bold">🏃 ${(user.speed * 3.6).toFixed(1)} km/h</span>`
+      : "";
+
+    const deviceBadge = user.deviceOs
+      ? `<span class="px-2 py-0.5 rounded-md bg-gray-100 text-gray-700 text-[10px] font-medium">📱 ${user.deviceOs}</span>`
+      : "";
+
+    const followBtn = `
+      <button onclick="window.__toggleFollowUser('${user.id}')" class="inline-flex items-center gap-1 px-2.5 py-1 rounded-lg ${
+        followingUserId === user.id ? 'bg-amber-500 hover:bg-amber-600 text-white' : 'bg-emerald-600 hover:bg-emerald-700 text-white'
+      } text-xs font-bold transition-all shadow-sm">
+        ${followingUserId === user.id ? '🎯 Stop Following' : '🧭 Follow Live'}
+      </button>
+    `;
+
     return `
-      <div class="p-3 min-w-[260px] max-w-[320px] font-sans text-gray-800">
+      <div class="p-3 min-w-[270px] max-w-[340px] font-sans text-gray-800">
         <div class="flex items-center gap-3 pb-3 border-b border-gray-100 mb-3">
           ${avatarImg}
           <div class="min-w-0 flex-1">
             <h4 class="font-bold text-sm text-[#0B1D3A] truncate m-0 leading-tight">${user.name || "Customer"}</h4>
             <div class="text-xs text-gray-500 truncate">${user.email || "No email"}</div>
-            <div class="flex items-center gap-1.5 mt-1">
+            <div class="flex items-center gap-1.5 mt-1 flex-wrap">
               <span class="inline-flex items-center gap-1 px-2 py-0.5 rounded-full text-[10px] font-bold ${
-                isOnline ? "bg-emerald-100 text-emerald-800" : "bg-gray-100 text-gray-600"
+                isMoving ? "bg-emerald-100 text-emerald-800 animate-pulse" : isOnline ? "bg-emerald-100 text-emerald-800" : "bg-gray-100 text-gray-600"
               }">
-                <span class="w-1.5 h-1.5 rounded-full ${isOnline ? "bg-emerald-500 animate-pulse" : "bg-gray-400"}"></span>
-                ${isOnline ? "LIVE NOW" : "OFFLINE"}
+                <span class="w-1.5 h-1.5 rounded-full ${isMoving ? "bg-emerald-500 animate-ping" : isOnline ? "bg-emerald-500 animate-pulse" : "bg-gray-400"}"></span>
+                ${isMoving ? "MOVING LIVE" : isOnline ? "LIVE NOW" : "OFFLINE"}
               </span>
+              ${speedInfo}
+              ${deviceBadge}
               <span class="text-[10px] text-gray-400">${timeAgo}</span>
             </div>
           </div>
@@ -346,7 +431,8 @@ export default function AdminLiveMap({ adminUid, initialSelectedUserId }: AdminL
           </div>
         </div>
 
-        <div class="flex items-center gap-2 pt-2 border-t border-gray-100">
+        <div class="flex items-center gap-2 pt-2 border-t border-gray-100 flex-wrap">
+          ${followBtn}
           ${phoneLink}
           ${waLink}
           <a href="/admin/orders?userId=${user.id}" class="inline-flex items-center gap-1 px-2.5 py-1 rounded-lg bg-gray-100 hover:bg-gray-200 text-gray-700 text-xs font-semibold ml-auto">
@@ -357,13 +443,14 @@ export default function AdminLiveMap({ adminUid, initialSelectedUserId }: AdminL
     `;
   };
 
-  // Render markers on map
+  // Render markers and movement breadcrumb trails on map
   useEffect(() => {
     const map = mapInstanceRef.current;
     if (!map) return;
 
     const currentMarkers = markersRef.current;
     const currentCircles = circlesRef.current;
+    const currentPolylines = polylinesRef.current;
 
     // Track active IDs to remove old ones
     const newIds = new Set<string>();
@@ -373,8 +460,33 @@ export default function AdminLiveMap({ adminUid, initialSelectedUserId }: AdminL
       const isSelected = selectedUser?.id === user.id;
       const latLng: [number, number] = [user.latitude, user.longitude];
 
+      // Update movement breadcrumb trail
+      const trail = trailPointsRef.current.get(user.id) || [];
+      const lastPt = trail[trail.length - 1];
+      if (!lastPt || Math.abs(lastPt[0] - user.latitude) > 0.00001 || Math.abs(lastPt[1] - user.longitude) > 0.00001) {
+        trail.push([user.latitude, user.longitude]);
+        if (trail.length > 30) trail.shift();
+        trailPointsRef.current.set(user.id, trail);
+      }
+
+      if (trail.length > 1) {
+        if (currentPolylines.has(user.id)) {
+          currentPolylines.get(user.id)!.setLatLngs(trail);
+        } else {
+          const polyline = L.polyline(trail, {
+            color: user.isOnline ? "#10B981" : "#3B82F6",
+            weight: 3.5,
+            opacity: 0.85,
+            lineCap: "round",
+            lineJoin: "round",
+            dashArray: user.isOnline ? "6, 6" : undefined,
+          }).addTo(map);
+          currentPolylines.set(user.id, polyline);
+        }
+      }
+
       if (currentMarkers.has(user.id)) {
-        // Update existing marker position & icon
+        // Update existing marker position & icon smoothly
         const marker = currentMarkers.get(user.id)!;
         marker.setLatLng(latLng);
         marker.setIcon(createUserDivIcon(user, isSelected));
@@ -435,6 +547,12 @@ export default function AdminLiveMap({ adminUid, initialSelectedUserId }: AdminL
         currentCircles.delete(id);
       }
     });
+    currentPolylines.forEach((poly, id) => {
+      if (!newIds.has(id)) {
+        poly.remove();
+        currentPolylines.delete(id);
+      }
+    });
 
     // If initial selected user specified, focus on them
     if (initialSelectedUserId && !selectedUser) {
@@ -443,7 +561,7 @@ export default function AdminLiveMap({ adminUid, initialSelectedUserId }: AdminL
         focusOnUser(target);
       }
     }
-  }, [users, selectedUser, initialSelectedUserId]);
+  }, [users, selectedUser, followingUserId, initialSelectedUserId]);
 
   // Focus on a specific user on the map
   const focusOnUser = (user: LocatedUser) => {
@@ -528,6 +646,20 @@ export default function AdminLiveMap({ adminUid, initialSelectedUserId }: AdminL
 
         {/* Controls */}
         <div className="flex items-center gap-2 flex-wrap">
+          {/* Live Following User Indicator */}
+          {followingUserId && (
+            <div className="flex items-center gap-2 px-3 py-1.5 rounded-xl bg-amber-500 text-white text-xs font-bold shadow-md animate-pulse">
+              <span>🎯 Following User Live</span>
+              <button
+                type="button"
+                onClick={() => setFollowingUserId(null)}
+                className="bg-black/25 hover:bg-black/40 rounded-lg px-2 py-0.5 text-[11px] font-semibold cursor-pointer"
+              >
+                Stop
+              </button>
+            </div>
+          )}
+
           {/* Layer switcher */}
           <div className="flex items-center bg-white border border-gray-200 rounded-xl p-1 shadow-sm text-xs font-semibold text-gray-700">
             {(Object.keys(TILE_LAYERS) as Array<keyof typeof TILE_LAYERS>).map((key) => (
@@ -772,12 +904,18 @@ export default function AdminLiveMap({ adminUid, initialSelectedUserId }: AdminL
                           </h4>
                           <span
                             className={`text-[9px] font-bold px-1.5 py-0.5 rounded-full ${
-                              isOnline
+                              u.isMoving || (u.lastLocationUpdate && Date.now() - new Date(u.lastLocationUpdate).getTime() <= 30 * 1000)
+                                ? "bg-emerald-100 text-emerald-800 animate-pulse border border-emerald-300"
+                                : isOnline
                                 ? "bg-emerald-100 text-emerald-800"
                                 : "bg-gray-100 text-gray-600"
                             }`}
                           >
-                            {isOnline ? "ONLINE" : "OFFLINE"}
+                            {u.isMoving || (u.lastLocationUpdate && Date.now() - new Date(u.lastLocationUpdate).getTime() <= 30 * 1000)
+                              ? "🏃 MOVING LIVE"
+                              : isOnline
+                              ? "ONLINE"
+                              : "OFFLINE"}
                           </span>
                         </div>
 

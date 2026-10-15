@@ -10,6 +10,8 @@ export interface FirebaseLiveLocationPayload {
   latitude: number;
   longitude: number;
   accuracy?: number | null;
+  speed?: number | null;
+  heading?: number | null;
   address?: string | null;
   city?: string | null;
   state?: string | null;
@@ -32,6 +34,9 @@ export async function syncLocationToFirebase(data: FirebaseLiveLocationPayload):
     latitude: data.latitude,
     longitude: data.longitude,
     accuracy: data.accuracy ?? null,
+    speed: data.speed ?? null,
+    heading: data.heading ?? null,
+    is_moving: Boolean(data.speed && data.speed > 0.3),
     address: data.address || null,
     city: data.city || null,
     state: data.state || null,

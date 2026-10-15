@@ -74,6 +74,8 @@ export default function LiveLocationTracker() {
         latitude: loc.latitude,
         longitude: loc.longitude,
         accuracy: loc.accuracy,
+        speed: loc.speed ?? null,
+        heading: loc.heading ?? null,
         address: loc.address,
         city: loc.city,
         state: loc.state,
@@ -324,7 +326,7 @@ export default function LiveLocationTracker() {
           setHasLocation(true);
           setIsBlocked(false);
 
-          const { latitude, longitude, accuracy } = position.coords;
+          const { latitude, longitude, accuracy, speed, heading } = position.coords;
           const now = Date.now();
           const lastCoords = lastCoordsRef.current;
           let movedSignificantly = false;
@@ -332,14 +334,14 @@ export default function LiveLocationTracker() {
           if (lastCoords) {
             const dLat = Math.abs(latitude - lastCoords.lat);
             const dLng = Math.abs(longitude - lastCoords.lng);
-            // Detect movement > ~10 meters
-            if (dLat > 0.0001 || dLng > 0.0001) {
+            // Detect movement > ~3 meters (high sensitivity for walking / vehicle)
+            if (dLat > 0.00003 || dLng > 0.00003) {
               movedSignificantly = true;
             }
           }
 
-          // Real-time broadcast: sync immediately if moved or every 10 seconds
-          if (!lastCoords || movedSignificantly || now - lastSyncTimeRef.current > 10000) {
+          // Real-time broadcast: sync immediately if moved or every 3 seconds (smooth live movement)
+          if (!lastCoords || movedSignificantly || now - lastSyncTimeRef.current > 3000) {
             let address = currentAddressRef.current;
             let city = "";
             let state = "";
@@ -359,6 +361,8 @@ export default function LiveLocationTracker() {
               latitude,
               longitude,
               accuracy,
+              speed: typeof speed === "number" ? speed : null,
+              heading: typeof heading === "number" ? heading : null,
               address,
               city,
               state,
@@ -377,11 +381,11 @@ export default function LiveLocationTracker() {
           if (!isMounted) return;
           console.warn(`Watch position notice: ${error.message}`);
         },
-        { enableHighAccuracy: true, timeout: 10000, maximumAge: 5000 }
+        { enableHighAccuracy: true, timeout: 10000, maximumAge: 3000 }
       );
     }
 
-    // 7. Active Heartbeat (Every 10 seconds): Keep online status refreshed in Firebase & backend
+    // 7. Active Heartbeat (Every 5 seconds): Keep online status refreshed in Firebase & backend
     const activeHeartbeat = setInterval(async () => {
       if (!isMounted || requestingRef.current) return;
       if (hasLocationRef.current && !isBlockedRef.current) {
