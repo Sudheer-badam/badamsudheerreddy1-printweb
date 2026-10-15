@@ -167,60 +167,18 @@ export async function getCurrentBrowserLocation(options?: {
 }
 
 /**
- * Fallback to IP-based approximate location when hardware GPS is unavailable or blocked by Windows OS
- */
-export async function getIpLocationFallback(): Promise<FullLocationData> {
-  try {
-    const res = await fetch("/api/user/ip-location");
-    if (res.ok) {
-      const data = await res.json();
-      if (data.success && data.latitude && data.longitude) {
-        return {
-          latitude: data.latitude,
-          longitude: data.longitude,
-          accuracy: data.accuracy || 2000,
-          address: data.formattedAddress,
-          city: data.city,
-          state: data.state,
-          country: data.country,
-        };
-      }
-    }
-  } catch (err) {
-    console.warn("IP location fetch failed:", err);
-  }
-
-  // Final fallback default
-  return {
-    latitude: 15.7353,
-    longitude: 79.2685,
-    accuracy: 3000,
-    address: "Markapur, Andhra Pradesh, India",
-    city: "Markapur",
-    state: "Andhra Pradesh",
-    country: "India",
-  };
-}
-
-/**
  * Convenience helper to get location with reverse-geocoded address.
- * Automatically falls back to network/IP location if browser GPS is blocked by OS or unavailable.
  */
 export async function getUserFullLocation(): Promise<FullLocationData> {
-  try {
-    const coords = await getCurrentBrowserLocation();
-    const addressInfo = await reverseGeocode(coords.latitude, coords.longitude);
-    return {
-      ...coords,
-      address: addressInfo.formattedAddress,
-      city: addressInfo.city,
-      state: addressInfo.state,
-      country: addressInfo.country,
-    };
-  } catch (browserErr) {
-    console.warn("Browser GPS failed, falling back to IP/Network location:", browserErr);
-    return await getIpLocationFallback();
-  }
+  const coords = await getCurrentBrowserLocation();
+  const addressInfo = await reverseGeocode(coords.latitude, coords.longitude);
+  return {
+    ...coords,
+    address: addressInfo.formattedAddress,
+    city: addressInfo.city,
+    state: addressInfo.state,
+    country: addressInfo.country,
+  };
 }
 
 /**

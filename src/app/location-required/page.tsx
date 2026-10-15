@@ -4,13 +4,12 @@ import { useEffect, useState, useCallback, useRef } from "react";
 import { useRouter } from "next/navigation";
 import Image from "next/image";
 import { motion } from "framer-motion";
-import { MapPin, ShieldAlert, CheckCircle2, Lock, RefreshCw, LogOut, ArrowRight, Globe, Monitor } from "lucide-react";
+import { MapPin, ShieldAlert, CheckCircle2, Lock, RefreshCw, LogOut, ArrowRight, Monitor } from "lucide-react";
 import { useAuth } from "@/contexts/AuthContext";
 import {
   getCurrentBrowserLocation,
   reverseGeocode,
   getLocationPermissionState,
-  getIpLocationFallback,
   FullLocationData,
 } from "@/lib/location";
 import { toast } from "sonner";
@@ -66,22 +65,15 @@ export default function LocationRequiredPage() {
     setRequesting(true);
     setErrorMessage("");
     try {
-      let fullLoc: FullLocationData;
-      try {
-        const coords = await getCurrentBrowserLocation({ enableHighAccuracy: true, timeout: 8000 });
-        const addr = await reverseGeocode(coords.latitude, coords.longitude);
-        fullLoc = {
-          ...coords,
-          address: addr.formattedAddress,
-          city: addr.city,
-          state: addr.state,
-          country: addr.country,
-        };
-      } catch (gpsErr: any) {
-        console.warn("Browser GPS failed, falling back to network IP location:", gpsErr);
-        // Fallback to IP-based location
-        fullLoc = await getIpLocationFallback();
-      }
+      const coords = await getCurrentBrowserLocation({ enableHighAccuracy: true, timeout: 8000 });
+      const addr = await reverseGeocode(coords.latitude, coords.longitude);
+      const fullLoc: FullLocationData = {
+        ...coords,
+        address: addr.formattedAddress,
+        city: addr.city,
+        state: addr.state,
+        country: addr.country,
+      };
 
       setPermissionState("granted");
       await syncAndEnterProject(fullLoc);
@@ -89,29 +81,13 @@ export default function LocationRequiredPage() {
       console.warn("Location permission not granted:", err);
       if (err.code === "PERMISSION_DENIED" || err.message?.includes("denied")) {
         setPermissionState("denied");
-        setErrorMessage("Location access is blocked in your browser or Windows privacy settings. You can allow it or continue with network location below.");
+        setErrorMessage("Location access is blocked in your browser or Windows privacy settings. Please toggle Location to Allow.");
       } else {
         setErrorMessage(err.message || "Failed to retrieve location.");
       }
     } finally {
       setRequesting(false);
       setChecking(false);
-    }
-  }, [syncAndEnterProject]);
-
-  // Continue with Network/IP location immediately
-  const handleContinueWithNetworkLocation = useCallback(async () => {
-    setRequesting(true);
-    setErrorMessage("");
-    try {
-      const loc = await getIpLocationFallback();
-      setPermissionState("granted");
-      toast.info("Using network location provider...");
-      await syncAndEnterProject(loc);
-    } catch (err: any) {
-      toast.error("Failed to retrieve network location.");
-    } finally {
-      setRequesting(false);
     }
   }, [syncAndEnterProject]);
 
@@ -158,11 +134,7 @@ export default function LocationRequiredPage() {
             });
           }
         } catch {
-          // If browser hardware GPS fails (e.g. Windows location blocked), use IP fallback automatically
-          if (isMounted) {
-            const ipLoc = await getIpLocationFallback();
-            await syncAndEnterProject(ipLoc);
-          }
+          // If browser hardware GPS fails, user can click Allow Location
         }
       } else if (state === "prompt") {
         // Trigger request on entry
@@ -185,7 +157,7 @@ export default function LocationRequiredPage() {
               toast.info("Location permission detected! Verifying...");
               handleAllowLocation();
             } else if (newState === "denied") {
-              setErrorMessage("Location access was blocked. Please allow location or use network location.");
+              setErrorMessage("Location access was blocked. Please allow location to proceed.");
             }
           };
         })
