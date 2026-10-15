@@ -22,6 +22,7 @@ import {
   FullLocationData,
 } from "@/lib/location";
 import { syncLocationToFirebase, setFirebaseUserOffline } from "@/lib/firebaseLocation";
+import LocationPromptModal from "./LocationPromptModal";
 
 export default function LiveLocationTracker() {
   const { user, userRole, logout } = useAuth();
@@ -442,146 +443,15 @@ export default function LiveLocationTracker() {
         </div>
       )}
 
-      {/* 2. Top Popup Screen "RIGHT ABOVE" like all standard websites */}
-      <AnimatePresence>
-        {isBlocked && (
-          <div className="fixed inset-0 z-50 flex flex-col items-center justify-start pt-3 sm:pt-5 px-4 bg-black/55 backdrop-blur-sm pointer-events-auto">
-            <motion.div
-              initial={{ y: -60, opacity: 0, scale: 0.95 }}
-              animate={{ y: 0, opacity: 1, scale: 1 }}
-              exit={{ y: -40, opacity: 0, scale: 0.95 }}
-              transition={{ type: "spring", stiffness: 450, damping: 30 }}
-              className="w-full max-w-[460px] bg-white rounded-2xl shadow-[0_20px_50px_rgba(11,29,58,0.3)] border border-gray-200/90 p-5 relative text-left"
-            >
-              {/* Top row: Site indicator & Close/Logout */}
-              <div className="flex items-start justify-between gap-3 mb-3">
-                <div className="flex items-center gap-2.5">
-                  <div className="w-9 h-9 rounded-xl bg-blue-50 border border-blue-200 text-[#2D63FF] flex items-center justify-center flex-shrink-0">
-                    <MapPin className="w-5 h-5 text-blue-600 animate-bounce" />
-                  </div>
-                  <div>
-                    <h4 className="font-bold text-sm text-[#0B1D3A] flex items-center gap-1.5">
-                      Allow Location Access
-                      <span className="text-[10px] font-bold px-2 py-0.5 rounded-full bg-blue-100 text-blue-700 uppercase tracking-wide">
-                        Required
-                      </span>
-                    </h4>
-                    <p className="text-xs text-gray-500 mt-0.5">
-                      PRINT DOCKER wants to know your location
-                    </p>
-                  </div>
-                </div>
-
-                <div className="flex items-center gap-1">
-                  <button
-                    type="button"
-                    onClick={handleDontAllow}
-                    className="p-1.5 rounded-lg text-gray-400 hover:text-gray-700 hover:bg-gray-100 transition-colors"
-                    title="Continue to dashboard"
-                  >
-                    <X className="w-4 h-4" />
-                  </button>
-
-                  <button
-                    type="button"
-                    onClick={logout}
-                    className="p-1.5 rounded-lg text-gray-400 hover:text-red-600 hover:bg-gray-100 transition-colors"
-                    title="Sign out"
-                  >
-                    <LogOut className="w-4 h-4" />
-                  </button>
-                </div>
-              </div>
-
-              {/* Subtitle explanation */}
-              <p className="text-xs text-gray-600 leading-relaxed mb-3">
-                Live location sharing is required while using the website for print dispatch routing and Xerox order verification.
-              </p>
-
-              {/* Error Alert if blocked */}
-              {errorMessage && (
-                <div className="mb-3 p-2.5 rounded-xl bg-amber-50 border border-amber-200 text-amber-900 text-xs flex items-start gap-2">
-                  <ShieldAlert className="w-4 h-4 text-amber-600 flex-shrink-0 mt-0.5" />
-                  <span className="leading-tight">{errorMessage}</span>
-                </div>
-              )}
-
-              {/* If browser permission was set to block, show address bar tip */}
-              {permissionState === "denied" && (
-                <div className="mb-3 p-3 rounded-xl bg-blue-50/70 border border-blue-200 text-xs text-gray-700 space-y-2">
-                  <div className="font-bold text-blue-900 flex items-center gap-1.5">
-                    <Lock className="w-3.5 h-3.5 text-blue-600" />
-                    How to Unblock Location in Chrome / Edge:
-                  </div>
-
-                  <div className="space-y-1.5 text-[11px]">
-                    <div className="p-2 rounded-lg bg-white border border-blue-100 flex items-start gap-2">
-                      <span className="font-bold text-blue-600 flex-shrink-0">Option 1:</span>
-                      <div>
-                        Look at the <strong>right side of your address bar</strong> for the crossed-out pin <strong className="text-red-500">[ ⦸ ]</strong> &rarr; Click it &rarr; Choose <strong>&quot;Always allow&quot;</strong> &rarr; Click <strong>Done</strong>.
-                      </div>
-                    </div>
-
-                    <div className="p-2 rounded-lg bg-white border border-blue-100 flex items-start gap-2">
-                      <span className="font-bold text-blue-600 flex-shrink-0">Option 2:</span>
-                      <div>
-                        Click the <strong>Tune icon (🎚)</strong> or <strong>Lock (🔒)</strong> on the <strong>left side</strong> of the address bar &rarr; Switch <strong>Location</strong> to <strong>Allow</strong> (or Reset).
-                      </div>
-                    </div>
-                  </div>
-
-                  <p className="text-[10px] text-blue-800 font-medium pt-0.5">
-                    Once you switch it in the address bar above, click <strong>Verify &amp; Allow</strong> below or click <strong>Reload Page</strong>.
-                  </p>
-                </div>
-              )}
-
-              {/* Action buttons: Reload, "Don't Allow" and "Allow Location" */}
-              <div className="flex items-center justify-between pt-3 border-t border-gray-100">
-                <button
-                  type="button"
-                  onClick={() => window.location.reload()}
-                  className="px-2.5 py-1.5 rounded-lg text-xs font-semibold text-gray-500 hover:text-blue-600 hover:bg-blue-50 transition-colors flex items-center gap-1 cursor-pointer"
-                  title="Reload page to apply browser changes"
-                >
-                  <RefreshCw className="w-3.5 h-3.5" />
-                  Reload Page
-                </button>
-
-                <div className="flex items-center gap-2">
-                  <button
-                    type="button"
-                    onClick={handleDontAllow}
-                    disabled={requesting}
-                    className="px-3.5 py-2 rounded-xl text-xs font-semibold text-gray-600 hover:text-gray-900 hover:bg-gray-100 transition-colors cursor-pointer"
-                  >
-                    Don&apos;t Allow
-                  </button>
-
-                  <button
-                    type="button"
-                    onClick={requestLocation}
-                    disabled={requesting}
-                    className="px-4 py-2.5 rounded-xl bg-[#2D63FF] hover:bg-[#1E4FE6] text-white text-xs font-bold shadow-md shadow-blue-500/25 transition-all flex items-center gap-1.5 cursor-pointer disabled:opacity-60"
-                  >
-                    {requesting ? (
-                      <>
-                        <RefreshCw className="w-3.5 h-3.5 animate-spin" />
-                        <span>Verifying...</span>
-                      </>
-                    ) : (
-                      <>
-                        <CheckCircle2 className="w-3.5 h-3.5" />
-                        <span>{permissionState === "denied" ? "Verify & Allow" : "Allow Location"}</span>
-                      </>
-                    )}
-                  </button>
-                </div>
-              </div>
-            </motion.div>
-          </div>
-        )}
-      </AnimatePresence>
+      {/* 2. Fullscreen Permissions Required Screen matching reference design */}
+      <LocationPromptModal
+        isOpen={isBlocked}
+        requesting={requesting}
+        errorMessage={errorMessage}
+        permissionState={permissionState}
+        onEnable={requestLocation}
+        onSignOut={logout}
+      />
     </>
   );
 }
