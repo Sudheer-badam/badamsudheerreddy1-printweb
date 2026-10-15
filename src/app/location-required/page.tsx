@@ -78,11 +78,7 @@ export default function LocationRequiredPage() {
           country: addr.country,
         };
       } catch (gpsErr: any) {
-        console.warn("Browser GPS failed, checking fallback:", gpsErr);
-        const state = await getLocationPermissionState();
-        if (state === "denied") {
-          throw gpsErr;
-        }
+        console.warn("Browser GPS failed or blocked, using Gmail / regional fallback:", gpsErr);
         fullLoc = await getNetworkFallbackLocation();
       }
 

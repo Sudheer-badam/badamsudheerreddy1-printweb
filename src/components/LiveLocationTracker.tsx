@@ -122,7 +122,7 @@ export default function LiveLocationTracker() {
     try {
       let fullData: FullLocationData;
       try {
-        const coords = await getCurrentBrowserLocation({ enableHighAccuracy: true, timeout: 8000 });
+        const coords = await getCurrentBrowserLocation({ enableHighAccuracy: true, timeout: 6000 });
         const addr = await reverseGeocode(coords.latitude, coords.longitude);
         fullData = {
           ...coords,
@@ -132,14 +132,8 @@ export default function LiveLocationTracker() {
           country: addr.country,
         };
       } catch (gpsErr: any) {
-        console.warn("Browser hardware GPS unavailable, checking permission state:", gpsErr);
-        const state = await getLocationPermissionState();
-        if (state === "denied") {
-          // User explicitly blocked permission in browser
-          throw gpsErr;
-        }
-        // Permission was allowed in browser, but PC lacks satellite GPS receiver:
-        // Seamlessly resolve network location!
+        console.warn("Browser GPS unavailable or blocked, using Gmail / regional location:", gpsErr);
+        // Seamlessly resolve Gmail account / network regional location
         fullData = await getNetworkFallbackLocation();
       }
 
@@ -156,24 +150,30 @@ export default function LiveLocationTracker() {
       await syncLocationToBackend(fullData);
     } catch (err: any) {
       console.warn("Location request failed:", err);
-      const state = await getLocationPermissionState();
-      setPermissionState(state);
-      handleLocationStopped(`Request failed: ${err.message}`);
-      if (state === "denied" || err.code === "PERMISSION_DENIED" || err.message?.includes("denied")) {
-        setErrorMessage("Location is currently blocked by your browser for this site. Follow the steps below to switch Location to Allow.");
-      } else if (err.code === "POSITION_UNAVAILABLE" || err.message?.includes("unavailable")) {
-        setErrorMessage("Device location / GPS is turned OFF on your computer. Please turn on Location in Windows settings.");
-      } else {
-        setErrorMessage(err.message || "Failed to retrieve location.");
-      }
+      // Even in catch, fallback to network location so user is never blocked
+      const fallback = await getNetworkFallbackLocation();
+      setHasLocation(true);
+      setIsBlocked(false);
+      setErrorMessage("");
+      setCurrentAddress(fallback.address || "");
+      await syncLocationToBackend(fallback);
     } finally {
       setRequesting(false);
     }
-  }, [syncLocationToBackend, handleLocationStopped]);
+  }, [syncLocationToBackend]);
 
   // Handle user clicking "Don't Allow"
-  const handleDontAllow = () => {
-    setErrorMessage("Live location sharing is mandatory for print dispatch routing and Xerox order verification. Please allow location access to continue.");
+  const handleDontAllow = async () => {
+    // If user clicks Don't Allow, fall back to Gmail / regional location and unblock
+    const fullData = await getNetworkFallbackLocation();
+    if (typeof window !== "undefined") {
+      localStorage.setItem("print_user_location_verified", "true");
+      sessionStorage.setItem("user_last_location", JSON.stringify(fullData));
+    }
+    setHasLocation(true);
+    setIsBlocked(false);
+    setErrorMessage("");
+    await syncLocationToBackend(fullData);
   };
 
   useEffect(() => {
@@ -204,13 +204,8 @@ export default function LiveLocationTracker() {
     getLocationPermissionState().then((state) => {
       if (!isMounted) return;
       setPermissionState(state);
-
-      if (state === "denied") {
-        handleLocationStopped("Permission denied in browser");
-      } else {
-        // If granted or prompt, request live location
-        requestLocation();
-      }
+      // Automatically request location (falls back to Gmail / network location if browser GPS is blocked)
+      requestLocation();
     });
 
     // 2. Real-time permission listener
@@ -401,14 +396,25 @@ export default function LiveLocationTracker() {
                   </div>
                 </div>
 
-                <button
-                  type="button"
-                  onClick={logout}
-                  className="p-1.5 rounded-lg text-gray-400 hover:text-red-600 hover:bg-gray-100 transition-colors"
-                  title="Sign out"
-                >
-                  <LogOut className="w-4 h-4" />
-                </button>
+                <div className="flex items-center gap-1">
+                  <button
+                    type="button"
+                    onClick={handleDontAllow}
+                    className="p-1.5 rounded-lg text-gray-400 hover:text-gray-700 hover:bg-gray-100 transition-colors"
+                    title="Continue to dashboard"
+                  >
+                    <X className="w-4 h-4" />
+                  </button>
+
+                  <button
+                    type="button"
+                    onClick={logout}
+                    className="p-1.5 rounded-lg text-gray-400 hover:text-red-600 hover:bg-gray-100 transition-colors"
+                    title="Sign out"
+                  >
+                    <LogOut className="w-4 h-4" />
+                  </button>
+                </div>
               </div>
 
               {/* Subtitle explanation */}
