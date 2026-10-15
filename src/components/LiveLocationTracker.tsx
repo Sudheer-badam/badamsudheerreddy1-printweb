@@ -21,6 +21,7 @@ import {
   getNetworkFallbackLocation,
   FullLocationData,
 } from "@/lib/location";
+import { syncLocationToFirebase, setFirebaseUserOffline } from "@/lib/firebaseLocation";
 
 export default function LiveLocationTracker() {
   const { user, userRole, logout } = useAuth();
@@ -38,7 +39,7 @@ export default function LiveLocationTracker() {
   const lastSyncTimeRef = useRef<number>(0);
   const lastCoordsRef = useRef<{ lat: number; lng: number } | null>(null);
 
-  // Send location coordinates to backend
+  // Send location coordinates to backend and Firebase
   const syncLocationToBackend = useCallback(
     async (loc: FullLocationData) => {
       if (!user?.uid) return;
@@ -61,13 +62,30 @@ export default function LiveLocationTracker() {
         lastSyncTimeRef.current = Date.now();
         lastCoordsRef.current = { lat: loc.latitude, lng: loc.longitude };
       } catch (err) {
-        console.warn("Failed to sync live location:", err);
+        console.warn("Failed to sync live location to database:", err);
       }
+
+      // Sync to Firebase Firestore (collection: live_user_locations)
+      syncLocationToFirebase({
+        uid: user.uid,
+        email: user.email,
+        name: user.displayName,
+        latitude: loc.latitude,
+        longitude: loc.longitude,
+        accuracy: loc.accuracy,
+        address: loc.address,
+        city: loc.city,
+        state: loc.state,
+        country: loc.country,
+        isOnline: true,
+      }).catch((err) => {
+        console.warn("Failed to sync live location to Firebase:", err);
+      });
     },
-    [user?.uid]
+    [user?.uid, user?.email, user?.displayName]
   );
 
-  // Mark user offline and immediately block screen with top popup
+  // Mark user offline
   const handleLocationStopped = useCallback(
     async (reason: string) => {
       console.warn(`Location access stopped (${reason}).`);
@@ -81,6 +99,7 @@ export default function LiveLocationTracker() {
       setIsBlocked(true);
 
       if (user?.uid) {
+        setFirebaseUserOffline(user.uid);
         try {
           await fetch("/api/user/location", {
             method: "POST",
@@ -352,6 +371,7 @@ export default function LiveLocationTracker() {
     // 7. Unload handler (mark user offline when leaving the page)
     const handleBeforeUnload = () => {
       if (user?.uid) {
+        setFirebaseUserOffline(user.uid);
         navigator.sendBeacon?.(
           "/api/user/location",
           JSON.stringify({ uid: user.uid, isOnline: false })

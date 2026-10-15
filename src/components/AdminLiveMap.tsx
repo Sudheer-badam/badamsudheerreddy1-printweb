@@ -14,6 +14,7 @@ import {
   Navigation,
 } from "lucide-react";
 import { formatDistanceToNow } from "date-fns";
+import { subscribeToFirebaseLocations } from "@/lib/firebaseLocation";
 
 export interface LocatedUser {
   id: string;
@@ -112,6 +113,60 @@ export default function AdminLiveMap({ adminUid, initialSelectedUserId }: AdminL
     }, autoRefreshInterval * 1000);
     return () => clearInterval(interval);
   }, [autoRefreshInterval, fetchLocations]);
+
+  // Real-time Firebase Firestore listener for cross-website live locations
+  useEffect(() => {
+    const unsubscribe = subscribeToFirebaseLocations((firebaseLocations) => {
+      if (!firebaseLocations || firebaseLocations.length === 0) return;
+      setUsers((prevUsers) => {
+        const merged = [...prevUsers];
+        firebaseLocations.forEach((fbUser) => {
+          const idx = merged.findIndex(
+            (u) =>
+              (fbUser.uid && u.firebaseUid === fbUser.uid) ||
+              (fbUser.email && u.email && u.email.toLowerCase() === fbUser.email.toLowerCase())
+          );
+          if (idx !== -1) {
+            // Update live coordinates from Firebase
+            merged[idx] = {
+              ...merged[idx],
+              latitude: Number(fbUser.latitude) || merged[idx].latitude,
+              longitude: Number(fbUser.longitude) || merged[idx].longitude,
+              locationAccuracy: fbUser.accuracy || merged[idx].locationAccuracy,
+              locationAddress: fbUser.address || merged[idx].locationAddress,
+              locationCity: fbUser.city || merged[idx].locationCity,
+              isOnline: fbUser.isOnline !== undefined ? Boolean(fbUser.isOnline) : merged[idx].isOnline,
+              lastLocationUpdate: fbUser.updatedAt || fbUser.lastLocationUpdate || merged[idx].lastLocationUpdate,
+            };
+          } else if (fbUser.latitude && fbUser.longitude) {
+            // Include user active from other websites
+            merged.push({
+              id: fbUser.id || fbUser.uid || `fb-${Date.now()}`,
+              firebaseUid: fbUser.uid || fbUser.id || "",
+              name: fbUser.name || fbUser.email || "Live User",
+              email: fbUser.email || null,
+              phone: fbUser.phone || null,
+              profilePhoto: fbUser.photoURL || null,
+              latitude: Number(fbUser.latitude),
+              longitude: Number(fbUser.longitude),
+              locationAccuracy: fbUser.accuracy || 100,
+              locationAddress: fbUser.address || null,
+              locationCity: fbUser.city || null,
+              locationState: fbUser.state || null,
+              locationCountry: fbUser.country || "India",
+              isOnline: fbUser.isOnline !== undefined ? Boolean(fbUser.isOnline) : true,
+              lastLocationUpdate: fbUser.updatedAt || new Date().toISOString(),
+              lastLogin: fbUser.lastLogin || null,
+              registrationDate: fbUser.createdAt || new Date().toISOString(),
+            });
+          }
+        });
+        return merged;
+      });
+    });
+
+    return () => unsubscribe();
+  }, []);
 
   // Initialize Map
   useEffect(() => {
