@@ -143,12 +143,12 @@ export async function getCurrentBrowserLocation(options?: {
     typeof navigator !== "undefined" &&
     /Android|webOS|iPhone|iPad|iPod|BlackBerry|IEMobile|Opera Mini/i.test(navigator.userAgent);
 
-  // 1. On mobile devices with GPS chip: try high-accuracy GPS with fast 5s timeout
+  // 1. On mobile devices with GPS chip: try high-accuracy GPS with generous 20s timeout for user to tap Allow
   if (isMobile) {
     try {
       return await queryPosition({
         enableHighAccuracy: true,
-        timeout: 5000,
+        timeout: 20000,
         maximumAge: 10000,
       });
     } catch (err: any) {
@@ -156,10 +156,10 @@ export async function getCurrentBrowserLocation(options?: {
     }
   }
 
-  // 2. On laptops/desktops or fallback: use Wi-Fi / IP triangulation (instant < 500ms, NEVER hangs!)
+  // 2. On laptops/desktops or fallback: use Wi-Fi / IP triangulation (instant, up to 15s for prompt click)
   return await queryPosition({
     enableHighAccuracy: false,
-    timeout: 5000,
+    timeout: 15000,
     maximumAge: 60000,
   });
 }
