@@ -268,7 +268,7 @@ export default function LiveLocationTracker() {
       );
     }
 
-    // 4. Active Heartbeat (Every 4 seconds): Verifies that location has NOT been stopped or turned off
+    // 4. Active Heartbeat (Every 1 second): Verifies that location has NOT been stopped or turned off
     const activeHeartbeat = setInterval(async () => {
       if (!isMounted) return;
       const state = await getLocationPermissionState();
@@ -278,7 +278,7 @@ export default function LiveLocationTracker() {
         // User turned off or blocked location in browser!
         handleLocationStopped(`Heartbeat detected state: ${state}`);
       }
-    }, 4000);
+    }, 1000);
 
     // 5. Periodic background sync: Keep online status active every 30 seconds
     const periodicSync = setInterval(() => {
