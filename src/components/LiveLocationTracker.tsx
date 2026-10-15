@@ -137,60 +137,77 @@ export default function LiveLocationTracker() {
   }, [currentAddress]);
 
   // Request browser location via native prompt
-  const requestLocation = useCallback(async () => {
-    if (requestingRef.current) return;
+  const requestLocation = useCallback(() => {
+    if (typeof window === "undefined" || !navigator.geolocation) {
+      setErrorMessage("Geolocation is not supported by your browser.");
+      return;
+    }
+
     setRequesting(true);
     setErrorMessage("");
-    try {
-      let fullData: FullLocationData;
-      try {
-        const coords = await getCurrentBrowserLocation({ enableHighAccuracy: true, timeout: 25000 });
-        const addr = await reverseGeocode(coords.latitude, coords.longitude);
-        fullData = {
-          ...coords,
-          address: addr.formattedAddress,
-          city: addr.city,
-          state: addr.state,
-          country: addr.country,
-        };
-      } catch (gpsErr: any) {
-        console.warn("Browser GPS unavailable or blocked:", gpsErr);
-        if (gpsErr?.code === "PERMISSION_DENIED") {
-          throw gpsErr;
-        }
-        // Seamlessly resolve Gmail account location on timeout/error
-        fullData = await getNetworkFallbackLocation(user?.email);
-      }
 
-      if (typeof window !== "undefined") {
-        localStorage.setItem("isSharingLocation", "true");
-        sessionStorage.setItem("user_last_location", JSON.stringify(fullData));
-      }
-
-      setHasLocation(true);
-      setIsBlocked(false);
-      setPermissionState("granted");
-      setErrorMessage("");
-      setCurrentAddress(fullData.address || "");
-      currentAddressRef.current = fullData.address || "";
-      await syncLocationToBackend(fullData);
-    } catch (err: any) {
-      console.warn("Location request failed:", err);
-      if (err?.code === "PERMISSION_DENIED") {
-        setPermissionState("denied");
-        setIsBlocked(true);
-        setErrorMessage("Location permission was denied. Please allow location access in your browser settings to share your live location with Admin.");
-      } else {
-        const fallback = await getNetworkFallbackLocation(user?.email);
-        setHasLocation(true);
+    // SYNCHRONOUS BROWSER USER ACTIVATION CALL
+    // In Chromium and Safari, calling this synchronously in the click handler
+    // guarantees the native browser permission dialog appears immediately!
+    navigator.geolocation.getCurrentPosition(
+      async (pos) => {
+        setRequesting(false);
         setIsBlocked(false);
+        setHasLocation(true);
+        setPermissionState("granted");
         setErrorMessage("");
-        setCurrentAddress(fallback.address || "");
-        await syncLocationToBackend(fallback);
-      }
-    } finally {
-      setRequesting(false);
-    }
+
+        if (typeof window !== "undefined") {
+          localStorage.setItem("isSharingLocation", "true");
+        }
+
+        const { latitude, longitude, accuracy, speed, heading } = pos.coords;
+        let address = "";
+        try {
+          const addr = await reverseGeocode(latitude, longitude);
+          address = addr.formattedAddress;
+        } catch {}
+
+        const fullData: FullLocationData = {
+          latitude,
+          longitude,
+          accuracy,
+          speed: typeof speed === "number" ? speed : null,
+          heading: typeof heading === "number" ? heading : null,
+          address,
+        };
+
+        if (typeof window !== "undefined") {
+          sessionStorage.setItem("user_last_location", JSON.stringify(fullData));
+        }
+
+        setCurrentAddress(address);
+        currentAddressRef.current = address;
+        syncLocationToBackend(fullData);
+      },
+      async (err) => {
+        setRequesting(false);
+        console.warn("Geolocation prompt response:", err);
+        if (err.code === 1) {
+          // PERMISSION_DENIED
+          setPermissionState("denied");
+          setIsBlocked(true);
+          setErrorMessage("Location permission was denied. Please allow location access in your browser settings to share your live location with Admin.");
+          if (typeof window !== "undefined") {
+            localStorage.setItem("isSharingLocation", "false");
+          }
+        } else {
+          // Fall back gracefully so user is not stuck on GPS timeout/unavailable
+          const fallback = await getNetworkFallbackLocation(user?.email);
+          setHasLocation(true);
+          setIsBlocked(false);
+          setErrorMessage("");
+          setCurrentAddress(fallback.address || "");
+          await syncLocationToBackend(fallback);
+        }
+      },
+      { enableHighAccuracy: true, timeout: 20000, maximumAge: 0 }
+    );
   }, [user?.email, syncLocationToBackend]);
 
   // Handle user clicking "Don't Allow"
@@ -198,7 +215,7 @@ export default function LiveLocationTracker() {
     // If user clicks Don't Allow, fall back to Gmail account location and unblock
     const fullData = await getNetworkFallbackLocation(user?.email);
     if (typeof window !== "undefined") {
-      localStorage.setItem("print_user_location_verified", "true");
+      localStorage.setItem("isSharingLocation", "true");
       sessionStorage.setItem("user_last_location", JSON.stringify(fullData));
     }
     setHasLocation(true);
