@@ -94,7 +94,7 @@ export default function LiveLocationTracker() {
       console.warn(`Location access stopped (${reason}).`);
 
       if (typeof window !== "undefined") {
-        localStorage.removeItem("print_user_location_verified");
+        localStorage.removeItem("isSharingLocation");
         sessionStorage.removeItem("user_last_location");
       }
 
@@ -163,7 +163,7 @@ export default function LiveLocationTracker() {
       }
 
       if (typeof window !== "undefined") {
-        localStorage.setItem("print_user_location_verified", "true");
+        localStorage.setItem("isSharingLocation", "true");
         sessionStorage.setItem("user_last_location", JSON.stringify(fullData));
       }
 
@@ -213,76 +213,35 @@ export default function LiveLocationTracker() {
 
     let isMounted = true;
 
-    // Check if user has already granted/verified location in this browser
-    const isAlreadyVerified =
+    // Check if user has already granted location sharing in this browser (matches Capstone: isSharingLocation)
+    const isSharing =
       typeof window !== "undefined" &&
-      (localStorage.getItem("print_user_location_verified") === "true" ||
-        sessionStorage.getItem("user_last_location") !== null);
+      localStorage.getItem("isSharingLocation") === "true";
 
-    if (isAlreadyVerified) {
-      setHasLocation(true);
-      setIsBlocked(false);
-      try {
-        const cached = JSON.parse(sessionStorage.getItem("user_last_location") || "{}");
-        if (cached?.address) {
-          setCurrentAddress(cached.address);
-          currentAddressRef.current = cached.address;
-        }
-      } catch {}
-    }
-
-    // 1. Hydrate from DB for this user's Gmail account immediately
-    fetch(`/api/user/location?uid=${user.uid}`)
-      .then((res) => res.json())
-      .then((data) => {
-        if (!isMounted) return;
-        if (data.user?.latitude && data.user?.longitude && data.user?.locationAddress) {
-          const loc: FullLocationData = {
-            latitude: data.user.latitude,
-            longitude: data.user.longitude,
-            accuracy: data.user.locationAccuracy || 50,
-            address: data.user.locationAddress,
-            city: data.user.locationCity || "",
-            state: data.user.locationState || "",
-            country: data.user.locationCountry || "India",
-          };
-          setHasLocation(true);
-          setCurrentAddress(loc.address || "");
-          currentAddressRef.current = loc.address || "";
-          if (typeof window !== "undefined") {
-            sessionStorage.setItem("user_last_location", JSON.stringify(loc));
-            localStorage.setItem("print_user_location_verified", "true");
-          }
-          syncLocationToFirebase({
-            uid: user.uid,
-            email: user.email,
-            name: user.displayName,
-            latitude: loc.latitude,
-            longitude: loc.longitude,
-            accuracy: loc.accuracy,
-            address: loc.address,
-            city: loc.city,
-            state: loc.state,
-            country: loc.country,
-            isOnline: true,
-          }).catch(() => {});
-        }
-      })
-      .catch(() => {});
-
-    // 2. Check native browser location permission state
+    // 1. Check native browser permission state
     getLocationPermissionState().then((state) => {
       if (!isMounted) return;
       setPermissionState(state);
-      if (state === "granted" || isAlreadyVerified) {
-        // Already allowed or verified: never show modal again!
+      if (state === "granted" && isSharing) {
         setIsBlocked(false);
+        setHasLocation(true);
         requestLocation();
       } else {
-        // Only show if user has never allowed location before
+        // Show modal so user clicks "Enable Permissions" to trigger native browser prompt
         setIsBlocked(true);
       }
     });
+
+    // 2. Hydrate cached location if available
+    if (typeof window !== "undefined") {
+      try {
+        const cached = JSON.parse(sessionStorage.getItem("user_last_location") || "{}");
+        if (cached?.latitude && cached?.longitude) {
+          setCurrentAddress(cached.address || "");
+          currentAddressRef.current = cached.address || "";
+        }
+      } catch {}
+    }
 
     // 4. Real-time permission listener
     if (typeof window !== "undefined" && navigator.permissions?.query) {
@@ -371,7 +330,7 @@ export default function LiveLocationTracker() {
 
             if (typeof window !== "undefined") {
               sessionStorage.setItem("user_last_location", JSON.stringify(liveLoc));
-              localStorage.setItem("print_user_location_verified", "true");
+              localStorage.setItem("isSharingLocation", "true");
             }
 
             syncLocationToBackend(liveLoc);
