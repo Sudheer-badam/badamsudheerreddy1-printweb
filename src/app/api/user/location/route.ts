@@ -72,10 +72,33 @@ export async function POST(req: NextRequest) {
   }
 }
 
-// GET: Fetch users with locations for Admin portal
+// GET: Fetch users with locations for Admin portal OR fetch single user's location by uid
 export async function GET(req: NextRequest) {
   try {
     const { searchParams } = new URL(req.url);
+    const uid = searchParams.get("uid");
+
+    // If querying own location by uid
+    if (uid) {
+      const user = await prisma.user.findUnique({
+        where: { firebaseUid: uid },
+        select: {
+          id: true,
+          email: true,
+          name: true,
+          latitude: true,
+          longitude: true,
+          locationAccuracy: true,
+          locationAddress: true,
+          locationCity: true,
+          locationState: true,
+          locationCountry: true,
+          isOnline: true,
+        },
+      });
+      return NextResponse.json({ success: true, user });
+    }
+
     const adminUid = searchParams.get("adminUid");
     const filter = searchParams.get("filter") || "all"; // 'all' | 'online' | 'today'
 

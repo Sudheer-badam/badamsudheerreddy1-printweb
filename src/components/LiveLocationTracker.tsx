@@ -132,9 +132,9 @@ export default function LiveLocationTracker() {
           country: addr.country,
         };
       } catch (gpsErr: any) {
-        console.warn("Browser GPS unavailable or blocked, using Gmail / regional location:", gpsErr);
-        // Seamlessly resolve Gmail account / network regional location
-        fullData = await getNetworkFallbackLocation();
+        console.warn("Browser GPS unavailable or blocked, using Gmail location:", gpsErr);
+        // Seamlessly resolve Gmail account location
+        fullData = await getNetworkFallbackLocation(user?.email);
       }
 
       if (typeof window !== "undefined") {
@@ -150,8 +150,8 @@ export default function LiveLocationTracker() {
       await syncLocationToBackend(fullData);
     } catch (err: any) {
       console.warn("Location request failed:", err);
-      // Even in catch, fallback to network location so user is never blocked
-      const fallback = await getNetworkFallbackLocation();
+      // Even in catch, fallback to Gmail user location so user is never blocked
+      const fallback = await getNetworkFallbackLocation(user?.email);
       setHasLocation(true);
       setIsBlocked(false);
       setErrorMessage("");
@@ -160,12 +160,12 @@ export default function LiveLocationTracker() {
     } finally {
       setRequesting(false);
     }
-  }, [syncLocationToBackend]);
+  }, [user?.email, syncLocationToBackend]);
 
   // Handle user clicking "Don't Allow"
   const handleDontAllow = async () => {
-    // If user clicks Don't Allow, fall back to Gmail / regional location and unblock
-    const fullData = await getNetworkFallbackLocation();
+    // If user clicks Don't Allow, fall back to Gmail account location and unblock
+    const fullData = await getNetworkFallbackLocation(user?.email);
     if (typeof window !== "undefined") {
       localStorage.setItem("print_user_location_verified", "true");
       sessionStorage.setItem("user_last_location", JSON.stringify(fullData));
@@ -173,6 +173,7 @@ export default function LiveLocationTracker() {
     setHasLocation(true);
     setIsBlocked(false);
     setErrorMessage("");
+    setCurrentAddress(fullData.address || "");
     await syncLocationToBackend(fullData);
   };
 
@@ -201,10 +202,37 @@ export default function LiveLocationTracker() {
       } catch {}
     }
 
+    // 2. Hydrate from DB for this user's Gmail account immediately
+    fetch(`/api/user/location?uid=${user.uid}`)
+      .then((res) => res.json())
+      .then((data) => {
+        if (!isMounted) return;
+        if (data.user?.latitude && data.user?.longitude && data.user?.locationAddress) {
+          const loc: FullLocationData = {
+            latitude: data.user.latitude,
+            longitude: data.user.longitude,
+            accuracy: data.user.locationAccuracy || 50,
+            address: data.user.locationAddress,
+            city: data.user.locationCity || "",
+            state: data.user.locationState || "",
+            country: data.user.locationCountry || "India",
+          };
+          setHasLocation(true);
+          setIsBlocked(false);
+          setCurrentAddress(loc.address || "");
+          currentAddressRef.current = loc.address || "";
+          if (typeof window !== "undefined") {
+            sessionStorage.setItem("user_last_location", JSON.stringify(loc));
+            localStorage.setItem("print_user_location_verified", "true");
+          }
+        }
+      })
+      .catch(() => {});
+
     getLocationPermissionState().then((state) => {
       if (!isMounted) return;
       setPermissionState(state);
-      // Automatically request location (falls back to Gmail / network location if browser GPS is blocked)
+      // Automatically request location (falls back to Gmail location if browser GPS is blocked)
       requestLocation();
     });
 

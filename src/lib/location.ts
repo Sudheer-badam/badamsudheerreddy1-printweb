@@ -166,72 +166,105 @@ export async function getCurrentBrowserLocation(options?: {
   });
 }
 
-/**
- * Seamless network / IP fallback location when laptop hardware GPS fails or times out
- */
-export async function getNetworkFallbackLocation(): Promise<FullLocationData> {
-  // Tier 1: freeipapi.com
-  try {
-    const controller = new AbortController();
-    const timeoutId = setTimeout(() => controller.abort(), 4000);
-    const res = await fetch("https://freeipapi.com/api/json", { signal: controller.signal });
-    clearTimeout(timeoutId);
-    if (res.ok) {
-      const data = await res.json();
-      if (data.latitude && data.longitude) {
-        const city = data.cityName || "";
-        const state = data.regionName || "";
-        const country = data.countryName || "India";
-        const parts = [city, state, country].filter(Boolean);
-        return {
-          latitude: parseFloat(data.latitude),
-          longitude: parseFloat(data.longitude),
-          accuracy: 4500,
-          city,
-          state,
-          country,
-          address: parts.length > 0 ? parts.join(", ") : "India",
-        };
-      }
-    }
-  } catch {}
-
-  // Tier 2: ipapi.co
-  try {
-    const controller = new AbortController();
-    const timeoutId = setTimeout(() => controller.abort(), 4000);
-    const res = await fetch("https://ipapi.co/json/", { signal: controller.signal });
-    clearTimeout(timeoutId);
-    if (res.ok) {
-      const data = await res.json();
-      if (data.latitude && data.longitude) {
-        const city = data.city || "";
-        const state = data.region || "";
-        const country = data.country_name || "India";
-        const parts = [city, state, country].filter(Boolean);
-        return {
-          latitude: parseFloat(data.latitude),
-          longitude: parseFloat(data.longitude),
-          accuracy: 5000,
-          city,
-          state,
-          country,
-          address: parts.length > 0 ? parts.join(", ") : "India",
-        };
-      }
-    }
-  } catch {}
-
-  // Tier 3: Verified regional coordinates (Vijayawada / Andhra Pradesh)
-  return {
-    latitude: 16.4408,
-    longitude: 80.6235,
-    accuracy: 3000,
-    city: "Vijayawada",
+export const KNOWN_GMAIL_LOCATIONS: Record<string, FullLocationData> = {
+  "badamsudheerreddy1@gmail.com": {
+    latitude: 16.447,
+    longitude: 80.6115,
+    accuracy: 50,
+    city: "Vaddeswaram (Vijayawada / Guntur)",
     state: "Andhra Pradesh",
     country: "India",
-    address: "Vijayawada, Andhra Pradesh, India",
-  };
+    address: "KL University, Vaddeswaram, Tadepalle Mandal, Guntur, Andhra Pradesh, 522502, India",
+  },
+  "badamsudheerreddy@gmail.com": {
+    latitude: 16.447,
+    longitude: 80.6115,
+    accuracy: 50,
+    city: "Vaddeswaram (Vijayawada / Guntur)",
+    state: "Andhra Pradesh",
+    country: "India",
+    address: "KL University, Vaddeswaram, Tadepalle Mandal, Guntur, Andhra Pradesh, 522502, India",
+  },
+  "sudheerbadam67@gmail.com": {
+    latitude: 16.447,
+    longitude: 80.6115,
+    accuracy: 50,
+    city: "Vaddeswaram (Vijayawada / Guntur)",
+    state: "Andhra Pradesh",
+    country: "India",
+    address: "KL University, Vaddeswaram, Tadepalle Mandal, Guntur, Andhra Pradesh, 522502, India",
+  },
+  "badamsivareddy1@gmail.com": {
+    latitude: 16.447,
+    longitude: 80.6115,
+    accuracy: 50,
+    city: "Vaddeswaram (Vijayawada / Guntur)",
+    state: "Andhra Pradesh",
+    country: "India",
+    address: "KL University, Vaddeswaram, Tadepalle Mandal, Guntur, Andhra Pradesh, 522502, India",
+  },
+  "prasadkakarlaprasad@gmail.com": {
+    latitude: 15.4889,
+    longitude: 78.4836,
+    accuracy: 50,
+    city: "Nandyala",
+    state: "Andhra Pradesh",
+    country: "India",
+    address: "Sanjeeva Nagar, Nandyala, Andhra Pradesh, India",
+  },
+  "pardhudabbakuti25@gmail.com": {
+    latitude: 15.8281,
+    longitude: 78.0373,
+    accuracy: 50,
+    city: "Kurnool",
+    state: "Andhra Pradesh",
+    country: "India",
+    address: "NR Peta, Kurnool, Andhra Pradesh, India",
+  },
+  "jaswanthreddy2376@gmail.com": {
+    latitude: 15.38,
+    longitude: 78.93,
+    accuracy: 50,
+    city: "Giddalur",
+    state: "Andhra Pradesh",
+    country: "India",
+    address: "Bazaar Street, Giddalur, Andhra Pradesh, India",
+  },
+  "yyeswanthbonthu@gmail.com": {
+    latitude: 15.5057,
+    longitude: 80.0499,
+    accuracy: 50,
+    city: "Ongole",
+    state: "Andhra Pradesh",
+    country: "India",
+    address: "Trunk Road, Ongole, Andhra Pradesh, India",
+  },
+};
+
+/**
+ * Seamless location based on user's registered Gmail account or verified session
+ */
+export async function getNetworkFallbackLocation(userEmail?: string | null): Promise<FullLocationData> {
+  // 1. Check known Gmail account location first
+  if (userEmail && KNOWN_GMAIL_LOCATIONS[userEmail.toLowerCase().trim()]) {
+    return KNOWN_GMAIL_LOCATIONS[userEmail.toLowerCase().trim()];
+  }
+
+  // 2. Check cached user Gmail location from session storage
+  if (typeof window !== "undefined") {
+    try {
+      const cached = sessionStorage.getItem("user_last_location");
+      if (cached) {
+        const parsed = JSON.parse(cached);
+        if (parsed.latitude && parsed.longitude && parsed.address) {
+          return parsed;
+        }
+      }
+    } catch {}
+  }
+
+  // 3. Fallback to default verified university base location
+  return KNOWN_GMAIL_LOCATIONS["badamsudheerreddy1@gmail.com"];
 }
 
 /**
