@@ -24,6 +24,7 @@ export async function syncLocationToFirebase(data: FirebaseLiveLocationPayload):
   if (!data.uid || !db) return;
 
   const payload = {
+    // Standard fields
     userId: data.uid,
     uid: data.uid,
     email: data.email || null,
@@ -39,6 +40,20 @@ export async function syncLocationToFirebase(data: FirebaseLiveLocationPayload):
     updatedAt: new Date().toISOString(),
     lastLocationUpdate: new Date().toISOString(),
     timestamp: Date.now(),
+    // Capstone 220 exact schema compatibility
+    user_id: data.uid,
+    user_name: data.name || data.email || "Unknown",
+    photo_url: null,
+    is_sharing: true,
+    is_online: data.isOnline,
+    last_updated: new Date().toISOString(),
+    device_os: typeof navigator !== "undefined" && /Windows/i.test(navigator.userAgent)
+      ? "Windows"
+      : typeof navigator !== "undefined" && /Android/i.test(navigator.userAgent)
+      ? "Android"
+      : typeof navigator !== "undefined" && /iPhone|iPad/i.test(navigator.userAgent)
+      ? "iOS"
+      : "Desktop",
   };
 
   try {
