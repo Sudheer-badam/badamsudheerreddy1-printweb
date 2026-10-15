@@ -131,6 +131,12 @@ export default function LocationRequiredPage() {
 
     let isMounted = true;
 
+    const isVerified = typeof window !== "undefined" && localStorage.getItem("print_user_location_verified") === "true";
+    if (isVerified) {
+      router.replace("/dashboard");
+      return;
+    }
+
     // Check permission state immediately
     getLocationPermissionState().then(async (state) => {
       if (!isMounted) return;

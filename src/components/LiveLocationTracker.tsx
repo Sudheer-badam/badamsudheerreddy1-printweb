@@ -44,11 +44,9 @@ export default function LiveLocationTracker() {
     }
   }, [user?.uid]);
 
-  // Mark user offline and redirect to /location-required when location access stops
+  // Mark user offline when location access stops (modal popup handles prompt)
   const handleLocationStopped = useCallback(async (reason: string) => {
-    if (isRedirectingRef.current) return;
-    isRedirectingRef.current = true;
-    console.warn(`Location access stopped (${reason}). Redirecting to /location-required...`);
+    console.warn(`Location access stopped (${reason}).`);
 
     if (user?.uid) {
       try {
@@ -61,8 +59,7 @@ export default function LiveLocationTracker() {
     }
 
     setHasLocation(false);
-    router.replace("/location-required");
-  }, [user?.uid, router]);
+  }, [user?.uid]);
 
   // Request browser location and sync with fallback
   const requestLocation = useCallback(async () => {

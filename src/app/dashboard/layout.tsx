@@ -20,7 +20,7 @@ import {
 } from "lucide-react";
 import { useAuth } from "@/contexts/AuthContext";
 import LiveLocationTracker from "@/components/LiveLocationTracker";
-import { getLocationPermissionState } from "@/lib/location";
+import LocationPromptModal from "@/components/LocationPromptModal";
 
 const navItems = [
   { href: "/dashboard", icon: LayoutDashboard, label: "Dashboard" },
@@ -44,18 +44,6 @@ export default function DashboardLayout({ children }: { children: React.ReactNod
         router.push("/auth/login");
       } else if (userRole === "ADMIN") {
         router.push("/admin");
-      } else {
-        // Customer: enforce location permission only if never verified
-        const storedLoc = typeof window !== "undefined" ? sessionStorage.getItem("user_last_location") : null;
-        const isVerified = typeof window !== "undefined" ? localStorage.getItem("print_user_location_verified") === "true" : false;
-
-        if (!storedLoc && !isVerified) {
-          getLocationPermissionState().then((state) => {
-            if (state !== "granted") {
-              router.replace("/location-required");
-            }
-          });
-        }
       }
     }
   }, [user, userRole, loading, router]);
@@ -76,6 +64,7 @@ export default function DashboardLayout({ children }: { children: React.ReactNod
   return (
     <div className="min-h-screen flex" style={{ background: "#f5f7fa" }}>
       <LiveLocationTracker />
+      <LocationPromptModal />
       {/* Mobile overlay */}
       <AnimatePresence>
         {sidebarOpen && (

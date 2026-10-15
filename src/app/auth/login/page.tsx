@@ -58,13 +58,8 @@ export default function LoginPage() {
 
       await signInWithEmail(email, password);
 
-      if (loc) {
-        toast.success("Welcome back!");
-        router.push("/dashboard");
-      } else {
-        toast.info("Please allow location access to enter PRINT DOCKER");
-        router.push("/location-required");
-      }
+      toast.success("Welcome back!");
+      router.push("/dashboard");
     } catch (error: any) {
       toast.error(error?.message || "Login failed");
     } finally {
@@ -102,13 +97,8 @@ export default function LoginPage() {
       if (provider === "google") await signInWithGoogle();
       if (provider === "microsoft") await signInWithMicrosoft();
 
-      if (loc) {
-        toast.success("Welcome back!");
-        router.push("/dashboard");
-      } else {
-        toast.info("Please allow location access to enter PRINT DOCKER");
-        router.push("/location-required");
-      }
+      toast.success("Welcome back!");
+      router.push("/dashboard");
     } catch (error: any) {
       toast.error(error?.message || "Login failed");
     } finally {

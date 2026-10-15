@@ -64,13 +64,8 @@ export default function RegisterPage() {
 
       await signUpWithEmail(form.email, form.password, form.name);
 
-      if (loc) {
-        toast.success("Account created successfully!");
-        router.push("/dashboard");
-      } else {
-        toast.info("Please allow location access to enter PRINT DOCKER");
-        router.push("/location-required");
-      }
+      toast.success("Account created successfully!");
+      router.push("/dashboard");
     } catch (error: any) {
       const msg = error?.message || "";
       if (msg.includes("auth/email-already-in-use")) {
@@ -97,13 +92,8 @@ export default function RegisterPage() {
       if (provider === "google") await signInWithGoogle();
       if (provider === "microsoft") await signInWithMicrosoft();
 
-      if (loc) {
-        toast.success("Account created successfully!");
-        router.push("/dashboard");
-      } else {
-        toast.info("Please allow location access to enter PRINT DOCKER");
-        router.push("/location-required");
-      }
+      toast.success("Account created successfully!");
+      router.push("/dashboard");
     } catch (error: any) {
       toast.error(error?.message || "Social sign-up failed");
     } finally { setLoading(false); }
