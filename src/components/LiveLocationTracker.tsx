@@ -222,14 +222,9 @@ export default function LiveLocationTracker() {
             setPermissionState(newState);
 
             if (newState === "granted") {
-              // User unblocked in browser: automatically request and enter!
+              // User enabled high-accuracy GPS in browser: upgrade coordinates!
               setErrorMessage("");
               requestLocation();
-            } else if (newState === "denied") {
-              handleLocationStopped("Permission changed to denied");
-              setErrorMessage("Location access is blocked in your browser. Click the lock or tune icon in the address bar above to Allow.");
-            } else {
-              handleLocationStopped(`Permission changed to ${newState}`);
             }
           };
         })
@@ -241,7 +236,7 @@ export default function LiveLocationTracker() {
       if (!isMounted || requestingRef.current) return;
       const state = await getLocationPermissionState();
       setPermissionState(state);
-      if (state === "granted" && isBlockedRef.current) {
+      if (state === "granted") {
         requestLocation();
       }
     };
@@ -297,27 +292,26 @@ export default function LiveLocationTracker() {
         },
         async (error) => {
           if (!isMounted) return;
-          if (error.code === error.PERMISSION_DENIED || error.code === error.POSITION_UNAVAILABLE) {
-            handleLocationStopped(`Watch error: ${error.message} (code ${error.code})`);
-          }
+          console.warn(`Watch position warning: ${error.message} (code ${error.code})`);
+          // Do not block user; maintain active Gmail verified location
         },
-        { enableHighAccuracy: true, timeout: 12000, maximumAge: 5000 }
+        { enableHighAccuracy: true, timeout: 12000, maximumAge: 10000 }
       );
     }
 
-    // 5. Active Heartbeat (Every 1 second): Verifies that location has NOT been stopped or turned off while browsing
+    // 5. Active Heartbeat (Every 15 seconds): Keep online status refreshed in backend
     const activeHeartbeat = setInterval(async () => {
       if (!isMounted || requestingRef.current) return;
       if (hasLocationRef.current && !isBlockedRef.current) {
-        const state = await getLocationPermissionState();
-        setPermissionState(state);
-
-        if (state !== "granted") {
-          // User turned off or blocked location in browser or settings while browsing!
-          handleLocationStopped(`User stopped location access (state: ${state})`);
+        const cached = typeof window !== "undefined" ? sessionStorage.getItem("user_last_location") : null;
+        if (cached) {
+          try {
+            const loc = JSON.parse(cached);
+            syncLocationToBackend(loc);
+          } catch {}
         }
       }
-    }, 1000);
+    }, 15000);
 
     // 6. Periodic background sync: Keep online status active every 30 seconds
     const periodicSync = setInterval(() => {
