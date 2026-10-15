@@ -451,6 +451,7 @@ export default function LiveLocationTracker() {
         permissionState={permissionState}
         onEnable={requestLocation}
         onSignOut={logout}
+        onContinueWithAccount={handleDontAllow}
       />
     </>
   );

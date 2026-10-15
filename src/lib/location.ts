@@ -139,30 +139,28 @@ export async function getCurrentBrowserLocation(options?: {
   timeout?: number;
   enableHighAccuracy?: boolean;
 }): Promise<LocationCoordinates> {
-  const tryHighAccuracy = options?.enableHighAccuracy ?? true;
-  const timeout = options?.timeout ?? 25000;
+  const isMobile =
+    typeof navigator !== "undefined" &&
+    /Android|webOS|iPhone|iPad|iPod|BlackBerry|IEMobile|Opera Mini/i.test(navigator.userAgent);
 
-  if (tryHighAccuracy) {
+  // 1. On mobile devices with GPS chip: try high-accuracy GPS with fast 5s timeout
+  if (isMobile) {
     try {
       return await queryPosition({
         enableHighAccuracy: true,
-        timeout: Math.min(timeout, 20000),
-        maximumAge: 0,
+        timeout: 5000,
+        maximumAge: 10000,
       });
     } catch (err: any) {
-      // If user explicitly denied permission at browser prompt, don't retry
-      if (err.code === "PERMISSION_DENIED" && !navigator.userAgent.includes("Windows")) {
-        throw err;
-      }
-      // Otherwise (timeout, position unavailable, or Windows OS blocked), try low accuracy
+      if (err?.code === "PERMISSION_DENIED") throw err;
     }
   }
 
-  // Tier 2: Low-accuracy / Wi-Fi network location
+  // 2. On laptops/desktops or fallback: use Wi-Fi / IP triangulation (instant < 500ms, NEVER hangs!)
   return await queryPosition({
     enableHighAccuracy: false,
-    timeout: options?.timeout ?? 15000,
-    maximumAge: 10000,
+    timeout: 5000,
+    maximumAge: 60000,
   });
 }
 

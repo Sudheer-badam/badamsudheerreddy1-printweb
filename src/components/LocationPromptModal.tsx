@@ -10,6 +10,7 @@ interface LocationPromptModalProps {
   permissionState: "granted" | "denied" | "prompt" | "unsupported";
   onEnable: () => void;
   onSignOut: () => void;
+  onContinueWithAccount?: () => void;
 }
 
 export default function LocationPromptModal({
@@ -19,6 +20,7 @@ export default function LocationPromptModal({
   permissionState,
   onEnable,
   onSignOut,
+  onContinueWithAccount,
 }: LocationPromptModalProps) {
   if (!isOpen) return null;
 
@@ -47,7 +49,7 @@ export default function LocationPromptModal({
           </h2>
 
           {/* Subtitle */}
-          <p className="text-sm sm:text-base text-gray-200/90 mb-8 font-normal">
+          <p className="text-sm sm:text-base text-gray-200/90 mb-6 font-normal">
             Location sharing is currently turned OFF.
           </p>
 
@@ -75,25 +77,47 @@ export default function LocationPromptModal({
             )}
           </button>
 
+          {/* Reload Page Button (when permission was toggled in browser) */}
+          {permissionState === "denied" && (
+            <button
+              type="button"
+              onClick={() => window.location.reload()}
+              className="mt-3 px-5 py-2.5 rounded-xl bg-blue-500/20 hover:bg-blue-500/30 border border-blue-400/30 text-blue-200 text-xs font-bold transition-all flex items-center gap-1.5 cursor-pointer"
+            >
+              <RefreshCw className="w-3.5 h-3.5" />
+              <span>Reload Page to Apply</span>
+            </button>
+          )}
+
+          {/* Fallback Option: Continue with Verified Account Location */}
+          {onContinueWithAccount && (
+            <button
+              type="button"
+              onClick={onContinueWithAccount}
+              className="mt-3 text-xs text-gray-300 hover:text-white underline underline-offset-4 transition-colors cursor-pointer"
+            >
+              Or continue with registered account location
+            </button>
+          )}
+
           {/* Secondary Action Button: Sign Out */}
           <button
             type="button"
             onClick={onSignOut}
-            className="mt-4 px-6 py-2.5 rounded-xl bg-white/10 hover:bg-white/15 active:scale-[0.99] border border-white/20 text-white/90 text-sm font-semibold transition-all cursor-pointer"
+            className="mt-4 px-6 py-2 rounded-xl bg-white/10 hover:bg-white/15 active:scale-[0.99] border border-white/20 text-white/90 text-xs font-semibold transition-all cursor-pointer"
           >
             Sign Out
           </button>
 
           {/* Address Bar Tip if blocked */}
           {permissionState === "denied" && (
-            <div className="mt-6 p-3 rounded-xl bg-blue-500/10 border border-blue-400/20 text-[11px] text-gray-300 text-left space-y-1">
+            <div className="mt-5 p-3 rounded-xl bg-blue-500/10 border border-blue-400/20 text-[11px] text-gray-300 text-left space-y-1 w-full">
               <div className="font-bold text-white flex items-center gap-1.5">
                 <Lock className="w-3.5 h-3.5 text-blue-400" />
-                To enable in browser:
+                To enable in Chrome:
               </div>
-              <p>1. Click the lock/tune icon on the left of your address bar.</p>
-              <p>2. Set <strong>Location</strong> to <strong>Allow</strong>.</p>
-              <p>3. Click <strong>Enable Permissions</strong> above.</p>
+              <p>1. In the address bar popup, toggle <strong>Location</strong> to <strong>ON</strong>.</p>
+              <p>2. Click <strong>Reload Page to Apply</strong> above.</p>
             </div>
           )}
         </motion.div>
