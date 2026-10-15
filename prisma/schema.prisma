@@ -106,17 +106,31 @@ model User {
   createdAt        DateTime  @default(now())
   updatedAt        DateTime  @updatedAt
 
-  orders         Order[]
-  payments       Payment[]
-  notifications  Notification[]
-  invoices       Invoice[]
-  supportTickets SupportTicket[]
-  auditLogs      AuditLog[]
-  reviews        Review[]
+  // Live Location Tracking
+  latitude           Float?
+  longitude          Float?
+  locationAccuracy   Float?
+  locationAddress    String?
+  locationCity       String?
+  locationState      String?
+  locationCountry    String?
+  isOnline           Boolean   @default(false)
+  lastLocationUpdate DateTime?
+
+  orders          Order[]
+  payments        Payment[]
+  notifications   Notification[]
+  invoices        Invoice[]
+  supportTickets  SupportTicket[]
+  auditLogs       AuditLog[]
+  reviews         Review[]
+  locationHistory UserLocationLog[]
 
   @@index([email])
   @@index([phone])
   @@index([firebaseUid])
+  @@index([lastLocationUpdate])
+  @@index([isOnline])
 }
 
 model Order {
@@ -378,4 +392,20 @@ model Review {
   updatedAt DateTime @updatedAt
 
   @@index([userId])
+}
+
+model UserLocationLog {
+  id        String   @id @default(cuid())
+  userId    String
+  user      User     @relation(fields: [userId], references: [id], onDelete: Cascade)
+  latitude  Float
+  longitude Float
+  accuracy  Float?
+  address   String?
+  city      String?
+  state     String?
+  createdAt DateTime @default(now())
+
+  @@index([userId])
+  @@index([createdAt])
 }

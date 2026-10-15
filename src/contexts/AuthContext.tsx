@@ -48,6 +48,14 @@ export function AuthProvider({ children }: { children: ReactNode }) {
         // Sync user with database and get role
         try {
           const idToken = await firebaseUser.getIdToken();
+          let locationPayload = null;
+          if (typeof window !== "undefined") {
+            try {
+              const cached = sessionStorage.getItem("user_last_location");
+              if (cached) locationPayload = JSON.parse(cached);
+            } catch {}
+          }
+
           const res = await fetch("/api/auth/sync", {
             method: "POST",
             headers: {
@@ -61,6 +69,7 @@ export function AuthProvider({ children }: { children: ReactNode }) {
               phone: firebaseUser.phoneNumber,
               photoURL: firebaseUser.photoURL,
               provider: firebaseUser.providerData[0]?.providerId,
+              location: locationPayload,
             }),
           });
           if (res.ok) {

@@ -19,12 +19,14 @@ import {
   CreditCard,
   Shield,
   Database,
+  MapPin,
 } from "lucide-react";
 import { useAuth } from "@/contexts/AuthContext";
 
 const navItems = [
   { href: "/admin", icon: LayoutDashboard, label: "Dashboard" },
   { href: "/admin/orders", icon: FileText, label: "All Orders" },
+  { href: "/admin/locations", icon: MapPin, label: "Live Locations" },
   { href: "/admin/customers", icon: Users, label: "Customers" },
   { href: "/admin/analytics", icon: TrendingUp, label: "Analytics" },
   { href: "/admin/payments", icon: CreditCard, label: "Payments" },

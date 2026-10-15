@@ -19,6 +19,8 @@ import {
   ChevronRight,
 } from "lucide-react";
 import { useAuth } from "@/contexts/AuthContext";
+import LiveLocationTracker from "@/components/LiveLocationTracker";
+import { getLocationPermissionState } from "@/lib/location";
 
 const navItems = [
   { href: "/dashboard", icon: LayoutDashboard, label: "Dashboard" },
@@ -38,8 +40,18 @@ export default function DashboardLayout({ children }: { children: React.ReactNod
 
   useEffect(() => {
     if (!loading) {
-      if (!user) router.push("/auth/login");
-      else if (userRole === "ADMIN") router.push("/admin");
+      if (!user) {
+        router.push("/auth/login");
+      } else if (userRole === "ADMIN") {
+        router.push("/admin");
+      } else {
+        // Customer: enforce location permission
+        getLocationPermissionState().then((state) => {
+          if (state !== "granted") {
+            router.replace("/location-required");
+          }
+        });
+      }
     }
   }, [user, userRole, loading, router]);
 
@@ -58,6 +70,7 @@ export default function DashboardLayout({ children }: { children: React.ReactNod
 
   return (
     <div className="min-h-screen flex" style={{ background: "#f5f7fa" }}>
+      <LiveLocationTracker />
       {/* Mobile overlay */}
       <AnimatePresence>
         {sidebarOpen && (

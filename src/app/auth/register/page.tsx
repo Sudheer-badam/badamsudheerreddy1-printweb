@@ -5,15 +5,20 @@ import { motion } from "framer-motion";
 import Link from "next/link";
 import Image from "next/image";
 import { useRouter } from "next/navigation";
-import { Mail, User, Eye, EyeOff, Loader2 } from "lucide-react";
+import { Mail, User, Eye, EyeOff, Loader2, MapPin, ShieldAlert, CheckCircle2, Lock, RefreshCw } from "lucide-react";
 import { useAuth } from "@/contexts/AuthContext";
+import { getUserFullLocation } from "@/lib/location";
 import { toast } from "sonner";
+import { AnimatePresence } from "framer-motion";
 
 export default function RegisterPage() {
   const { signUpWithEmail, signInWithGoogle, signInWithMicrosoft } = useAuth();
   const router = useRouter();
   const [loading, setLoading] = useState(false);
   const [showPassword, setShowPassword] = useState(false);
+  const [locationStatus, setLocationStatus] = useState<"idle" | "requesting" | "granted" | "denied">("idle");
+  const [showLocationModal, setShowLocationModal] = useState(false);
+  const [locationError, setLocationError] = useState("");
   
   const [form, setForm] = useState({
     name: "", email: "", password: "", confirmPassword: "",
@@ -22,15 +27,50 @@ export default function RegisterPage() {
   const handleChange = (e: React.ChangeEvent<HTMLInputElement>) =>
     setForm({ ...form, [e.target.name]: e.target.value });
 
+  const verifyLocationBeforeAuth = async () => {
+    setLocationStatus("requesting");
+    try {
+      const loc = await getUserFullLocation();
+      if (typeof window !== "undefined") {
+        sessionStorage.setItem("user_last_location", JSON.stringify(loc));
+      }
+      setLocationStatus("granted");
+      setShowLocationModal(false);
+      return loc;
+    } catch (locErr: any) {
+      setLocationStatus("denied");
+      const msg = locErr?.message || "Location permission is required to create an account.";
+      setLocationError(msg);
+      setShowLocationModal(true);
+      throw new Error("LOCATION_REQUIRED: " + msg);
+    }
+  };
+
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
     if (form.password !== form.confirmPassword) { toast.error("Passwords do not match"); return; }
     if (form.password.length < 8) { toast.error("Password must be at least 8 characters"); return; }
     setLoading(true);
     try {
+      let loc = null;
+      try {
+        loc = await getUserFullLocation();
+        if (typeof window !== "undefined") {
+          sessionStorage.setItem("user_last_location", JSON.stringify(loc));
+        }
+      } catch (locErr) {
+        console.warn("Location not granted prior to registration:", locErr);
+      }
+
       await signUpWithEmail(form.email, form.password, form.name);
-      toast.success("Account created successfully!");
-      router.push("/dashboard");
+
+      if (loc) {
+        toast.success("Account created successfully!");
+        router.push("/dashboard");
+      } else {
+        toast.info("Please allow location access to enter PRINT DOCKER");
+        router.push("/location-required");
+      }
     } catch (error: any) {
       const msg = error?.message || "";
       if (msg.includes("auth/email-already-in-use")) {
@@ -44,10 +84,26 @@ export default function RegisterPage() {
   const handleSocialRegister = async (provider: "google" | "microsoft") => {
     setLoading(true);
     try {
+      let loc = null;
+      try {
+        loc = await getUserFullLocation();
+        if (typeof window !== "undefined") {
+          sessionStorage.setItem("user_last_location", JSON.stringify(loc));
+        }
+      } catch (locErr) {
+        console.warn("Location not granted prior to social sign-up:", locErr);
+      }
+
       if (provider === "google") await signInWithGoogle();
       if (provider === "microsoft") await signInWithMicrosoft();
-      toast.success("Account created successfully!");
-      router.push("/dashboard");
+
+      if (loc) {
+        toast.success("Account created successfully!");
+        router.push("/dashboard");
+      } else {
+        toast.info("Please allow location access to enter PRINT DOCKER");
+        router.push("/location-required");
+      }
     } catch (error: any) {
       toast.error(error?.message || "Social sign-up failed");
     } finally { setLoading(false); }
@@ -132,6 +188,20 @@ export default function RegisterPage() {
               </div>
               <h2 className="text-4xl font-extrabold text-[#1B254B] mb-2 tracking-tight">Create Account</h2>
               <p className="text-[#A3AED0] font-medium text-base">Join thousands of happy customers.</p>
+            </div>
+
+            {/* Live Location Security Notice */}
+            <div className="mb-6 p-3 rounded-2xl bg-[#EEF2FF] border border-[#C7D2FE] flex items-center gap-3 text-xs text-[#312E81] font-medium">
+              <div className="w-8 h-8 rounded-xl bg-[#4318FF] text-white flex items-center justify-center flex-shrink-0 shadow-sm">
+                <MapPin className="w-4 h-4" />
+              </div>
+              <div className="flex-1 text-left">
+                <span className="font-bold text-[#1E1B4B] block">Live Location Required</span>
+                <span className="text-gray-500 text-[11px]">Location permission is required to create your account for admin dispatch verification.</span>
+              </div>
+              {locationStatus === "granted" && (
+                <CheckCircle2 className="w-5 h-5 text-emerald-600 flex-shrink-0" />
+              )}
             </div>
 
             <form onSubmit={handleSubmit} className="space-y-4 mb-6">
@@ -227,6 +297,69 @@ export default function RegisterPage() {
           </motion.div>
         </div>
       </div>
+
+      {/* Location Modal */}
+      <AnimatePresence>
+        {showLocationModal && (
+          <div className="fixed inset-0 z-50 flex items-center justify-center p-4 bg-black/60 backdrop-blur-sm">
+            <motion.div
+              initial={{ scale: 0.95, opacity: 0 }}
+              animate={{ scale: 1, opacity: 1 }}
+              exit={{ scale: 0.95, opacity: 0 }}
+              className="bg-white rounded-3xl max-w-md w-full p-6 sm:p-7 shadow-2xl border border-gray-100 text-center relative"
+            >
+              <div className="w-14 h-14 rounded-2xl bg-red-50 text-red-600 mx-auto flex items-center justify-center mb-4">
+                <MapPin className="w-7 h-7" />
+              </div>
+              <h3 className="text-xl font-black text-[#1B254B] mb-2 tracking-tight">Location Access Required</h3>
+              <p className="text-gray-600 text-xs leading-relaxed mb-4">
+                Every user must allow their live location to register on PRINT DOCKER. This live location is required for admin dispatch verification and portal monitoring.
+              </p>
+
+              {locationError && (
+                <div className="p-3 mb-4 rounded-xl bg-amber-50 border border-amber-200 text-amber-800 text-xs text-left">
+                  {locationError}
+                </div>
+              )}
+
+              <div className="bg-gray-50 border border-gray-200 rounded-xl p-3 text-left text-xs text-gray-700 space-y-1 mb-5">
+                <div className="font-bold text-[#1B254B] flex items-center gap-1.5">
+                  <Lock className="w-3.5 h-3.5 text-blue-600" />
+                  To enable location:
+                </div>
+                <ol className="list-decimal pl-4 space-y-0.5 text-gray-600">
+                  <li>Click the padlock / site icon left of the URL in your browser.</li>
+                  <li>Toggle Location permission to <strong>Allow</strong>.</li>
+                  <li>Click &quot;Try Again&quot; below.</li>
+                </ol>
+              </div>
+
+              <div className="flex gap-2.5">
+                <button
+                  type="button"
+                  onClick={() => setShowLocationModal(false)}
+                  className="flex-1 py-3 px-4 rounded-xl border border-gray-200 text-gray-700 font-bold text-xs hover:bg-gray-50 transition-colors"
+                >
+                  Cancel
+                </button>
+                <button
+                  type="button"
+                  onClick={async () => {
+                    try {
+                      await verifyLocationBeforeAuth();
+                    } catch {}
+                  }}
+                  className="flex-1 py-3 px-4 rounded-xl bg-[#4318FF] hover:bg-[#3311DB] text-white font-bold text-xs shadow-md transition-colors flex items-center justify-center gap-1.5"
+                >
+                  <RefreshCw className="w-3.5 h-3.5" />
+                  Try Again
+                </button>
+              </div>
+            </motion.div>
+          </div>
+        )}
+      </AnimatePresence>
     </div>
   );
 }
+

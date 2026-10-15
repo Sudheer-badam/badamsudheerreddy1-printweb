@@ -11,7 +11,7 @@ export async function POST(req: NextRequest) {
     // Verify Firebase token via Admin SDK would go here
     // For now, trust the client-sent data (in production, verify token server-side)
     const body = await req.json();
-    const { uid, email, name, phone, photoURL, provider } = body;
+    const { uid, email, name, phone, photoURL, provider, location } = body;
 
     if (!uid) {
       return NextResponse.json({ error: "Missing uid" }, { status: 400 });
@@ -32,6 +32,18 @@ export async function POST(req: NextRequest) {
       });
     }
 
+    const locationUpdate = location && typeof location.latitude === "number" && typeof location.longitude === "number" ? {
+      latitude: location.latitude,
+      longitude: location.longitude,
+      locationAccuracy: location.accuracy || null,
+      locationAddress: location.address || null,
+      locationCity: location.city || null,
+      locationState: location.state || null,
+      locationCountry: location.country || null,
+      isOnline: true,
+      lastLocationUpdate: new Date(),
+    } : {};
+
     if (user) {
       // Update existing user
       user = await prisma.user.update({
@@ -44,6 +56,7 @@ export async function POST(req: NextRequest) {
           ...(phone && { phone }),
           ...(photoURL && { profilePhoto: photoURL }),
           ...(provider && { authProvider: provider }),
+          ...locationUpdate,
         },
       });
     } else {
@@ -59,8 +72,24 @@ export async function POST(req: NextRequest) {
           role,
           registrationDate: new Date(),
           lastLogin: new Date(),
+          ...locationUpdate,
         },
       });
+    }
+
+    // If location provided, log in UserLocationLog
+    if (location && typeof location.latitude === "number" && typeof location.longitude === "number") {
+      await prisma.userLocationLog.create({
+        data: {
+          userId: user.id,
+          latitude: location.latitude,
+          longitude: location.longitude,
+          accuracy: location.accuracy || null,
+          address: location.address || null,
+          city: location.city || null,
+          state: location.state || null,
+        },
+      }).catch((e: any) => console.warn("Failed to write location log:", e));
     }
 
     return NextResponse.json({ role: user.role, userId: user.id });
