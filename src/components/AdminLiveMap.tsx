@@ -47,23 +47,23 @@ interface AdminLiveMapProps {
 }
 
 const TILE_LAYERS = {
-  googleRoads: {
-    name: "Google Roads",
+  googleStreet: {
+    name: "Google Street",
     url: "https://mt1.google.com/vt/lyrs=m&x={x}&y={y}&z={z}",
-    attribution: "Leaflet | &copy; Google Maps",
+    attribution: "© Google Maps",
     maxZoom: 20,
   },
-  googleHybrid: {
-    name: "Satellite Hybrid",
+  googleSatellite: {
+    name: "Google Satellite",
     url: "https://mt1.google.com/vt/lyrs=y&x={x}&y={y}&z={z}",
-    attribution: "Leaflet | &copy; Google Maps",
+    attribution: "© Google Maps",
     maxZoom: 20,
   },
-  osm: {
-    name: "OpenStreetMap",
-    url: "https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png",
-    attribution: "&copy; OpenStreetMap contributors",
-    maxZoom: 19,
+  googleTerrain: {
+    name: "Google Terrain",
+    url: "https://mt1.google.com/vt/lyrs=p&x={x}&y={y}&z={z}",
+    attribution: "© Google Maps",
+    maxZoom: 20,
   },
 };
 
@@ -85,7 +85,7 @@ export default function AdminLiveMap({ adminUid, initialSelectedUserId }: AdminL
   const [selectedUser, setSelectedUser] = useState<LocatedUser | null>(null);
   const [followingUserId, setFollowingUserId] = useState<string | null>(null);
   const [autoRefreshInterval, setAutoRefreshInterval] = useState<number>(10); // 10s default
-  const [currentTileLayer, setCurrentTileLayer] = useState<keyof typeof TILE_LAYERS>("googleRoads");
+  const [currentTileLayer, setCurrentTileLayer] = useState<keyof typeof TILE_LAYERS>("googleStreet");
   const [lastRefreshedAt, setLastRefreshedAt] = useState<Date>(new Date());
 
   // Global window handler for popup "Follow Live Movement" button
@@ -247,10 +247,10 @@ export default function AdminLiveMap({ adminUid, initialSelectedUserId }: AdminL
   useEffect(() => {
     if (!mapContainerRef.current || mapInstanceRef.current) return;
 
-    // Default center: Andhra Pradesh (e.g. Nandyala / Kurnool region)
+    // Default center matching Capstone: KL University / Vijayawada region
     const map = L.map(mapContainerRef.current, {
-      center: [15.48, 78.48],
-      zoom: 8,
+      center: [16.5, 80.64],
+      zoom: 13,
       zoomControl: false,
     });
 
@@ -312,8 +312,8 @@ export default function AdminLiveMap({ adminUid, initialSelectedUserId }: AdminL
     const pulseRing = isMoving
       ? `<span class="absolute -inset-2.5 rounded-full bg-emerald-400 opacity-75 animate-ping"></span><span class="absolute -inset-1 rounded-full bg-emerald-300 opacity-60 animate-pulse"></span>`
       : isOnline
-      ? `<span class="absolute -inset-1.5 rounded-full bg-emerald-400 opacity-60 animate-ping"></span>`
-      : "";
+        ? `<span class="absolute -inset-1.5 rounded-full bg-emerald-400 opacity-60 animate-ping"></span>`
+        : "";
 
     const movingBadge = isMoving
       ? `<span class="absolute -top-3.5 px-1.5 py-0.2 rounded-full bg-emerald-600 border border-white text-[8px] text-white font-black shadow-md flex items-center gap-0.5 whitespace-nowrap z-20"><span>●</span> MOVING</span>`
@@ -391,47 +391,50 @@ export default function AdminLiveMap({ adminUid, initialSelectedUserId }: AdminL
       : "";
 
     const followBtn = `
-      <button onclick="window.__toggleFollowUser('${user.id}')" class="inline-flex items-center gap-1 px-2.5 py-1 rounded-lg ${
-        followingUserId === user.id ? 'bg-amber-500 hover:bg-amber-600 text-white' : 'bg-emerald-600 hover:bg-emerald-700 text-white'
+      <button onclick="window.__toggleFollowUser('${user.id}')" class="inline-flex items-center gap-1 px-2.5 py-1 rounded-lg ${followingUserId === user.id ? 'bg-amber-500 hover:bg-amber-600 text-white' : 'bg-emerald-600 hover:bg-emerald-700 text-white'
       } text-xs font-bold transition-all shadow-sm">
         ${followingUserId === user.id ? '🎯 Stop Following' : '🧭 Follow Live'}
       </button>
     `;
 
     return `
-      <div class="p-3 min-w-[270px] max-w-[340px] font-sans text-gray-800">
-        <div class="flex items-center gap-3 pb-3 border-b border-gray-100 mb-3">
+      <div class="p-3.5 min-w-[270px] max-w-[340px] font-sans text-gray-800 text-center">
+        <div class="flex items-center justify-center gap-3 pb-2.5 border-b border-gray-100 mb-2.5">
           ${avatarImg}
-          <div class="min-w-0 flex-1">
-            <h4 class="font-bold text-sm text-[#0B1D3A] truncate m-0 leading-tight">${user.name || "Customer"}</h4>
+          <div class="min-w-0 text-left">
+            <h4 class="font-bold text-base text-[#0B1D3A] truncate m-0 leading-tight">${user.name || "Customer"}</h4>
             <div class="text-xs text-gray-500 truncate">${user.email || "No email"}</div>
-            <div class="flex items-center gap-1.5 mt-1 flex-wrap">
-              <span class="inline-flex items-center gap-1 px-2 py-0.5 rounded-full text-[10px] font-bold ${
-                isMoving ? "bg-emerald-100 text-emerald-800 animate-pulse" : isOnline ? "bg-emerald-100 text-emerald-800" : "bg-gray-100 text-gray-600"
-              }">
-                <span class="w-1.5 h-1.5 rounded-full ${isMoving ? "bg-emerald-500 animate-ping" : isOnline ? "bg-emerald-500 animate-pulse" : "bg-gray-400"}"></span>
-                ${isMoving ? "MOVING LIVE" : isOnline ? "LIVE NOW" : "OFFLINE"}
-              </span>
-              ${speedInfo}
-              ${deviceBadge}
-              <span class="text-[10px] text-gray-400">${timeAgo}</span>
-            </div>
           </div>
         </div>
 
-        <div class="space-y-1.5 text-xs text-gray-600 mb-3">
+        {/* Capstone Specification Status Badge */}
+        <div class="my-2">
+          <span style="display:inline-block;padding:4px 10px;border-radius:12px;background:${
+            isOnline ? "#d4edda" : "#f8d7da"
+          };color:${isOnline ? "#155724" : "#721c24"};font-weight:bold;font-size:12px;box-shadow:0 1px 3px rgba(0,0,0,0.06)">
+            ${isOnline ? "🟢 LIVE NOW" : "🔴 NOT IN LIVE"}
+          </span>
+        </div>
+
+        <div class="flex items-center justify-center gap-2 mb-2 flex-wrap">
+          ${deviceBadge}
+          ${speedInfo}
+          <span class="text-[10px] text-gray-400 font-medium">${timeAgo}</span>
+        </div>
+
+        <div class="space-y-1 text-xs text-gray-600 mb-3 text-left bg-gray-50 p-2.5 rounded-xl border border-gray-100">
           <div class="flex items-start gap-1.5">
-            <span class="font-semibold text-gray-800">📍 Location:</span>
+            <span class="font-semibold text-gray-800">📍</span>
             <span class="truncate-2-lines">${user.locationAddress || `${user.latitude.toFixed(4)}, ${user.longitude.toFixed(4)}`}</span>
           </div>
-          <div class="flex items-center justify-between text-[11px] text-gray-500 pt-1">
+          <div class="flex items-center justify-between text-[11px] text-gray-500 pt-1 border-t border-gray-200/50 mt-1">
             <span>Lat: <strong>${user.latitude.toFixed(4)}</strong></span>
             <span>Lng: <strong>${user.longitude.toFixed(4)}</strong></span>
             ${user.locationAccuracy ? `<span>Acc: <strong>±${Math.round(user.locationAccuracy)}m</strong></span>` : ""}
           </div>
         </div>
 
-        <div class="flex items-center gap-2 pt-2 border-t border-gray-100 flex-wrap">
+        <div class="flex items-center justify-center gap-2 pt-1 border-t border-gray-100 flex-wrap">
           ${followBtn}
           ${phoneLink}
           ${waLink}
@@ -666,9 +669,8 @@ export default function AdminLiveMap({ adminUid, initialSelectedUserId }: AdminL
               <button
                 key={key}
                 onClick={() => setCurrentTileLayer(key)}
-                className={`px-3 py-1.5 rounded-lg transition-colors ${
-                  currentTileLayer === key ? "bg-[#0B1D3A] text-white shadow-sm" : "hover:bg-gray-100"
-                }`}
+                className={`px-3 py-1.5 rounded-lg transition-colors ${currentTileLayer === key ? "bg-[#0B1D3A] text-white shadow-sm" : "hover:bg-gray-100"
+                  }`}
               >
                 {TILE_LAYERS[key].name}
               </button>
@@ -825,11 +827,10 @@ export default function AdminLiveMap({ adminUid, initialSelectedUserId }: AdminL
               <button
                 key={tab.id}
                 onClick={() => setActiveFilter(tab.id)}
-                className={`flex-1 py-1.5 text-xs font-bold rounded-lg transition-all ${
-                  activeFilter === tab.id
+                className={`flex-1 py-1.5 text-xs font-bold rounded-lg transition-all ${activeFilter === tab.id
                     ? "bg-white text-blue-600 shadow-sm"
                     : "text-gray-500 hover:text-gray-900"
-                }`}
+                  }`}
               >
                 {tab.label}
               </button>
@@ -865,11 +866,10 @@ export default function AdminLiveMap({ adminUid, initialSelectedUserId }: AdminL
                   <div
                     key={u.id}
                     onClick={() => focusOnUser(u)}
-                    className={`p-3 rounded-2xl border transition-all cursor-pointer ${
-                      isSelected
+                    className={`p-3 rounded-2xl border transition-all cursor-pointer ${isSelected
                         ? "bg-blue-50/70 border-blue-400 shadow-sm"
                         : "bg-white border-gray-200/80 hover:border-blue-200 hover:bg-gray-50/60"
-                    }`}
+                      }`}
                   >
                     <div className="flex items-start gap-3">
                       {/* Avatar */}
@@ -890,9 +890,8 @@ export default function AdminLiveMap({ adminUid, initialSelectedUserId }: AdminL
                           </div>
                         )}
                         <span
-                          className={`absolute -bottom-0.5 -right-0.5 w-3 h-3 rounded-full border-2 border-white ${
-                            isOnline ? "bg-emerald-500 animate-pulse" : "bg-gray-400"
-                          }`}
+                          className={`absolute -bottom-0.5 -right-0.5 w-3 h-3 rounded-full border-2 border-white ${isOnline ? "bg-emerald-500 animate-pulse" : "bg-gray-400"
+                            }`}
                         />
                       </div>
 
@@ -903,19 +902,18 @@ export default function AdminLiveMap({ adminUid, initialSelectedUserId }: AdminL
                             {u.name || "Customer"}
                           </h4>
                           <span
-                            className={`text-[9px] font-bold px-1.5 py-0.5 rounded-full ${
-                              u.isMoving || (u.lastLocationUpdate && Date.now() - new Date(u.lastLocationUpdate).getTime() <= 30 * 1000)
+                            className={`text-[9px] font-bold px-1.5 py-0.5 rounded-full ${u.isMoving || (u.lastLocationUpdate && Date.now() - new Date(u.lastLocationUpdate).getTime() <= 30 * 1000)
                                 ? "bg-emerald-100 text-emerald-800 animate-pulse border border-emerald-300"
                                 : isOnline
-                                ? "bg-emerald-100 text-emerald-800"
-                                : "bg-gray-100 text-gray-600"
-                            }`}
+                                  ? "bg-emerald-100 text-emerald-800"
+                                  : "bg-gray-100 text-gray-600"
+                              }`}
                           >
                             {u.isMoving || (u.lastLocationUpdate && Date.now() - new Date(u.lastLocationUpdate).getTime() <= 30 * 1000)
                               ? "🏃 MOVING LIVE"
                               : isOnline
-                              ? "ONLINE"
-                              : "OFFLINE"}
+                                ? "ONLINE"
+                                : "OFFLINE"}
                           </span>
                         </div>
 
