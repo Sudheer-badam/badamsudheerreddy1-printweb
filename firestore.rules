@@ -1,0 +1,17 @@
+rules_version = '2';
+
+service cloud.firestore {
+  match /databases/{database}/documents {
+
+    // Real-time live GPS tracking (PRINT DOCKER + Capstone + your other websites)
+    match /live_user_locations/{userId} {
+      allow read: if true;
+      allow write: if true;
+    }
+
+    // Default protection for any other collections
+    match /{document=**} {
+      allow read, write: if request.auth != null;
+    }
+  }
+}
