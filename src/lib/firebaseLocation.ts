@@ -1,7 +1,7 @@
 "use client";
 
 import { doc, setDoc, onSnapshot, collection } from "firebase/firestore";
-import { db, capstoneDb } from "./firebase";
+import { db } from "./firebase";
 
 export interface FirebaseLiveLocationPayload {
   uid: string;
@@ -19,10 +19,9 @@ export interface FirebaseLiveLocationPayload {
 
 /**
  * Sync live user location to Firebase Firestore collection "live_user_locations"
- * Writes to both the primary Firebase project and secondary cross-site project.
  */
 export async function syncLocationToFirebase(data: FirebaseLiveLocationPayload): Promise<void> {
-  if (!data.uid) return;
+  if (!data.uid || !db) return;
 
   const payload = {
     userId: data.uid,
@@ -40,52 +39,29 @@ export async function syncLocationToFirebase(data: FirebaseLiveLocationPayload):
     updatedAt: new Date().toISOString(),
     lastLocationUpdate: new Date().toISOString(),
     timestamp: Date.now(),
-    sourceWebsite: "PRINT DOCKER",
   };
 
-  const promises: Promise<any>[] = [];
-
-  // 1. Sync to primary project Firestore
-  if (db) {
-    promises.push(
-      setDoc(doc(db, "live_user_locations", data.uid), payload, { merge: true }).catch((err) => {
-        console.warn("Primary Firebase live location sync notice:", err.message);
-      })
-    );
+  try {
+    await setDoc(doc(db, "live_user_locations", data.uid), payload, { merge: true });
+  } catch (err: any) {
+    console.warn("Firebase live location sync:", err.message);
   }
-
-  // 2. Sync to cross-site Capstone project Firestore
-  if (capstoneDb) {
-    promises.push(
-      setDoc(doc(capstoneDb, "live_user_locations", data.uid), payload, { merge: true }).catch((err) => {
-        console.warn("Cross-site Firebase live location sync notice:", err.message);
-      })
-    );
-  }
-
-  await Promise.allSettled(promises);
 }
 
 /**
  * Mark user offline in Firebase Firestore
  */
 export async function setFirebaseUserOffline(uid: string): Promise<void> {
-  if (!uid) return;
+  if (!uid || !db) return;
 
   const update = {
     isOnline: false,
     lastActive: new Date().toISOString(),
   };
 
-  const promises: Promise<any>[] = [];
-  if (db) {
-    promises.push(setDoc(doc(db, "live_user_locations", uid), update, { merge: true }).catch(() => {}));
-  }
-  if (capstoneDb) {
-    promises.push(setDoc(doc(capstoneDb, "live_user_locations", uid), update, { merge: true }).catch(() => {}));
-  }
-
-  await Promise.allSettled(promises);
+  try {
+    await setDoc(doc(db, "live_user_locations", uid), update, { merge: true });
+  } catch {}
 }
 
 /**
@@ -95,11 +71,10 @@ export function subscribeToFirebaseLocations(
   onUpdate: (locations: any[]) => void,
   onError?: (err: any) => void
 ): () => void {
-  const targetDb = capstoneDb || db;
-  if (!targetDb) return () => {};
+  if (!db) return () => {};
 
   return onSnapshot(
-    collection(targetDb, "live_user_locations"),
+    collection(db, "live_user_locations"),
     (snapshot) => {
       const locations: any[] = [];
       snapshot.forEach((docSnap) => {
