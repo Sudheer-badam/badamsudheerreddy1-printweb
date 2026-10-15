@@ -31,7 +31,17 @@ export async function GET(req: NextRequest) {
       orderBy: { registrationDate: "desc" },
     });
 
-    return NextResponse.json(customers);
+    const fiveMinutesAgo = new Date(Date.now() - 5 * 60 * 1000);
+    const customersWithRealtimeOnline = customers.map((c) => ({
+      ...c,
+      isOnline: Boolean(
+        c.isOnline &&
+        c.lastLocationUpdate &&
+        new Date(c.lastLocationUpdate).getTime() >= fiveMinutesAgo.getTime()
+      ),
+    }));
+
+    return NextResponse.json(customersWithRealtimeOnline);
   } catch (error) {
     console.error("Get customers error:", error);
     return NextResponse.json({ error: "Internal server error" }, { status: 500 });

@@ -451,7 +451,15 @@ export default function HomePage() {
                     {r.user?.profilePhoto ? (
                       <div className="w-10 h-10 rounded-full overflow-hidden flex-shrink-0">
                         {/* eslint-disable-next-line @next/next/no-img-element */}
-                        <img src={r.user.profilePhoto} alt={r.user.name || "User"} className="w-full h-full object-cover" />
+                        <img 
+                          src={r.user.profilePhoto} 
+                          alt={r.user.name || "User"} 
+                          className="w-full h-full object-cover" 
+                          onError={(e) => {
+                            e.currentTarget.onerror = null;
+                            e.currentTarget.src = `https://ui-avatars.com/api/?name=${encodeURIComponent(r.user?.name || "Customer")}&background=2D63FF&color=fff&size=128`;
+                          }}
+                        />
                       </div>
                     ) : (
                       <div className="w-10 h-10 rounded-full flex items-center justify-center text-sm font-bold text-white flex-shrink-0"

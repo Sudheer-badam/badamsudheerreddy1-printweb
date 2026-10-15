@@ -152,6 +152,10 @@ export default function ProfilePage() {
                 src={profile.profilePhoto}
                 alt="Profile"
                 className="w-20 h-20 rounded-2xl object-cover border-2 border-violet-500/30"
+                onError={(e) => {
+                  e.currentTarget.onerror = null;
+                  e.currentTarget.src = `https://ui-avatars.com/api/?name=${encodeURIComponent(profile.name || profile.email || "User")}&background=7C3AED&color=fff&size=128`;
+                }}
               />
             ) : (
               <div className="w-20 h-20 rounded-2xl bg-violet-600/20 border-2 border-violet-500/30 flex items-center justify-center text-3xl font-bold text-violet-300">

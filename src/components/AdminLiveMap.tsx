@@ -163,11 +163,15 @@ export default function AdminLiveMap({ adminUid, initialSelectedUserId }: AdminL
 
   // Helper to create HTML DivIcon for user marker
   const createUserDivIcon = (user: LocatedUser, isSelected: boolean) => {
-    const isOnline = user.isOnline;
+    const isOnline = Boolean(
+      user.isOnline &&
+      user.lastLocationUpdate &&
+      Date.now() - new Date(user.lastLocationUpdate).getTime() <= 5 * 60 * 1000
+    );
     const initial = (user.name || user.email || "U").charAt(0).toUpperCase();
 
     const avatarHtml = user.profilePhoto
-      ? `<img src="${user.profilePhoto}" class="w-full h-full object-cover rounded-full" alt="" />`
+      ? `<img src="${user.profilePhoto}" class="w-full h-full object-cover rounded-full" alt="" onerror="this.onerror=null;this.src='https://ui-avatars.com/api/?name=${encodeURIComponent(user.name || 'User')}&background=0B1D3A&color=fff&size=128';" />`
       : `<span class="font-bold text-xs text-white">${initial}</span>`;
 
     const pulseRing = isOnline
@@ -203,14 +207,18 @@ export default function AdminLiveMap({ adminUid, initialSelectedUserId }: AdminL
 
   // Helper to format popup content
   const createPopupContent = (user: LocatedUser) => {
-    const isOnline = user.isOnline;
+    const isOnline = Boolean(
+      user.isOnline &&
+      user.lastLocationUpdate &&
+      Date.now() - new Date(user.lastLocationUpdate).getTime() <= 5 * 60 * 1000
+    );
     const timeAgo = user.lastLocationUpdate
       ? formatDistanceToNow(new Date(user.lastLocationUpdate), { addSuffix: true })
       : "Recently";
 
     const initial = (user.name || user.email || "U").charAt(0).toUpperCase();
     const avatarImg = user.profilePhoto
-      ? `<img src="${user.profilePhoto}" class="w-10 h-10 rounded-xl object-cover border border-gray-200" alt="" />`
+      ? `<img src="${user.profilePhoto}" class="w-10 h-10 rounded-xl object-cover border border-gray-200" alt="" onerror="this.onerror=null;this.src='https://ui-avatars.com/api/?name=${encodeURIComponent(user.name || 'User')}&background=0B1D3A&color=fff&size=128';" />`
       : `<div class="w-10 h-10 rounded-xl bg-blue-600 text-white font-bold flex items-center justify-center">${initial}</div>`;
 
     const phoneLink = user.phone
@@ -598,7 +606,11 @@ export default function AdminLiveMap({ adminUid, initialSelectedUserId }: AdminL
             ) : (
               filteredUsers.map((u) => {
                 const isSelected = selectedUser?.id === u.id;
-                const isOnline = u.isOnline;
+                const isOnline = Boolean(
+                  u.isOnline &&
+                  u.lastLocationUpdate &&
+                  Date.now() - new Date(u.lastLocationUpdate).getTime() <= 5 * 60 * 1000
+                );
                 const timeAgo = u.lastLocationUpdate
                   ? formatDistanceToNow(new Date(u.lastLocationUpdate), { addSuffix: true })
                   : "Recently";
@@ -621,6 +633,10 @@ export default function AdminLiveMap({ adminUid, initialSelectedUserId }: AdminL
                             src={u.profilePhoto}
                             alt=""
                             className="w-10 h-10 rounded-xl object-cover border border-gray-200"
+                            onError={(e) => {
+                              e.currentTarget.onerror = null;
+                              e.currentTarget.src = `https://ui-avatars.com/api/?name=${encodeURIComponent(u.name || 'User')}&background=0B1D3A&color=fff&size=128`;
+                            }}
                           />
                         ) : (
                           <div className="w-10 h-10 rounded-xl bg-[#0B1D3A] text-white font-bold text-xs flex items-center justify-center">
@@ -629,7 +645,7 @@ export default function AdminLiveMap({ adminUid, initialSelectedUserId }: AdminL
                         )}
                         <span
                           className={`absolute -bottom-0.5 -right-0.5 w-3 h-3 rounded-full border-2 border-white ${
-                            isOnline ? "bg-emerald-500" : "bg-gray-400"
+                            isOnline ? "bg-emerald-500 animate-pulse" : "bg-gray-400"
                           }`}
                         />
                       </div>
@@ -663,7 +679,7 @@ export default function AdminLiveMap({ adminUid, initialSelectedUserId }: AdminL
                         </div>
 
                         <div className="flex items-center justify-between text-[10px] text-gray-400 mt-1.5 pt-1.5 border-t border-gray-100">
-                          <span>Updated {timeAgo}</span>
+                          <span>{isOnline ? "Active now" : `Last seen ${timeAgo}`}</span>
                           <span className="text-blue-600 font-bold hover:underline">
                             Locate on Map &rarr;
                           </span>

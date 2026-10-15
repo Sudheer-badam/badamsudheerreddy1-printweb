@@ -100,11 +100,12 @@ export async function GET(req: NextRequest) {
     };
 
     const now = new Date();
+    const fiveMinutesAgo = new Date(now.getTime() - 5 * 60 * 1000);
+
     if (filter === "online") {
-      // Considered online if flagged online AND active in the last 15 minutes
-      const fifteenMinutesAgo = new Date(now.getTime() - 15 * 60 * 1000);
+      // Considered online only if flagged online AND active in the last 5 minutes
       where.isOnline = true;
-      where.lastLocationUpdate = { gte: fifteenMinutesAgo };
+      where.lastLocationUpdate = { gte: fiveMinutesAgo };
     } else if (filter === "today") {
       const startOfToday = new Date(now.setHours(0, 0, 0, 0));
       where.lastLocationUpdate = { gte: startOfToday };
@@ -139,6 +140,19 @@ export async function GET(req: NextRequest) {
       },
     });
 
+    // Dynamically guarantee isOnline is only true if lastLocationUpdate was within 5 minutes
+    const usersWithRealtimeStatus = users.map((u) => {
+      const isActuallyOnline = Boolean(
+        u.isOnline &&
+        u.lastLocationUpdate &&
+        new Date(u.lastLocationUpdate).getTime() >= fiveMinutesAgo.getTime()
+      );
+      return {
+        ...u,
+        isOnline: isActuallyOnline,
+      };
+    });
+
     // Compute stats
     const totalWithLocation = await prisma.user.count({
       where: {
@@ -148,12 +162,11 @@ export async function GET(req: NextRequest) {
       },
     });
 
-    const activeFifteenMin = new Date(Date.now() - 15 * 60 * 1000);
     const onlineCount = await prisma.user.count({
       where: {
         role: "CUSTOMER",
         isOnline: true,
-        lastLocationUpdate: { gte: activeFifteenMin },
+        lastLocationUpdate: { gte: fiveMinutesAgo },
       },
     });
 
@@ -167,7 +180,7 @@ export async function GET(req: NextRequest) {
     });
 
     return NextResponse.json({
-      users,
+      users: usersWithRealtimeStatus,
       stats: {
         totalWithLocation,
         onlineCount,
