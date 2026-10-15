@@ -199,10 +199,6 @@ export default function LiveLocationTracker() {
   useEffect(() => {
     if (!user?.uid) return;
 
-    // Only enforce and track for CUSTOMER role (not ADMIN)
-    const isCustomer = userRole === "CUSTOMER" || !userRole;
-    if (!isCustomer) return;
-
     let isMounted = true;
 
     // 1. Initial check on mount: check if user already has verified location from their Gmail account
@@ -248,14 +244,14 @@ export default function LiveLocationTracker() {
       })
       .catch(() => {});
 
+    // 3. Request native device location prompt on user's device
     getLocationPermissionState().then((state) => {
       if (!isMounted) return;
       setPermissionState(state);
-      // Automatically request location (falls back to Gmail location if browser GPS is blocked)
       requestLocation();
     });
 
-    // 2. Real-time permission listener
+    // 4. Real-time permission listener
     if (typeof window !== "undefined" && navigator.permissions?.query) {
       navigator.permissions
         .query({ name: "geolocation" as any })
@@ -269,7 +265,7 @@ export default function LiveLocationTracker() {
             setPermissionState(newState);
 
             if (newState === "granted") {
-              // User enabled high-accuracy GPS in browser: upgrade coordinates!
+              // User enabled high-accuracy GPS on device: upgrade to live GPS!
               setErrorMessage("");
               requestLocation();
             }
@@ -278,7 +274,7 @@ export default function LiveLocationTracker() {
         .catch(() => {});
     }
 
-    // 3. Window focus listener: detect when user returns after changing browser address bar settings
+    // 5. Window focus listener: detect when user returns after changing browser address bar settings
     const handleWindowFocus = async () => {
       if (!isMounted || requestingRef.current) return;
       const state = await getLocationPermissionState();
@@ -289,7 +285,7 @@ export default function LiveLocationTracker() {
     };
     window.addEventListener("focus", handleWindowFocus);
 
-    // 4. Geolocation watcher (watches live GPS coordinates)
+    // 6. Real-time Geolocation watcher: continuous device GPS stream to Firebase
     if (typeof window !== "undefined" && navigator.geolocation) {
       watchIdRef.current = navigator.geolocation.watchPosition(
         async (position) => {
@@ -305,12 +301,14 @@ export default function LiveLocationTracker() {
           if (lastCoords) {
             const dLat = Math.abs(latitude - lastCoords.lat);
             const dLng = Math.abs(longitude - lastCoords.lng);
-            if (dLat > 0.0005 || dLng > 0.0005) {
+            // Detect movement > ~10 meters
+            if (dLat > 0.0001 || dLng > 0.0001) {
               movedSignificantly = true;
             }
           }
 
-          if (!lastCoords || movedSignificantly || now - lastSyncTimeRef.current > 30000) {
+          // Real-time broadcast: sync immediately if moved or every 10 seconds
+          if (!lastCoords || movedSignificantly || now - lastSyncTimeRef.current > 10000) {
             let address = currentAddressRef.current;
             let city = "";
             let state = "";
@@ -326,7 +324,7 @@ export default function LiveLocationTracker() {
               currentAddressRef.current = address;
             }
 
-            syncLocationToBackend({
+            const liveLoc: FullLocationData = {
               latitude,
               longitude,
               accuracy,
@@ -334,19 +332,25 @@ export default function LiveLocationTracker() {
               city,
               state,
               country,
-            });
+            };
+
+            if (typeof window !== "undefined") {
+              sessionStorage.setItem("user_last_location", JSON.stringify(liveLoc));
+              localStorage.setItem("print_user_location_verified", "true");
+            }
+
+            syncLocationToBackend(liveLoc);
           }
         },
         async (error) => {
           if (!isMounted) return;
-          console.warn(`Watch position warning: ${error.message} (code ${error.code})`);
-          // Do not block user; maintain active Gmail verified location
+          console.warn(`Watch position notice: ${error.message}`);
         },
-        { enableHighAccuracy: true, timeout: 12000, maximumAge: 10000 }
+        { enableHighAccuracy: true, timeout: 10000, maximumAge: 5000 }
       );
     }
 
-    // 5. Active Heartbeat (Every 15 seconds): Keep online status refreshed in backend
+    // 7. Active Heartbeat (Every 10 seconds): Keep online status refreshed in Firebase & backend
     const activeHeartbeat = setInterval(async () => {
       if (!isMounted || requestingRef.current) return;
       if (hasLocationRef.current && !isBlockedRef.current) {
@@ -358,15 +362,15 @@ export default function LiveLocationTracker() {
           } catch {}
         }
       }
-    }, 15000);
+    }, 10000);
 
-    // 6. Periodic background sync: Keep online status active every 30 seconds
+    // 8. Periodic background sync: Keep online status active every 20 seconds
     const periodicSync = setInterval(() => {
       if (!isMounted) return;
       if (!isBlockedRef.current && hasLocationRef.current) {
         requestLocation();
       }
-    }, 30000);
+    }, 20000);
 
     // 7. Unload handler (mark user offline when leaving the page)
     const handleBeforeUnload = () => {
