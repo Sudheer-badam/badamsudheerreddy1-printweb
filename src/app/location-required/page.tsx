@@ -3,10 +3,16 @@
 import { useEffect, useState, useCallback, useRef } from "react";
 import { useRouter } from "next/navigation";
 import Image from "next/image";
-import { motion, AnimatePresence } from "framer-motion";
-import { MapPin, ShieldAlert, CheckCircle2, Lock, RefreshCw, LogOut, ArrowRight, Compass } from "lucide-react";
+import { motion } from "framer-motion";
+import { MapPin, ShieldAlert, CheckCircle2, Lock, RefreshCw, LogOut, ArrowRight, Globe, Monitor } from "lucide-react";
 import { useAuth } from "@/contexts/AuthContext";
-import { getCurrentBrowserLocation, reverseGeocode, getLocationPermissionState, FullLocationData } from "@/lib/location";
+import {
+  getCurrentBrowserLocation,
+  reverseGeocode,
+  getLocationPermissionState,
+  getIpLocationFallback,
+  FullLocationData,
+} from "@/lib/location";
 import { toast } from "sonner";
 
 export default function LocationRequiredPage() {
@@ -47,43 +53,64 @@ export default function LocationRequiredPage() {
       toast.success("Location verified! Entering PRINT DOCKER...");
       setTimeout(() => {
         router.replace("/dashboard");
-      }, 600);
+      }, 500);
     } catch (err) {
       console.error("Failed to sync location on entry:", err);
-      // Still navigate if location was retrieved
       router.replace("/dashboard");
     }
   }, [user?.uid, router]);
 
-  // Request browser location
+  // Request browser location with automatic fallback
   const handleAllowLocation = useCallback(async () => {
     setRequesting(true);
     setErrorMessage("");
     try {
-      const coords = await getCurrentBrowserLocation({ enableHighAccuracy: true, timeout: 12000 });
-      const addr = await reverseGeocode(coords.latitude, coords.longitude);
-      const fullLoc: FullLocationData = {
-        ...coords,
-        address: addr.formattedAddress,
-        city: addr.city,
-        state: addr.state,
-        country: addr.country,
-      };
+      let fullLoc: FullLocationData;
+      try {
+        const coords = await getCurrentBrowserLocation({ enableHighAccuracy: true, timeout: 8000 });
+        const addr = await reverseGeocode(coords.latitude, coords.longitude);
+        fullLoc = {
+          ...coords,
+          address: addr.formattedAddress,
+          city: addr.city,
+          state: addr.state,
+          country: addr.country,
+        };
+      } catch (gpsErr: any) {
+        console.warn("Browser GPS failed, falling back to network IP location:", gpsErr);
+        // Fallback to IP-based location
+        fullLoc = await getIpLocationFallback();
+      }
+
       setPermissionState("granted");
       await syncAndEnterProject(fullLoc);
     } catch (err: any) {
       console.warn("Location permission not granted:", err);
       if (err.code === "PERMISSION_DENIED" || err.message?.includes("denied")) {
         setPermissionState("denied");
-        setErrorMessage("Location access is currently blocked in your browser settings. Please toggle it to 'Allow' above.");
-      } else if (err.code === "POSITION_UNAVAILABLE") {
-        setErrorMessage("Location/GPS hardware is turned off on your device. Please turn on device location and try again.");
+        setErrorMessage("Location access is blocked in your browser or Windows privacy settings. You can allow it or continue with network location below.");
       } else {
         setErrorMessage(err.message || "Failed to retrieve location.");
       }
     } finally {
       setRequesting(false);
       setChecking(false);
+    }
+  }, [syncAndEnterProject]);
+
+  // Continue with Network/IP location immediately
+  const handleContinueWithNetworkLocation = useCallback(async () => {
+    setRequesting(true);
+    setErrorMessage("");
+    try {
+      const loc = await getIpLocationFallback();
+      setPermissionState("granted");
+      toast.info("Using network location provider...");
+      await syncAndEnterProject(loc);
+    } catch (err: any) {
+      toast.error("Failed to retrieve network location.");
+    } finally {
+      setRequesting(false);
     }
   }, [syncAndEnterProject]);
 
@@ -110,9 +137,9 @@ export default function LocationRequiredPage() {
       setChecking(false);
 
       if (state === "granted") {
-        // Location already enabled! Automatically proceed to dashboard
+        // Location already enabled in browser! Automatically proceed
         try {
-          const coords = await getCurrentBrowserLocation({ timeout: 8000 });
+          const coords = await getCurrentBrowserLocation({ timeout: 6000 });
           const addr = await reverseGeocode(coords.latitude, coords.longitude);
           if (isMounted) {
             await syncAndEnterProject({
@@ -124,10 +151,14 @@ export default function LocationRequiredPage() {
             });
           }
         } catch {
-          // If fetch fails, prompt user
+          // If browser hardware GPS fails (e.g. Windows location blocked), use IP fallback automatically
+          if (isMounted) {
+            const ipLoc = await getIpLocationFallback();
+            await syncAndEnterProject(ipLoc);
+          }
         }
       } else if (state === "prompt") {
-        // Auto trigger request on entry
+        // Trigger request on entry
         handleAllowLocation();
       }
     });
@@ -144,11 +175,10 @@ export default function LocationRequiredPage() {
             const newState = status.state as any;
             setPermissionState(newState);
             if (newState === "granted") {
-              // User enabled location in browser settings! Automatically enter project!
               toast.info("Location permission detected! Verifying...");
               handleAllowLocation();
             } else if (newState === "denied") {
-              setErrorMessage("Location access was blocked. Please allow location to proceed.");
+              setErrorMessage("Location access was blocked. Please allow location or use network location.");
             }
           };
         })
@@ -214,7 +244,7 @@ export default function LocationRequiredPage() {
         </h1>
 
         <p className="text-gray-600 text-sm leading-relaxed mb-6">
-          To enter and use the <strong>PRINT DOCKER</strong> platform, you must allow live location sharing. This live location is required for admin dispatch verification, print delivery routing, and account security.
+          To enter and use the <strong>PRINT DOCKER</strong> platform, live location sharing is required for admin dispatch verification, print delivery routing, and account security.
         </p>
 
         {/* Error Alert */}
@@ -222,7 +252,7 @@ export default function LocationRequiredPage() {
           <div className="mb-6 p-4 rounded-2xl bg-amber-50 border border-amber-200 text-amber-900 text-xs text-left flex items-start gap-3">
             <ShieldAlert className="w-5 h-5 text-amber-600 flex-shrink-0 mt-0.5" />
             <div className="flex-1">
-              <span className="font-bold block mb-0.5">Permission Needed</span>
+              <span className="font-bold block mb-0.5">Permission Notice</span>
               <span>{errorMessage}</span>
             </div>
           </div>
@@ -230,32 +260,35 @@ export default function LocationRequiredPage() {
 
         {/* Step-by-Step Instructions if blocked */}
         {permissionState === "denied" && (
-          <div className="bg-gray-50/90 border border-gray-200 rounded-2xl p-4 text-left text-xs text-gray-700 space-y-2 mb-6">
+          <div className="bg-gray-50/90 border border-gray-200 rounded-2xl p-4 text-left text-xs text-gray-700 space-y-3 mb-6">
             <div className="font-bold text-[#1B254B] flex items-center gap-1.5">
               <Lock className="w-4 h-4 text-blue-600" />
-              How to enable location in your browser:
+              If location was blocked in your browser:
             </div>
-            <ol className="list-decimal pl-4 space-y-1.5 text-gray-600">
-              <li>
-                Click the <strong>Lock / Settings icon</strong> located on the left of your browser address bar (where the URL is).
-              </li>
-              <li>
-                Find <strong>Location</strong> and switch it from <em>Block</em> to <strong>Allow</strong>.
-              </li>
-              <li>
-                Click the blue button below to verify and enter the project.
-              </li>
+            <ol className="list-decimal pl-4 space-y-1 text-gray-600">
+              <li>Click the <strong>Lock / Settings icon</strong> on the left of your browser address bar.</li>
+              <li>Find <strong>Location</strong> and switch it from <em>Block</em> to <strong>Allow</strong>.</li>
             </ol>
+
+            <div className="pt-2 border-t border-gray-200/80">
+              <div className="font-bold text-[#1B254B] flex items-center gap-1.5 mb-1">
+                <Monitor className="w-4 h-4 text-indigo-600" />
+                Already allowed in browser? Check Windows Settings:
+              </div>
+              <p className="text-gray-600 leading-relaxed">
+                Open <strong>Windows Settings &gt; Privacy &amp; security &gt; Location</strong> and ensure both <strong>Location services</strong> and <strong>Let desktop apps access your location</strong> are switched <strong>ON</strong>.
+              </p>
+            </div>
           </div>
         )}
 
-        {/* Action Button */}
+        {/* Action Buttons */}
         <div className="space-y-3">
           <button
             type="button"
             onClick={handleAllowLocation}
             disabled={requesting || successRedirecting}
-            className="w-full py-4 px-6 bg-gradient-to-r from-[#4318FF] to-[#2D63FF] hover:from-[#3311DB] hover:to-[#1C3CB3] text-white rounded-2xl font-bold text-base shadow-[0_10px_25px_rgba(67,24,255,0.3)] hover:shadow-[0_15px_30px_rgba(67,24,255,0.4)] transition-all flex items-center justify-center gap-2.5 disabled:opacity-70"
+            className="w-full py-4 px-6 bg-gradient-to-r from-[#4318FF] to-[#2D63FF] hover:from-[#3311DB] hover:to-[#1C3CB3] text-white rounded-2xl font-bold text-base shadow-[0_10px_25px_rgba(67,24,255,0.3)] hover:shadow-[0_15px_30px_rgba(67,24,255,0.4)] transition-all flex items-center justify-center gap-2.5 disabled:opacity-70 cursor-pointer"
           >
             {requesting || successRedirecting ? (
               <>
@@ -271,10 +304,21 @@ export default function LocationRequiredPage() {
             )}
           </button>
 
+          {/* Backup option to enter via Network Location if hardware GPS is blocked */}
+          <button
+            type="button"
+            onClick={handleContinueWithNetworkLocation}
+            disabled={requesting || successRedirecting}
+            className="w-full py-3 px-5 bg-white hover:bg-gray-50 text-[#0B1D3A] border border-gray-300 rounded-2xl font-semibold text-sm transition-all flex items-center justify-center gap-2 shadow-sm cursor-pointer disabled:opacity-60"
+          >
+            <Globe className="w-4 h-4 text-blue-600" />
+            <span>Verify &amp; Continue with Network Location</span>
+          </button>
+
           <button
             type="button"
             onClick={logout}
-            className="w-full py-3 px-4 text-xs font-semibold text-gray-500 hover:text-red-600 transition-colors flex items-center justify-center gap-1.5"
+            className="w-full py-2.5 px-4 text-xs font-semibold text-gray-500 hover:text-red-600 transition-colors flex items-center justify-center gap-1.5 cursor-pointer"
           >
             <LogOut className="w-3.5 h-3.5" />
             <span>Sign out / Switch account</span>
@@ -284,3 +328,4 @@ export default function LocationRequiredPage() {
     </div>
   );
 }
+

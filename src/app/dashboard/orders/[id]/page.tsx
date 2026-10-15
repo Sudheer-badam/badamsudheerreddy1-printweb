@@ -29,7 +29,7 @@ import { useAuth } from "@/contexts/AuthContext";
 import { formatCurrency, formatDate, ORDER_STATUS_LABELS, PAYMENT_STATUS_COLORS, PAYMENT_STATUS_LABELS } from "@/lib/utils";
 import { toast } from "sonner";
 import { upload } from "@vercel/blob/client";
-import { getCurrentBrowserLocation, reverseGeocode } from "@/lib/location";
+import { getCurrentBrowserLocation, reverseGeocode, getIpLocationFallback } from "@/lib/location";
 
 const PAYMENT_APPS = [
   { name: "Google Pay", src: "/payment-logos/gpay.jpeg", alt: "Google Pay", hClass: "h-5 sm:h-6" },
@@ -329,7 +329,15 @@ export default function OrderDetailPage() {
           city: addr.city,
         };
       } catch (locErr) {
-        console.warn("Could not retrieve payment coordinates:", locErr);
+        console.warn("Could not retrieve GPS coordinates, checking fallback:", locErr);
+        try {
+          const stored = typeof window !== "undefined" ? sessionStorage.getItem("user_last_location") : null;
+          if (stored) {
+            paymentCoords = JSON.parse(stored);
+          } else {
+            paymentCoords = await getIpLocationFallback();
+          }
+        } catch {}
       }
 
       const res = await fetch("/api/payments", {

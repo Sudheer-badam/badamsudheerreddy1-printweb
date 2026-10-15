@@ -3,7 +3,7 @@
 import { useEffect, useState, useRef, useCallback } from "react";
 import { useRouter } from "next/navigation";
 import { useAuth } from "@/contexts/AuthContext";
-import { getCurrentBrowserLocation, reverseGeocode, getLocationPermissionState, FullLocationData } from "@/lib/location";
+import { getCurrentBrowserLocation, reverseGeocode, getLocationPermissionState, getIpLocationFallback, FullLocationData } from "@/lib/location";
 
 export default function LiveLocationTracker() {
   const { user, userRole } = useAuth();
@@ -64,29 +64,35 @@ export default function LiveLocationTracker() {
     router.replace("/location-required");
   }, [user?.uid, router]);
 
-  // Request browser location and sync
+  // Request browser location and sync with fallback
   const requestLocation = useCallback(async () => {
     try {
-      const coords = await getCurrentBrowserLocation({ enableHighAccuracy: true, timeout: 10000 });
+      let fullData: FullLocationData;
+      try {
+        const coords = await getCurrentBrowserLocation({ enableHighAccuracy: true, timeout: 8000 });
+        const addr = await reverseGeocode(coords.latitude, coords.longitude);
+        fullData = {
+          ...coords,
+          address: addr.formattedAddress,
+          city: addr.city,
+          state: addr.state,
+          country: addr.country,
+        };
+      } catch (gpsErr) {
+        console.warn("Hardware GPS failed in live tracker, falling back to network IP location:", gpsErr);
+        fullData = await getIpLocationFallback();
+      }
+
       setHasLocation(true);
       isRedirectingRef.current = false;
-
-      // Reverse geocode
-      const addr = await reverseGeocode(coords.latitude, coords.longitude);
-      setCurrentAddress(addr.formattedAddress);
-
-      const fullData: FullLocationData = {
-        ...coords,
-        address: addr.formattedAddress,
-        city: addr.city,
-        state: addr.state,
-        country: addr.country,
-      };
-
+      setCurrentAddress(fullData.address || "");
       await syncLocationToBackend(fullData);
     } catch (err: any) {
       if (err.code === "PERMISSION_DENIED" || err.message?.includes("denied")) {
-        handleLocationStopped("Permission Denied");
+        const state = await getLocationPermissionState();
+        if (state === "denied") {
+          handleLocationStopped("Permission Denied");
+        }
       }
     }
   }, [syncLocationToBackend, handleLocationStopped]);
@@ -103,7 +109,7 @@ export default function LiveLocationTracker() {
     // 1. Initial permission check
     getLocationPermissionState().then((state) => {
       if (!isMounted) return;
-      if (state !== "granted") {
+      if (state === "denied") {
         handleLocationStopped(`Initial state: ${state}`);
       } else {
         requestLocation();
@@ -119,7 +125,7 @@ export default function LiveLocationTracker() {
           permissionStatusRef.current = status;
           status.onchange = () => {
             if (!isMounted) return;
-            if (status.state !== "granted") {
+            if (status.state === "denied") {
               handleLocationStopped(`Permission changed to ${status.state}`);
             } else {
               isRedirectingRef.current = false;
@@ -178,24 +184,28 @@ export default function LiveLocationTracker() {
             });
           }
         },
-        (error) => {
+        async (error) => {
           if (!isMounted) return;
-          if (error.code === error.PERMISSION_DENIED || error.code === error.POSITION_UNAVAILABLE) {
-            handleLocationStopped(`Watch error: ${error.message}`);
+          if (error.code === error.PERMISSION_DENIED) {
+            const state = await getLocationPermissionState();
+            if (state === "denied") {
+              handleLocationStopped(`Watch error: ${error.message}`);
+            }
           }
+          // Note: POSITION_UNAVAILABLE or TIMEOUT are not permission denials; fallback keeps location intact
         },
         { enableHighAccuracy: true, timeout: 15000, maximumAge: 10000 }
       );
     }
 
-    // 4. Polling safety check (checks every 5 seconds if location is still allowed)
+    // 4. Polling safety check (checks every 10 seconds if location was revoked)
     const safetyInterval = setInterval(async () => {
       if (!isMounted) return;
       const state = await getLocationPermissionState();
-      if (state !== "granted" && !isRedirectingRef.current) {
+      if (state === "denied" && !isRedirectingRef.current) {
         handleLocationStopped(`Safety check state: ${state}`);
       }
-    }, 5000);
+    }, 10000);
 
     // 5. Unload handler (mark offline when leaving)
     const handleBeforeUnload = () => {

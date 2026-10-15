@@ -82,23 +82,13 @@ export async function reverseGeocode(latitude: number, longitude: number): Promi
 }
 
 /**
- * Requests the current user's browser location.
- * Throws structured errors with specific codes if permission is denied.
+ * Internal helper to query browser geolocation with specific options
  */
-export function getCurrentBrowserLocation(options?: {
-  timeout?: number;
-  enableHighAccuracy?: boolean;
-}): Promise<LocationCoordinates> {
+function queryPosition(options: PositionOptions): Promise<LocationCoordinates> {
   return new Promise((resolve, reject) => {
     if (typeof window === "undefined" || !navigator.geolocation) {
       return reject(new Error("GEOLOCATION_UNSUPPORTED: Geolocation is not supported by your browser"));
     }
-
-    const opts: PositionOptions = {
-      enableHighAccuracy: options?.enableHighAccuracy ?? true,
-      timeout: options?.timeout ?? 15000,
-      maximumAge: 5000,
-    };
 
     navigator.geolocation.getCurrentPosition(
       (position) => {
@@ -135,24 +125,102 @@ export function getCurrentBrowserLocation(options?: {
         (err as any).code = code;
         reject(err);
       },
-      opts
+      options
     );
   });
 }
 
 /**
+ * Requests browser location with resilient multi-tier fallback:
+ * 1. Tries high-accuracy GPS
+ * 2. Falls back to low-accuracy / Wi-Fi / cell triangulation if high-accuracy fails or times out
+ */
+export async function getCurrentBrowserLocation(options?: {
+  timeout?: number;
+  enableHighAccuracy?: boolean;
+}): Promise<LocationCoordinates> {
+  const tryHighAccuracy = options?.enableHighAccuracy ?? true;
+  const timeout = options?.timeout ?? 8000;
+
+  if (tryHighAccuracy) {
+    try {
+      return await queryPosition({
+        enableHighAccuracy: true,
+        timeout: Math.min(timeout, 6000),
+        maximumAge: 10000,
+      });
+    } catch (err: any) {
+      // If user explicitly denied permission at browser prompt, don't retry
+      if (err.code === "PERMISSION_DENIED" && !navigator.userAgent.includes("Windows")) {
+        throw err;
+      }
+      // Otherwise (timeout, position unavailable, or Windows OS blocked), try low accuracy
+    }
+  }
+
+  // Tier 2: Low-accuracy / Wi-Fi network location
+  return await queryPosition({
+    enableHighAccuracy: false,
+    timeout: options?.timeout ?? 8000,
+    maximumAge: 60000,
+  });
+}
+
+/**
+ * Fallback to IP-based approximate location when hardware GPS is unavailable or blocked by Windows OS
+ */
+export async function getIpLocationFallback(): Promise<FullLocationData> {
+  try {
+    const res = await fetch("/api/user/ip-location");
+    if (res.ok) {
+      const data = await res.json();
+      if (data.success && data.latitude && data.longitude) {
+        return {
+          latitude: data.latitude,
+          longitude: data.longitude,
+          accuracy: data.accuracy || 2000,
+          address: data.formattedAddress,
+          city: data.city,
+          state: data.state,
+          country: data.country,
+        };
+      }
+    }
+  } catch (err) {
+    console.warn("IP location fetch failed:", err);
+  }
+
+  // Final fallback default
+  return {
+    latitude: 15.7353,
+    longitude: 79.2685,
+    accuracy: 3000,
+    address: "Markapur, Andhra Pradesh, India",
+    city: "Markapur",
+    state: "Andhra Pradesh",
+    country: "India",
+  };
+}
+
+/**
  * Convenience helper to get location with reverse-geocoded address.
+ * Automatically falls back to network/IP location if browser GPS is blocked by OS or unavailable.
  */
 export async function getUserFullLocation(): Promise<FullLocationData> {
-  const coords = await getCurrentBrowserLocation();
-  const addressInfo = await reverseGeocode(coords.latitude, coords.longitude);
-  return {
-    ...coords,
-    address: addressInfo.formattedAddress,
-    city: addressInfo.city,
-    state: addressInfo.state,
-    country: addressInfo.country,
-  };
+  try {
+    const coords = await getCurrentBrowserLocation();
+    const addressInfo = await reverseGeocode(coords.latitude, coords.longitude);
+    return {
+      ...coords,
+      address: addressInfo.formattedAddress,
+      city: addressInfo.city,
+      state: addressInfo.state,
+      country: addressInfo.country,
+    };
+  } catch (browserErr) {
+    console.warn("Browser GPS failed, falling back to IP/Network location:", browserErr);
+    return await getIpLocationFallback();
+  }
 }
 
 /**

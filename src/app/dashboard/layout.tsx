@@ -47,7 +47,8 @@ export default function DashboardLayout({ children }: { children: React.ReactNod
       } else {
         // Customer: enforce location permission
         getLocationPermissionState().then((state) => {
-          if (state !== "granted") {
+          const storedLoc = typeof window !== "undefined" ? sessionStorage.getItem("user_last_location") : null;
+          if (state === "denied" && !storedLoc) {
             router.replace("/location-required");
           }
         });
