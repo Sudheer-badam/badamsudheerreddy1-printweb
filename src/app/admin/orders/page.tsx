@@ -19,6 +19,7 @@ import {
   FileText,
   Phone,
   Mail,
+  MapPin,
 } from "lucide-react";
 import { useAuth } from "@/contexts/AuthContext";
 import { useRouter, useSearchParams } from "next/navigation";
@@ -49,7 +50,20 @@ interface Order {
   updatedAt: string;
   adminNotes: string | null;
   paymentProofUrl: string | null;
-  user: { id: string; name: string; email: string; phone: string };
+  user: {
+    id: string;
+    name: string;
+    email: string;
+    phone: string;
+    latitude?: number | null;
+    longitude?: number | null;
+    locationAccuracy?: number | null;
+    locationAddress?: string | null;
+    locationCity?: string | null;
+    locationState?: string | null;
+    isOnline?: boolean;
+    lastLocationUpdate?: string | null;
+  };
   payments?: {
     id: string;
     amount: number;
@@ -372,7 +386,12 @@ export default function AdminOrdersPage() {
                       <div className="text-xs text-gray-400">{formatDate(order.createdAt)}</div>
                     </td>
                     <td className="px-4 py-3">
-                      <div className="font-medium text-[#0B1D3A]">{order.user.name}</div>
+                      <div className="font-medium text-[#0B1D3A] flex items-center gap-1.5">
+                        <span>{order.user.name}</span>
+                        {order.user.isOnline && (
+                          <span className="w-2 h-2 rounded-full bg-emerald-500 animate-pulse" title="Online Now" />
+                        )}
+                      </div>
                       <div className="flex items-center gap-1 text-xs text-gray-500">
                         <a href={`https://wa.me/${(order.user.phone || "").replace(/\D/g, '')}`} target="_blank" rel="noopener noreferrer" onClick={(e) => e.stopPropagation()} className="hover:text-green-500 hover:underline cursor-pointer flex items-center gap-1"><Phone className="w-3 h-3" /> {order.user.phone}</a>
                       </div>
@@ -381,6 +400,17 @@ export default function AdminOrdersPage() {
                           <Mail className="w-3 h-3" /> {order.user.email}
                         </a>
                       </div>
+                      {order.user.latitude && order.user.longitude && (
+                        <Link
+                          href={`/admin/locations?userId=${order.user.id}`}
+                          onClick={(e) => e.stopPropagation()}
+                          className="mt-1.5 inline-flex items-center gap-1 px-1.5 py-0.5 rounded-md bg-blue-50 hover:bg-blue-100 text-blue-700 text-[10px] font-semibold border border-blue-200 transition-colors"
+                          title="View customer live location on map"
+                        >
+                          <MapPin className="w-2.5 h-2.5 text-red-500" />
+                          <span className="truncate max-w-[120px]">{order.user.locationCity || "Live Location"}</span>
+                        </Link>
+                      )}
                     </td>
                     <td className="px-4 py-3 hidden lg:table-cell">
                       <div className="text-[#0B1D3A] truncate max-w-[150px]">{order.fileName}</div>
@@ -538,13 +568,44 @@ export default function AdminOrdersPage() {
             <div className="space-y-4">
               {/* Customer Info */}
               <div className="glass rounded-2xl p-4 border border-gray-200">
-                <h3 className="text-sm font-semibold text-amber-400 mb-3">Customer Information</h3>
+                <div className="flex items-center justify-between mb-3">
+                  <h3 className="text-sm font-semibold text-amber-500">Customer Information</h3>
+                  {selectedOrder.user.isOnline && (
+                    <span className="inline-flex items-center gap-1.5 px-2.5 py-1 rounded-full bg-emerald-100 text-emerald-800 text-xs font-bold animate-pulse">
+                      <span className="w-2 h-2 rounded-full bg-emerald-500"></span>
+                      Customer Live Online
+                    </span>
+                  )}
+                </div>
                 <div className="grid grid-cols-2 gap-3 text-sm">
                   <InfoRow label="Name" value={selectedOrder.user.name} />
                   <InfoRow label="Phone" value={<a href={`https://wa.me/${(selectedOrder.user.phone || "").replace(/\D/g, "")}`} target="_blank" rel="noopener noreferrer" onClick={(e) => e.stopPropagation()} className="hover:text-green-500 hover:underline cursor-pointer flex items-center gap-1">{selectedOrder.user.phone}</a>} />
                   <InfoRow label="Email" value={<a href={getEmailDraft(selectedOrder)} target="_blank" rel="noopener noreferrer" onClick={(e) => e.stopPropagation()} className="hover:text-blue-500 hover:underline cursor-pointer flex items-center gap-1">{selectedOrder.user.email}</a>} />
                   <InfoRow label="Order ID" value={selectedOrder.orderNumber} />
                 </div>
+
+                {selectedOrder.user.latitude && selectedOrder.user.longitude && (
+                  <div className="mt-3 pt-3 border-t border-gray-200/80 flex flex-col sm:flex-row sm:items-center justify-between gap-2 bg-blue-50/50 p-2.5 rounded-xl border">
+                    <div className="flex items-center gap-2 text-xs text-gray-700">
+                      <MapPin className="w-4 h-4 text-red-500 flex-shrink-0" />
+                      <div>
+                        <span className="font-bold text-[#0B1D3A]">{selectedOrder.user.locationCity || selectedOrder.user.locationAddress || "Live Location Available"}</span>
+                        <span className="text-gray-500 text-[11px] block">
+                          Lat: {selectedOrder.user.latitude.toFixed(4)}, Lng: {selectedOrder.user.longitude.toFixed(4)}
+                          {selectedOrder.user.locationAccuracy ? ` (±${Math.round(selectedOrder.user.locationAccuracy)}m)` : ""}
+                        </span>
+                      </div>
+                    </div>
+                    <Link
+                      href={`/admin/locations?userId=${selectedOrder.user.id}`}
+                      target="_blank"
+                      className="inline-flex items-center gap-1 px-3 py-1.5 rounded-lg bg-blue-600 hover:bg-blue-700 text-white text-xs font-bold transition-all shadow-sm self-start sm:self-auto"
+                    >
+                      <MapPin className="w-3.5 h-3.5" />
+                      <span>View on Live Map</span>
+                    </Link>
+                  </div>
+                )}
               </div>
 
               {/* Print Details */}

@@ -14,6 +14,9 @@ import {
   FileText,
   ArrowUpRight,
   Activity,
+  MapPin,
+  Radio,
+  Compass,
 } from "lucide-react";
 import { useAuth } from "@/contexts/AuthContext";
 import { formatCurrency, formatDate, ORDER_STATUS_COLORS, ORDER_STATUS_LABELS, PAYMENT_STATUS_COLORS } from "@/lib/utils";
@@ -82,6 +85,26 @@ const mockRevenueData = [
 export default function AdminDashboard() {
   const { user } = useAuth();
   const [analytics, setAnalytics] = useState<Analytics | null>(null);
+  const [locationData, setLocationData] = useState<{
+    users: Array<{
+      id: string;
+      name: string | null;
+      email: string | null;
+      phone: string | null;
+      profilePhoto: string | null;
+      latitude: number;
+      longitude: number;
+      locationCity: string | null;
+      locationAddress: string | null;
+      isOnline: boolean;
+      lastLocationUpdate: string | null;
+    }>;
+    stats: {
+      totalWithLocation: number;
+      onlineCount: number;
+      activeTodayCount: number;
+    };
+  } | null>(null);
   const [loading, setLoading] = useState(true);
 
   useEffect(() => {
@@ -90,13 +113,21 @@ export default function AdminDashboard() {
 
   const fetchAnalytics = async () => {
     try {
-      const res = await fetch(`/api/admin/analytics?uid=${user?.uid}`);
+      const [res, locRes] = await Promise.all([
+        fetch(`/api/admin/analytics?uid=${user?.uid}`),
+        fetch(`/api/user/location?adminUid=${user?.uid}`),
+      ]);
+
       if (res.ok) {
         const data = await res.json();
         setAnalytics(data);
       }
+      if (locRes.ok) {
+        const locData = await locRes.json();
+        setLocationData(locData);
+      }
     } catch (error) {
-      console.error("Failed to fetch analytics:", error);
+      console.error("Failed to fetch analytics or locations:", error);
     } finally {
       setLoading(false);
     }
@@ -159,6 +190,13 @@ export default function AdminDashboard() {
       trend: "+22%",
     },
     {
+      label: "Live Users Online",
+      value: (locationData?.stats?.onlineCount ?? 0).toString(),
+      icon: Radio,
+      color: "from-emerald-500 to-teal-600",
+      trend: "GPS Live",
+    },
+    {
       label: "Total Pages",
       value: (stats?.totalPages || 0).toLocaleString(),
       icon: FileText,
@@ -183,9 +221,94 @@ export default function AdminDashboard() {
   return (
     <div className="space-y-8">
       {/* Header */}
-      <div>
-        <h1 className="text-2xl font-bold text-[#0B1D3A]">Admin Dashboard</h1>
-        <p className="text-gray-500 mt-1">PRINT DOCKER Management Overview</p>
+      <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-4">
+        <div>
+          <h1 className="text-2xl font-bold text-[#0B1D3A]">Admin Dashboard</h1>
+          <p className="text-gray-500 mt-1">PRINT DOCKER Management &amp; Real-time Operations</p>
+        </div>
+        <Link
+          href="/admin/locations"
+          className="inline-flex items-center gap-2.5 px-4 py-2.5 rounded-2xl bg-[#0B1D3A] hover:bg-slate-800 text-white text-xs font-bold shadow-md transition-all self-start sm:self-auto border border-white/10"
+        >
+          <span className="relative flex h-2.5 w-2.5">
+            <span className="animate-ping absolute inline-flex h-full w-full rounded-full bg-emerald-400 opacity-75"></span>
+            <span className="relative inline-flex rounded-full h-2.5 w-2.5 bg-emerald-500"></span>
+          </span>
+          <MapPin className="w-4 h-4 text-emerald-400" />
+          <span>Live Location Services ({locationData?.stats?.onlineCount ?? 0} Online)</span>
+        </Link>
+      </div>
+
+      {/* Live Location Tracking Center Banner */}
+      <div className="bg-gradient-to-br from-[#0B1D3A] via-[#102A54] to-[#1E3A8A] rounded-3xl p-6 text-white shadow-xl relative overflow-hidden border border-blue-900/40">
+        <div className="absolute top-0 right-0 w-96 h-96 bg-blue-500/10 rounded-full blur-3xl pointer-events-none" />
+        <div className="flex flex-col lg:flex-row lg:items-center justify-between gap-6 relative z-10">
+          <div className="space-y-3">
+            <div className="flex items-center gap-2">
+              <span className="inline-flex items-center gap-1.5 px-3 py-1 rounded-full bg-emerald-500/20 text-emerald-300 text-xs font-bold border border-emerald-500/30">
+                <span className="w-2 h-2 rounded-full bg-emerald-400 animate-ping"></span>
+                Real-Time Live Location Services
+              </span>
+              <span className="text-xs text-blue-200/80 font-medium">GPS Active</span>
+            </div>
+            <h2 className="text-2xl font-black tracking-tight text-white">
+              Customer Live Locations &amp; Dispatch Portal
+            </h2>
+            <p className="text-blue-100/80 text-sm max-w-xl leading-relaxed">
+              Every customer login is verified with high-accuracy GPS coordinates. Track live movements, pinpoint delivery zones, and monitor user locations in real time on the interactive map.
+            </p>
+          </div>
+
+          <div className="flex flex-col sm:flex-row lg:flex-col gap-3 min-w-[240px]">
+            <Link
+              href="/admin/locations"
+              className="py-3 px-5 bg-gradient-to-r from-amber-500 to-amber-600 hover:from-amber-600 hover:to-amber-700 text-white rounded-2xl font-bold text-xs shadow-lg shadow-amber-500/25 transition-all flex items-center justify-center gap-2 text-center"
+            >
+              <Compass className="w-4 h-4" />
+              <span>Open Interactive Live Map</span>
+              <ArrowUpRight className="w-4 h-4 ml-auto" />
+            </Link>
+
+            <div className="flex items-center justify-between px-4 py-2.5 rounded-xl bg-white/10 border border-white/10 text-xs">
+              <span className="text-blue-200">Active Live Online</span>
+              <span className="font-extrabold text-emerald-400 text-sm">
+                {locationData?.stats?.onlineCount ?? 0} Users
+              </span>
+            </div>
+          </div>
+        </div>
+
+        {/* Recently Located Customers Strip */}
+        {locationData?.users && locationData.users.length > 0 && (
+          <div className="mt-6 pt-5 border-t border-white/10">
+            <div className="text-xs font-bold text-blue-200 mb-3 flex items-center gap-1.5">
+              <MapPin className="w-3.5 h-3.5 text-red-400" />
+              Recent Active Customer Locations:
+            </div>
+            <div className="grid grid-cols-1 sm:grid-cols-2 md:grid-cols-3 gap-3">
+              {locationData.users.slice(0, 3).map((u) => (
+                <Link
+                  key={u.id}
+                  href={`/admin/locations?userId=${u.id}`}
+                  className="p-2.5 rounded-xl bg-white/5 hover:bg-white/15 border border-white/10 transition-all flex items-center gap-3 text-left group"
+                >
+                  <div className="w-8 h-8 rounded-lg bg-blue-600 text-white font-bold text-xs flex items-center justify-center flex-shrink-0">
+                    {(u.name || "U").charAt(0).toUpperCase()}
+                  </div>
+                  <div className="min-w-0 flex-1">
+                    <div className="font-bold text-xs text-white truncate group-hover:text-amber-400 transition-colors">
+                      {u.name || "Customer"}
+                    </div>
+                    <div className="text-[11px] text-blue-200 truncate">
+                      {u.locationCity || u.locationAddress || "Andhra Pradesh"}
+                    </div>
+                  </div>
+                  <span className={`w-2 h-2 rounded-full ${u.isOnline ? "bg-emerald-400 animate-pulse" : "bg-gray-400"}`} />
+                </Link>
+              ))}
+            </div>
+          </div>
+        )}
       </div>
 
       {/* Stats Grid */}

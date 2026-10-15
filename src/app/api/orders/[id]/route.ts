@@ -21,7 +21,21 @@ export async function GET(
       where: { id },
       include: {
         user: {
-          select: { id: true, name: true, email: true, phone: true, profilePhoto: true },
+          select: {
+            id: true,
+            name: true,
+            email: true,
+            phone: true,
+            profilePhoto: true,
+            latitude: true,
+            longitude: true,
+            locationAccuracy: true,
+            locationAddress: true,
+            locationCity: true,
+            locationState: true,
+            isOnline: true,
+            lastLocationUpdate: true,
+          },
         },
         payments: true,
         invoice: true,
