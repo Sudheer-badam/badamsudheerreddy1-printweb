@@ -10,20 +10,16 @@ import {
   CheckCircle2,
   Lock,
   RefreshCw,
-  Globe,
-  Monitor,
-  ArrowRight,
   LogOut,
+  X,
 } from "lucide-react";
 import { useAuth } from "@/contexts/AuthContext";
 import {
   getCurrentBrowserLocation,
   reverseGeocode,
   getLocationPermissionState,
-  getIpLocationFallback,
   FullLocationData,
 } from "@/lib/location";
-import { toast } from "sonner";
 
 export default function LiveLocationTracker() {
   const { user, userRole, logout } = useAuth();
@@ -33,7 +29,7 @@ export default function LiveLocationTracker() {
   const [isBlocked, setIsBlocked] = useState(false);
   const [requesting, setRequesting] = useState(false);
   const [errorMessage, setErrorMessage] = useState("");
-  const [permissionState, setPermissionState] = useState<"granted" | "denied" | "prompt" | "unsupported">("granted");
+  const [permissionState, setPermissionState] = useState<"granted" | "denied" | "prompt" | "unsupported">("prompt");
   const [currentAddress, setCurrentAddress] = useState<string>("");
 
   const watchIdRef = useRef<number | null>(null);
@@ -70,10 +66,10 @@ export default function LiveLocationTracker() {
     [user?.uid]
   );
 
-  // Mark user offline and immediately block screen with popup
+  // Mark user offline and immediately block screen with top popup
   const handleLocationStopped = useCallback(
     async (reason: string) => {
-      console.warn(`Location access stopped (${reason}). Blocking dashboard with popup.`);
+      console.warn(`Location access stopped (${reason}).`);
 
       if (typeof window !== "undefined") {
         localStorage.removeItem("print_user_location_verified");
@@ -96,12 +92,12 @@ export default function LiveLocationTracker() {
     [user?.uid]
   );
 
-  // Request browser location and unblock
+  // Request browser location via native prompt
   const requestLocation = useCallback(async () => {
     setRequesting(true);
     setErrorMessage("");
     try {
-      const coords = await getCurrentBrowserLocation({ enableHighAccuracy: true, timeout: 8000 });
+      const coords = await getCurrentBrowserLocation({ enableHighAccuracy: true, timeout: 10000 });
       const addr = await reverseGeocode(coords.latitude, coords.longitude);
       const fullData: FullLocationData = {
         ...coords,
@@ -127,7 +123,7 @@ export default function LiveLocationTracker() {
       setPermissionState(state);
       handleLocationStopped(`Request failed: ${err.message}`);
       if (state === "denied" || err.code === "PERMISSION_DENIED" || err.message?.includes("denied")) {
-        setErrorMessage("Location access is blocked in your browser or device settings. Please toggle it to Allow.");
+        setErrorMessage("Location access is blocked in your browser. Click the lock icon in the address bar above and set Location to Allow.");
       } else if (err.code === "POSITION_UNAVAILABLE") {
         setErrorMessage("Device location / GPS is turned OFF on your computer. Please turn on Location in Windows settings.");
       } else {
@@ -138,29 +134,10 @@ export default function LiveLocationTracker() {
     }
   }, [syncLocationToBackend, handleLocationStopped]);
 
-  // Fallback to Network Location if hardware GPS is unavailable
-  const handleContinueWithNetworkLocation = useCallback(async () => {
-    setRequesting(true);
-    setErrorMessage("");
-    try {
-      const loc = await getIpLocationFallback();
-      if (typeof window !== "undefined") {
-        localStorage.setItem("print_user_location_verified", "true");
-        sessionStorage.setItem("user_last_location", JSON.stringify(loc));
-      }
-
-      setHasLocation(true);
-      setIsBlocked(false);
-      setErrorMessage("");
-      setCurrentAddress(loc.address || "");
-      await syncLocationToBackend(loc);
-      toast.info("Connected via network location provider.");
-    } catch (err) {
-      toast.error("Failed to retrieve network location.");
-    } finally {
-      setRequesting(false);
-    }
-  }, [syncLocationToBackend]);
+  // Handle user clicking "Don't Allow"
+  const handleDontAllow = () => {
+    setErrorMessage("Location access is required. Please click 'Allow Location' to continue using PRINT DOCKER.");
+  };
 
   useEffect(() => {
     if (!user?.uid) return;
@@ -176,12 +153,11 @@ export default function LiveLocationTracker() {
       if (!isMounted) return;
       setPermissionState(state);
 
-      if (state === "denied") {
-        // Explicitly denied in browser: block immediately!
-        handleLocationStopped("Permission denied on mount");
-      } else {
-        // Try getting location
+      if (state === "granted") {
         requestLocation();
+      } else {
+        // Show top popup to request permission
+        handleLocationStopped(`Initial state: ${state}`);
       }
     });
 
@@ -199,7 +175,7 @@ export default function LiveLocationTracker() {
             setPermissionState(newState);
 
             if (newState !== "granted") {
-              // User toggled location OFF in browser: block immediately!
+              // User turned off or blocked location in browser: block immediately!
               handleLocationStopped(`Permission changed to ${newState}`);
             } else {
               // User toggled location back ON: unblock and sync!
@@ -210,7 +186,7 @@ export default function LiveLocationTracker() {
         .catch(() => {});
     }
 
-    // 3. Geolocation watcher (continuously detects if user moves or stops location)
+    // 3. Geolocation watcher (watches live GPS coordinates)
     if (typeof window !== "undefined" && navigator.geolocation) {
       watchIdRef.current = navigator.geolocation.watchPosition(
         async (position) => {
@@ -259,7 +235,6 @@ export default function LiveLocationTracker() {
         },
         async (error) => {
           if (!isMounted) return;
-          // If user denies permission or device hardware GPS is turned off:
           if (error.code === error.PERMISSION_DENIED || error.code === error.POSITION_UNAVAILABLE) {
             handleLocationStopped(`Watch error: ${error.message} (code ${error.code})`);
           }
@@ -326,107 +301,98 @@ export default function LiveLocationTracker() {
         </div>
       )}
 
-      {/* 2. Full Blocking Modal (Appears IMMEDIATELY whenever user stops or turns off location) */}
+      {/* 2. Top Popup Screen "RIGHT ABOVE" like all standard websites */}
       <AnimatePresence>
         {isBlocked && (
-          <div className="fixed inset-0 z-50 flex items-center justify-center p-4 bg-black/75 backdrop-blur-md">
+          <div className="fixed inset-0 z-50 flex flex-col items-center justify-start pt-3 sm:pt-5 px-4 bg-black/55 backdrop-blur-sm pointer-events-auto">
             <motion.div
-              initial={{ scale: 0.92, opacity: 0, y: 20 }}
-              animate={{ scale: 1, opacity: 1, y: 0 }}
-              exit={{ scale: 0.92, opacity: 0, y: 20 }}
-              transition={{ type: "spring", damping: 25, stiffness: 300 }}
-              className="w-full max-w-[480px] bg-white rounded-[32px] p-6 sm:p-8 shadow-2xl border border-gray-100 text-center relative"
+              initial={{ y: -60, opacity: 0, scale: 0.95 }}
+              animate={{ y: 0, opacity: 1, scale: 1 }}
+              exit={{ y: -40, opacity: 0, scale: 0.95 }}
+              transition={{ type: "spring", stiffness: 450, damping: 30 }}
+              className="w-full max-w-[460px] bg-white rounded-2xl shadow-[0_20px_50px_rgba(11,29,58,0.3)] border border-gray-200/90 p-5 relative text-left"
             >
-              {/* Header Logo */}
-              <div className="flex justify-center mb-4">
+              {/* Top row: Site indicator & Close/Logout */}
+              <div className="flex items-start justify-between gap-3 mb-3">
                 <div className="flex items-center gap-2.5">
-                  <div className="w-10 h-10 rounded-full overflow-hidden border-2 border-blue-600">
-                    <Image src="/logo.png" alt="PRINT DOCKER" width={40} height={40} className="w-full h-full object-cover" />
+                  <div className="w-9 h-9 rounded-xl bg-blue-50 border border-blue-200 text-[#2D63FF] flex items-center justify-center flex-shrink-0">
+                    <MapPin className="w-5 h-5 text-blue-600 animate-bounce" />
                   </div>
-                  <div className="text-left">
-                    <span className="font-extrabold text-base tracking-tight block text-[#0B1D3A]">PRINT DOCKER</span>
-                    <span className="text-[10px] text-gray-500 font-medium">Live Dispatch System</span>
+                  <div>
+                    <h4 className="font-bold text-sm text-[#0B1D3A] flex items-center gap-1.5">
+                      Allow Location Access
+                      <span className="text-[10px] font-bold px-2 py-0.5 rounded-full bg-blue-100 text-blue-700 uppercase tracking-wide">
+                        Required
+                      </span>
+                    </h4>
+                    <p className="text-xs text-gray-500 mt-0.5">
+                      PRINT DOCKER wants to know your location
+                    </p>
                   </div>
                 </div>
-              </div>
-
-              {/* Animated Red Radar Pin */}
-              <div className="relative w-16 h-16 mx-auto mb-4 flex items-center justify-center">
-                <span className="absolute inset-0 rounded-full bg-red-500/20 animate-ping" />
-                <span className="absolute inset-1.5 rounded-full bg-red-500/20 animate-pulse" />
-                <div className="relative z-10 w-14 h-14 rounded-2xl bg-gradient-to-br from-red-500 to-rose-600 text-white flex items-center justify-center shadow-lg shadow-red-500/30">
-                  <MapPin className="w-7 h-7 animate-bounce" />
-                </div>
-              </div>
-
-              {/* Title & Description */}
-              <h3 className="text-xl font-black text-[#0B1D3A] tracking-tight mb-2">
-                Location Access Required
-              </h3>
-              <p className="text-gray-600 text-xs leading-relaxed mb-4">
-                You have turned off or stopped sharing your live location. Live location sharing is mandatory while using PRINT DOCKER for print order routing and verification.
-              </p>
-
-              {/* Error Notice */}
-              {errorMessage && (
-                <div className="mb-4 p-3 rounded-xl bg-amber-50 border border-amber-200 text-amber-900 text-xs text-left flex items-start gap-2">
-                  <ShieldAlert className="w-4 h-4 text-amber-600 flex-shrink-0 mt-0.5" />
-                  <span>{errorMessage}</span>
-                </div>
-              )}
-
-              {/* Instructions on how to re-enable */}
-              <div className="bg-gray-50 border border-gray-200 rounded-2xl p-3.5 text-left text-xs text-gray-700 space-y-2 mb-5">
-                <div className="font-bold text-[#0B1D3A] flex items-center gap-1.5">
-                  <Lock className="w-3.5 h-3.5 text-blue-600" />
-                  How to turn location back on:
-                </div>
-                <ol className="list-decimal pl-4 space-y-1 text-gray-600 text-[11px]">
-                  <li>Click the <strong>Lock / Settings icon</strong> left of the URL in your browser bar.</li>
-                  <li>Find <strong>Location</strong> and switch it back to <strong>Allow</strong>.</li>
-                  <li className="text-gray-500">On Windows, ensure <strong>Location services</strong> is ON in Windows Settings.</li>
-                </ol>
-              </div>
-
-              {/* Action Buttons */}
-              <div className="space-y-2.5">
-                <button
-                  type="button"
-                  onClick={requestLocation}
-                  disabled={requesting}
-                  className="w-full py-3.5 px-5 bg-gradient-to-r from-[#4318FF] to-[#2D63FF] hover:from-[#3311DB] hover:to-[#1C3CB3] text-white rounded-xl font-bold text-sm shadow-[0_8px_20px_rgba(67,24,255,0.3)] hover:shadow-[0_12px_25px_rgba(67,24,255,0.4)] transition-all flex items-center justify-center gap-2 cursor-pointer disabled:opacity-70"
-                >
-                  {requesting ? (
-                    <>
-                      <RefreshCw className="w-4 h-4 animate-spin" />
-                      <span>Verifying Location...</span>
-                    </>
-                  ) : (
-                    <>
-                      <CheckCircle2 className="w-4 h-4" />
-                      <span>Re-enable Location &amp; Continue</span>
-                      <ArrowRight className="w-4 h-4" />
-                    </>
-                  )}
-                </button>
-
-                <button
-                  type="button"
-                  onClick={handleContinueWithNetworkLocation}
-                  disabled={requesting}
-                  className="w-full py-2.5 px-4 bg-white hover:bg-gray-50 text-gray-700 border border-gray-200 rounded-xl font-semibold text-xs transition-colors flex items-center justify-center gap-1.5 cursor-pointer disabled:opacity-60 shadow-sm"
-                >
-                  <Globe className="w-3.5 h-3.5 text-blue-600" />
-                  <span>Verify with Network Location</span>
-                </button>
 
                 <button
                   type="button"
                   onClick={logout}
-                  className="w-full py-2 px-3 text-xs text-gray-400 hover:text-red-600 transition-colors flex items-center justify-center gap-1 cursor-pointer font-medium"
+                  className="p-1.5 rounded-lg text-gray-400 hover:text-red-600 hover:bg-gray-100 transition-colors"
+                  title="Sign out"
                 >
-                  <LogOut className="w-3 h-3" />
-                  <span>Sign out</span>
+                  <LogOut className="w-4 h-4" />
+                </button>
+              </div>
+
+              {/* Subtitle explanation */}
+              <p className="text-xs text-gray-600 leading-relaxed mb-3">
+                Live location sharing is required while using the website for print dispatch routing and Xerox order verification.
+              </p>
+
+              {/* Error Alert if blocked */}
+              {errorMessage && (
+                <div className="mb-3 p-2.5 rounded-xl bg-amber-50 border border-amber-200 text-amber-900 text-xs flex items-start gap-2">
+                  <ShieldAlert className="w-4 h-4 text-amber-600 flex-shrink-0 mt-0.5" />
+                  <span className="leading-tight">{errorMessage}</span>
+                </div>
+              )}
+
+              {/* If browser permission was set to block, show address bar tip */}
+              {permissionState === "denied" && (
+                <div className="mb-3 p-2.5 rounded-xl bg-gray-50 border border-gray-200 text-[11px] text-gray-600 space-y-1">
+                  <div className="font-semibold text-gray-800 flex items-center gap-1">
+                    <Lock className="w-3.5 h-3.5 text-blue-600" />
+                    How to allow in browser:
+                  </div>
+                  <p>Click the <strong>padlock / settings icon</strong> on the left side of the address bar above and switch <strong>Location</strong> to <strong>Allow</strong>.</p>
+                </div>
+              )}
+
+              {/* Action buttons: "Don't Allow" and "Allow Location" */}
+              <div className="flex items-center justify-end gap-2.5 pt-3 border-t border-gray-100">
+                <button
+                  type="button"
+                  onClick={handleDontAllow}
+                  disabled={requesting}
+                  className="px-4 py-2 rounded-xl text-xs font-semibold text-gray-600 hover:text-gray-900 hover:bg-gray-100 transition-colors cursor-pointer"
+                >
+                  Don&apos;t Allow
+                </button>
+
+                <button
+                  type="button"
+                  onClick={requestLocation}
+                  disabled={requesting}
+                  className="px-5 py-2.5 rounded-xl bg-[#2D63FF] hover:bg-[#1E4FE6] text-white text-xs font-bold shadow-md shadow-blue-500/25 transition-all flex items-center gap-1.5 cursor-pointer disabled:opacity-60"
+                >
+                  {requesting ? (
+                    <>
+                      <RefreshCw className="w-3.5 h-3.5 animate-spin" />
+                      <span>Requesting...</span>
+                    </>
+                  ) : (
+                    <>
+                      <CheckCircle2 className="w-3.5 h-3.5" />
+                      <span>Allow Location</span>
+                    </>
+                  )}
                 </button>
               </div>
             </motion.div>

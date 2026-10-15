@@ -311,16 +311,6 @@ export default function LocationRequiredPage() {
             )}
           </button>
 
-          {/* Backup option to enter via Network Location if hardware GPS is blocked */}
-          <button
-            type="button"
-            onClick={handleContinueWithNetworkLocation}
-            disabled={requesting || successRedirecting}
-            className="w-full py-3 px-5 bg-white hover:bg-gray-50 text-[#0B1D3A] border border-gray-300 rounded-2xl font-semibold text-sm transition-all flex items-center justify-center gap-2 shadow-sm cursor-pointer disabled:opacity-60"
-          >
-            <Globe className="w-4 h-4 text-blue-600" />
-            <span>Verify &amp; Continue with Network Location</span>
-          </button>
 
           <button
             type="button"
