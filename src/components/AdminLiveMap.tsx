@@ -12,9 +12,14 @@ import {
   Radio,
   Clock,
   Navigation,
+  Trash2,
 } from "lucide-react";
 import { formatDistanceToNow } from "date-fns";
-import { subscribeToFirebaseLocations, deleteFirebaseUserLocation } from "@/lib/firebaseLocation";
+import {
+  subscribeToFirebaseLocations,
+  deleteFirebaseUserLocation,
+  clearAllFirebaseLocations,
+} from "@/lib/firebaseLocation";
 import { toast } from "sonner";
 
 export interface LocatedUser {
@@ -103,6 +108,9 @@ export default function AdminLiveMap({ adminUid, initialSelectedUserId }: AdminL
       ) {
         try {
           await deleteFirebaseUserLocation(uid);
+          await fetch(`/api/user/location?adminUid=${adminUid}&uid=${uid}`, {
+            method: "DELETE",
+          });
           toast.success("User live tracking data removed.");
           setUsers((prev) => prev.filter((u) => u.firebaseUid !== uid && u.id !== uid));
         } catch {
@@ -655,6 +663,41 @@ export default function AdminLiveMap({ adminUid, initialSelectedUserId }: AdminL
     map.fitBounds(group.getBounds().pad(0.15), { animate: true, duration: 1 });
   };
 
+  // Completely wipe all user location tracking data
+  const handleClearAllLocations = async () => {
+    if (
+      !window.confirm(
+        "Are you sure you want to REMOVE ALL USER LOCATION DATA from both Firebase and the Database? All current coordinates will be wiped and ready to be added newly."
+      )
+    ) {
+      return;
+    }
+    try {
+      setRefreshing(true);
+      await clearAllFirebaseLocations();
+      await fetch(`/api/user/location?adminUid=${adminUid}&all=true`, {
+        method: "DELETE",
+      });
+      setUsers([]);
+      setStats({ totalWithLocation: 0, onlineCount: 0, activeTodayCount: 0 });
+      markersRef.current.forEach((marker) => marker.remove());
+      markersRef.current.clear();
+      circlesRef.current.forEach((circle) => circle.remove());
+      circlesRef.current.clear();
+      polylinesRef.current.forEach((p) => p.remove());
+      polylinesRef.current.clear();
+      trailPointsRef.current.clear();
+      setSelectedUser(null);
+      setFollowingUserId(null);
+      toast.success("All user location data removed. Ready to add newly!");
+    } catch (err) {
+      console.error("Failed to clear all location data:", err);
+      toast.error("Failed to clear all location data.");
+    } finally {
+      setRefreshing(false);
+    }
+  };
+
   // Filtered users list for the sidebar
   const filteredUsers = users.filter((u) => {
     if (!searchQuery) return true;
@@ -757,6 +800,17 @@ export default function AdminLiveMap({ adminUid, initialSelectedUserId }: AdminL
           >
             <Compass className="w-3.5 h-3.5" />
             <span>Fit All Users</span>
+          </button>
+
+          {/* Clear All Locations button */}
+          <button
+            onClick={handleClearAllLocations}
+            disabled={refreshing}
+            className="flex items-center gap-1.5 px-3.5 py-2 bg-rose-600 hover:bg-rose-700 text-white text-xs font-bold rounded-xl shadow-sm transition-colors disabled:opacity-50"
+            title="Wipe all user location records across Firebase & Database"
+          >
+            <Trash2 className="w-3.5 h-3.5" />
+            <span>Clear All Data</span>
           </button>
         </div>
       </div>

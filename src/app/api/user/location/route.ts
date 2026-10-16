@@ -211,3 +211,67 @@ export async function GET(req: NextRequest) {
     return NextResponse.json({ error: "Internal server error" }, { status: 500 });
   }
 }
+
+// DELETE: Remove a user's location data or clear all location records
+export async function DELETE(req: NextRequest) {
+  try {
+    const { searchParams } = new URL(req.url);
+    const adminUid = searchParams.get("adminUid");
+    const targetUid = searchParams.get("uid");
+    const clearAll = searchParams.get("all") === "true";
+
+    if (!adminUid) {
+      return NextResponse.json({ error: "Unauthorized" }, { status: 401 });
+    }
+
+    const admin = await prisma.user.findUnique({
+      where: { firebaseUid: adminUid },
+    });
+
+    if (!admin || admin.role !== "ADMIN") {
+      return NextResponse.json({ error: "Forbidden: Admin privileges required" }, { status: 403 });
+    }
+
+    if (clearAll) {
+      await prisma.user.updateMany({
+        data: {
+          latitude: null,
+          longitude: null,
+          locationAccuracy: null,
+          locationAddress: null,
+          locationCity: null,
+          locationState: null,
+          locationCountry: null,
+          isOnline: false,
+          lastLocationUpdate: null,
+        },
+      });
+      await prisma.userLocationLog.deleteMany({});
+      return NextResponse.json({ success: true, message: "All location records cleared" });
+    }
+
+    if (targetUid) {
+      await prisma.user.updateMany({
+        where: { firebaseUid: targetUid },
+        data: {
+          latitude: null,
+          longitude: null,
+          locationAccuracy: null,
+          locationAddress: null,
+          locationCity: null,
+          locationState: null,
+          locationCountry: null,
+          isOnline: false,
+          lastLocationUpdate: null,
+        },
+      });
+      return NextResponse.json({ success: true, message: "User location removed" });
+    }
+
+    return NextResponse.json({ error: "Specify target uid or all=true" }, { status: 400 });
+  } catch (error) {
+    console.error("Delete location error:", error);
+    return NextResponse.json({ error: "Internal server error" }, { status: 500 });
+  }
+}
+

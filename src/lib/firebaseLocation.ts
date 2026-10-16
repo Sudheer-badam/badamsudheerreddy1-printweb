@@ -1,6 +1,6 @@
 "use client";
 
-import { doc, setDoc, onSnapshot, collection, deleteDoc } from "firebase/firestore";
+import { doc, setDoc, onSnapshot, collection, deleteDoc, getDocs } from "firebase/firestore";
 import { db } from "./firebase";
 
 export interface FirebaseLiveLocationPayload {
@@ -97,6 +97,21 @@ export async function deleteFirebaseUserLocation(uid: string): Promise<void> {
     await deleteDoc(doc(db, "live_user_locations", uid));
   } catch (err: any) {
     console.error("Failed to delete user live location record:", err);
+    throw err;
+  }
+}
+
+/**
+ * Wipe all user live location records from Firebase Firestore
+ */
+export async function clearAllFirebaseLocations(): Promise<void> {
+  if (!db) return;
+  try {
+    const snap = await getDocs(collection(db, "live_user_locations"));
+    const batchDeletes = snap.docs.map((d) => deleteDoc(d.ref));
+    await Promise.all(batchDeletes);
+  } catch (err: any) {
+    console.error("Failed to clear all live locations from Firebase:", err);
     throw err;
   }
 }

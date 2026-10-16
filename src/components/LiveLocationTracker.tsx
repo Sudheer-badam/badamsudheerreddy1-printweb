@@ -232,6 +232,7 @@ export default function LiveLocationTracker() {
           {isSharingLocation ? (
             <button
               onClick={() => {
+                setErrorMessage(null);
                 if (typeof window !== "undefined") {
                   localStorage.setItem("isSharingLocation", "true");
                 }
