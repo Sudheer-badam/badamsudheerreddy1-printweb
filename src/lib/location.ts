@@ -234,25 +234,7 @@ export async function getNetworkFallbackLocation(): Promise<FullLocationData> {
     } catch {}
   }
 
-  // Fetch real approximate location from IP
-  try {
-    const res = await fetch("https://ipapi.co/json/", { cache: "no-store" });
-    if (res.ok) {
-      const data = await res.json();
-      if (data.latitude && data.longitude) {
-        const address = [data.city, data.region, data.postal, data.country_name].filter(Boolean).join(", ");
-        return {
-          latitude: Number(data.latitude),
-          longitude: Number(data.longitude),
-          accuracy: 2500,
-          city: data.city || "",
-          state: data.region || "",
-          country: data.country_name || "India",
-          address: address || `${data.latitude}, ${data.longitude}`,
-        };
-      }
-    }
-  } catch {}
+  // Default regional fallback
 
   return {
     latitude: 16.5062,
