@@ -1,5 +1,6 @@
 import { NextRequest, NextResponse } from "next/server";
 import { prisma } from "@/lib/prisma";
+import { reverseGeocode } from "@/lib/location";
 
 // POST: Update current user's live location
 export async function POST(req: NextRequest) {
@@ -30,10 +31,28 @@ export async function POST(req: NextRequest) {
       updateData.longitude = longitude;
       updateData.locationAccuracy = accuracy ?? null;
       updateData.lastLocationUpdate = new Date();
-      if (address) updateData.locationAddress = address;
-      if (city) updateData.locationCity = city;
-      if (state) updateData.locationState = state;
-      if (country) updateData.locationCountry = country;
+
+      let resolvedAddress = address;
+      let resolvedCity = city;
+      let resolvedState = state;
+      let resolvedCountry = country;
+
+      if (!resolvedAddress) {
+        try {
+          const geo = await reverseGeocode(latitude, longitude);
+          if (geo.formattedAddress) {
+            resolvedAddress = geo.formattedAddress;
+            resolvedCity = resolvedCity || geo.city;
+            resolvedState = resolvedState || geo.state;
+            resolvedCountry = resolvedCountry || geo.country;
+          }
+        } catch {}
+      }
+
+      if (resolvedAddress) updateData.locationAddress = resolvedAddress;
+      if (resolvedCity) updateData.locationCity = resolvedCity;
+      if (resolvedState) updateData.locationState = resolvedState;
+      if (resolvedCountry) updateData.locationCountry = resolvedCountry;
     }
 
     const updatedUser = await prisma.user.update({

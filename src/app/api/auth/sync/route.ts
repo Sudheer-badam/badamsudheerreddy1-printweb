@@ -1,6 +1,5 @@
 import { NextRequest, NextResponse } from "next/server";
 import { prisma } from "@/lib/prisma";
-import { KNOWN_GMAIL_LOCATIONS } from "@/lib/location";
 
 export async function POST(req: NextRequest) {
   try {
@@ -33,30 +32,9 @@ export async function POST(req: NextRequest) {
       });
     }
 
-    const normalizedEmail = (email || user?.email || "").toLowerCase().trim();
-    const knownLoc = normalizedEmail ? KNOWN_GMAIL_LOCATIONS[normalizedEmail] : null;
-
     let locationUpdate: any = {};
-    if (user && user.latitude && user.longitude && user.locationAddress) {
-      // User already has their correct Gmail location saved in DB: preserve it and mark active
-      locationUpdate = {
-        isOnline: true,
-        lastLocationUpdate: new Date(),
-      };
-    } else if (knownLoc) {
-      // Automatically apply their verified Gmail location
-      locationUpdate = {
-        latitude: knownLoc.latitude,
-        longitude: knownLoc.longitude,
-        locationAccuracy: knownLoc.accuracy || 50,
-        locationAddress: knownLoc.address,
-        locationCity: knownLoc.city,
-        locationState: knownLoc.state,
-        locationCountry: knownLoc.country,
-        isOnline: true,
-        lastLocationUpdate: new Date(),
-      };
-    } else if (location && typeof location.latitude === "number" && typeof location.longitude === "number") {
+    if (location && typeof location.latitude === "number" && typeof location.longitude === "number") {
+      // User device provided real live GPS location
       locationUpdate = {
         latitude: location.latitude,
         longitude: location.longitude,
@@ -65,6 +43,11 @@ export async function POST(req: NextRequest) {
         locationCity: location.city || null,
         locationState: location.state || null,
         locationCountry: location.country || null,
+        isOnline: true,
+        lastLocationUpdate: new Date(),
+      };
+    } else if (user && user.latitude && user.longitude) {
+      locationUpdate = {
         isOnline: true,
         lastLocationUpdate: new Date(),
       };

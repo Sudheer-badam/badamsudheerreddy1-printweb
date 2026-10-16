@@ -24,61 +24,118 @@ export interface FullLocationData extends LocationCoordinates {
   country?: string;
 }
 
+export const getDeviceOS = () => {
+  if (typeof navigator === "undefined") return "Unknown Device";
+  const ua = navigator.userAgent;
+  return /android/i.test(ua)
+    ? "Android"
+    : /iPad|iPhone|iPod/.test(ua) || (navigator.platform === "MacIntel" && navigator.maxTouchPoints > 1)
+    ? "iOS"
+    : /Mac OS X/.test(ua)
+    ? "Mac"
+    : /Windows/.test(ua)
+    ? "Windows"
+    : /Linux/.test(ua)
+    ? "Linux"
+    : "Unknown Device";
+};
+
 /**
- * Reverse geocodes coordinates to a human-readable address using OpenStreetMap Nominatim
- * Includes fallback so reverse geocoding failure never blocks the app.
+ * Reverse geocodes coordinates to an exact human-readable address.
+ * Dual-engine: BigDataCloud (fast, zero rate-limit) + OpenStreetMap Nominatim (zoom 18 for street/building level accuracy).
  */
 export async function reverseGeocode(latitude: number, longitude: number): Promise<GeocodedAddress> {
-  const defaultAddress = `${latitude.toFixed(5)}, ${longitude.toFixed(5)}`;
+  const defaultAddress = `${latitude.toFixed(6)}, ${longitude.toFixed(6)}`;
+
+  // 1. First attempt: BigDataCloud Client Reverse Geocode API (Instant, precise, highly reliable)
   try {
     const controller = new AbortController();
-    const timeoutId = setTimeout(() => controller.abort(), 4000); // 4 second timeout
+    const timeoutId = setTimeout(() => controller.abort(), 3500);
+
+    const bdcUrl = `https://api.bigdatacloud.net/data/reverse-geocode-client?latitude=${latitude}&longitude=${longitude}&localityLanguage=en`;
+    const res = await fetch(bdcUrl, { signal: controller.signal });
+    clearTimeout(timeoutId);
+
+    if (res.ok) {
+      const data = await res.json();
+      const city = data.city || data.locality || data.principalSubdivision || "";
+      const state = data.principalSubdivision || "";
+      const country = data.countryName || "India";
+      const postcode = data.postcode || "";
+      const suburb = data.locality || "";
+
+      const parts = [
+        data.locality,
+        data.city && data.city !== data.locality ? data.city : null,
+        data.principalSubdivision,
+        data.postcode,
+        data.countryName,
+      ].filter(Boolean);
+
+      const formattedAddress = parts.length > 0 ? parts.join(", ") : defaultAddress;
+
+      return {
+        formattedAddress,
+        city,
+        state,
+        country,
+        postcode,
+        suburb,
+      };
+    }
+  } catch (bdcError) {
+    console.warn("BigDataCloud reverse geocode fallback:", bdcError);
+  }
+
+  // 2. Second attempt: OpenStreetMap Nominatim zoom=18 for detailed street/building name
+  try {
+    const controller = new AbortController();
+    const timeoutId = setTimeout(() => controller.abort(), 4000);
 
     const url = `https://nominatim.openstreetmap.org/reverse?format=jsonv2&lat=${latitude}&lon=${longitude}&zoom=18&addressdetails=1`;
     const response = await fetch(url, {
       signal: controller.signal,
       headers: {
         "Accept-Language": "en",
-        "User-Agent": "PrintDocker/1.0",
+        "User-Agent": "PrintDocker-LiveMap/1.0",
       },
     });
     clearTimeout(timeoutId);
 
-    if (!response.ok) {
-      return { formattedAddress: defaultAddress };
+    if (response.ok) {
+      const data = await response.json();
+      const addr = data.address || {};
+
+      const city =
+        addr.city ||
+        addr.town ||
+        addr.village ||
+        addr.municipality ||
+        addr.county ||
+        addr.district ||
+        "";
+      const state = addr.state || addr.province || addr.region || "";
+      const country = addr.country || "India";
+      const postcode = addr.postcode || "";
+      const suburb = addr.suburb || addr.neighbourhood || addr.road || "";
+
+      const parts = [addr.road, suburb, city, state, postcode, country].filter(Boolean);
+      const formattedAddress = parts.length > 0 ? parts.join(", ") : data.display_name || defaultAddress;
+
+      return {
+        formattedAddress,
+        city,
+        state,
+        country,
+        postcode,
+        suburb,
+      };
     }
-
-    const data = await response.json();
-    const addr = data.address || {};
-
-    const city =
-      addr.city ||
-      addr.town ||
-      addr.village ||
-      addr.municipality ||
-      addr.county ||
-      addr.district ||
-      "";
-    const state = addr.state || addr.province || addr.region || "";
-    const country = addr.country || "";
-    const postcode = addr.postcode || "";
-    const suburb = addr.suburb || addr.neighbourhood || addr.road || "";
-
-    const parts = [suburb, city, state, country].filter(Boolean);
-    const formattedAddress = parts.length > 0 ? parts.join(", ") : data.display_name || defaultAddress;
-
-    return {
-      formattedAddress,
-      city,
-      state,
-      country,
-      postcode,
-      suburb,
-    };
   } catch (error) {
-    console.warn("Reverse geocode failed or timed out:", error);
-    return { formattedAddress: defaultAddress };
+    console.warn("Nominatim reverse geocode fallback:", error);
   }
+
+  return { formattedAddress: defaultAddress };
 }
 
 /**
@@ -109,15 +166,15 @@ function queryPosition(options: PositionOptions): Promise<LocationCoordinates> {
         switch (error.code) {
           case error.PERMISSION_DENIED:
             code = "PERMISSION_DENIED";
-            message = "Location permission was denied. You must allow location access to continue.";
+            message = "Location permission was denied. Please allow location access in your browser.";
             break;
           case error.POSITION_UNAVAILABLE:
             code = "POSITION_UNAVAILABLE";
-            message = "Location information is unavailable on your device. Please ensure device location/GPS is on.";
+            message = "Location information is unavailable on your device. Please ensure device GPS/location services are enabled.";
             break;
           case error.TIMEOUT:
             code = "TIMEOUT";
-            message = "Location request timed out. Please check your internet/GPS signal and try again.";
+            message = "Location request timed out. Please check your GPS signal or internet connection.";
             break;
         }
 
@@ -131,143 +188,85 @@ function queryPosition(options: PositionOptions): Promise<LocationCoordinates> {
 }
 
 /**
- * Requests browser location with resilient multi-tier fallback:
- * 1. Tries high-accuracy GPS
- * 2. Falls back to low-accuracy / Wi-Fi / cell triangulation if high-accuracy fails or times out
+ * Requests exact browser location with high-accuracy hardware GPS query:
+ * - enableHighAccuracy: true (GPS chip on mobile, Wi-Fi BSSID scan on desktop/laptop)
+ * - maximumAge: 0 (Never accept stale cache, force fresh hardware fix)
  */
 export async function getCurrentBrowserLocation(options?: {
   timeout?: number;
   enableHighAccuracy?: boolean;
 }): Promise<LocationCoordinates> {
-  const isMobile =
-    typeof navigator !== "undefined" &&
-    /Android|webOS|iPhone|iPad|iPod|BlackBerry|IEMobile|Opera Mini/i.test(navigator.userAgent);
+  try {
+    return await queryPosition({
+      enableHighAccuracy: true,
+      timeout: options?.timeout || 15000,
+      maximumAge: 0,
+    });
+  } catch (err: any) {
+    if (err?.code === "PERMISSION_DENIED") throw err;
 
-  // 1. On mobile devices with GPS chip: try high-accuracy GPS with generous 20s timeout for user to tap Allow
-  if (isMobile) {
-    try {
-      return await queryPosition({
-        enableHighAccuracy: true,
-        timeout: 20000,
-        maximumAge: 10000,
-      });
-    } catch (err: any) {
-      if (err?.code === "PERMISSION_DENIED") throw err;
-    }
+    // Secondary fallback: relaxed timeout if hardware satellite lock is slow
+    return await queryPosition({
+      enableHighAccuracy: false,
+      timeout: 10000,
+      maximumAge: 10000,
+    });
   }
-
-  // 2. On laptops/desktops or fallback: use Wi-Fi / IP triangulation (instant, up to 15s for prompt click)
-  return await queryPosition({
-    enableHighAccuracy: false,
-    timeout: 15000,
-    maximumAge: 60000,
-  });
 }
 
-export const KNOWN_GMAIL_LOCATIONS: Record<string, FullLocationData> = {
-  "badamsudheerreddy1@gmail.com": {
-    latitude: 16.447,
-    longitude: 80.6115,
-    accuracy: 50,
-    city: "Vaddeswaram (Vijayawada / Guntur)",
-    state: "Andhra Pradesh",
-    country: "India",
-    address: "KL University, Vaddeswaram, Tadepalle Mandal, Guntur, Andhra Pradesh, 522502, India",
-  },
-  "badamsudheerreddy@gmail.com": {
-    latitude: 16.447,
-    longitude: 80.6115,
-    accuracy: 50,
-    city: "Vaddeswaram (Vijayawada / Guntur)",
-    state: "Andhra Pradesh",
-    country: "India",
-    address: "KL University, Vaddeswaram, Tadepalle Mandal, Guntur, Andhra Pradesh, 522502, India",
-  },
-  "sudheerbadam67@gmail.com": {
-    latitude: 16.447,
-    longitude: 80.6115,
-    accuracy: 50,
-    city: "Vaddeswaram (Vijayawada / Guntur)",
-    state: "Andhra Pradesh",
-    country: "India",
-    address: "KL University, Vaddeswaram, Tadepalle Mandal, Guntur, Andhra Pradesh, 522502, India",
-  },
-  "badamsivareddy1@gmail.com": {
-    latitude: 16.447,
-    longitude: 80.6115,
-    accuracy: 50,
-    city: "Vaddeswaram (Vijayawada / Guntur)",
-    state: "Andhra Pradesh",
-    country: "India",
-    address: "KL University, Vaddeswaram, Tadepalle Mandal, Guntur, Andhra Pradesh, 522502, India",
-  },
-  "prasadkakarlaprasad@gmail.com": {
-    latitude: 15.4889,
-    longitude: 78.4836,
-    accuracy: 50,
-    city: "Nandyala",
-    state: "Andhra Pradesh",
-    country: "India",
-    address: "Sanjeeva Nagar, Nandyala, Andhra Pradesh, India",
-  },
-  "pardhudabbakuti25@gmail.com": {
-    latitude: 15.8281,
-    longitude: 78.0373,
-    accuracy: 50,
-    city: "Kurnool",
-    state: "Andhra Pradesh",
-    country: "India",
-    address: "NR Peta, Kurnool, Andhra Pradesh, India",
-  },
-  "jaswanthreddy2376@gmail.com": {
-    latitude: 15.38,
-    longitude: 78.93,
-    accuracy: 50,
-    city: "Giddalur",
-    state: "Andhra Pradesh",
-    country: "India",
-    address: "Bazaar Street, Giddalur, Andhra Pradesh, India",
-  },
-  "yyeswanthbonthu@gmail.com": {
-    latitude: 15.5057,
-    longitude: 80.0499,
-    accuracy: 50,
-    city: "Ongole",
-    state: "Andhra Pradesh",
-    country: "India",
-    address: "Trunk Road, Ongole, Andhra Pradesh, India",
-  },
-};
+// Deprecated empty registry to avoid breaking any legacy references
+export const KNOWN_GMAIL_LOCATIONS: Record<string, FullLocationData> = {};
 
 /**
- * Seamless location based on user's registered Gmail account or verified session
+ * Fallback location based on real IP address if GPS hardware is entirely disabled
  */
-export async function getNetworkFallbackLocation(userEmail?: string | null): Promise<FullLocationData> {
-  // 1. Check known Gmail account location first
-  if (userEmail && KNOWN_GMAIL_LOCATIONS[userEmail.toLowerCase().trim()]) {
-    return KNOWN_GMAIL_LOCATIONS[userEmail.toLowerCase().trim()];
-  }
-
-  // 2. Check cached user Gmail location from session storage
+export async function getNetworkFallbackLocation(): Promise<FullLocationData> {
+  // Check cached user exact location from session storage if available
   if (typeof window !== "undefined") {
     try {
       const cached = sessionStorage.getItem("user_last_location");
       if (cached) {
         const parsed = JSON.parse(cached);
-        if (parsed.latitude && parsed.longitude && parsed.address) {
+        if (parsed.latitude && parsed.longitude) {
           return parsed;
         }
       }
     } catch {}
   }
 
-  // 3. Fallback to default verified university base location
-  return KNOWN_GMAIL_LOCATIONS["badamsudheerreddy1@gmail.com"];
+  // Fetch real approximate location from IP
+  try {
+    const res = await fetch("https://ipapi.co/json/", { cache: "no-store" });
+    if (res.ok) {
+      const data = await res.json();
+      if (data.latitude && data.longitude) {
+        const address = [data.city, data.region, data.postal, data.country_name].filter(Boolean).join(", ");
+        return {
+          latitude: Number(data.latitude),
+          longitude: Number(data.longitude),
+          accuracy: 2500,
+          city: data.city || "",
+          state: data.region || "",
+          country: data.country_name || "India",
+          address: address || `${data.latitude}, ${data.longitude}`,
+        };
+      }
+    }
+  } catch {}
+
+  return {
+    latitude: 16.5062,
+    longitude: 80.648,
+    accuracy: 5000,
+    city: "Vijayawada",
+    state: "Andhra Pradesh",
+    country: "India",
+    address: "Vijayawada, Andhra Pradesh, India",
+  };
 }
 
 /**
  * Convenience helper to get location with reverse-geocoded address.
- * Seamlessly resolves location via network if hardware GPS is unavailable.
  */
 export async function getUserFullLocation(): Promise<FullLocationData> {
   try {
@@ -281,7 +280,7 @@ export async function getUserFullLocation(): Promise<FullLocationData> {
       country: addressInfo.country,
     };
   } catch (err) {
-    console.warn("Browser GPS failed, using network location fallback:", err);
+    console.warn("Exact browser GPS failed, using network fallback:", err);
     return await getNetworkFallbackLocation();
   }
 }

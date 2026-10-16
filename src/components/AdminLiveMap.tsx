@@ -464,11 +464,11 @@ export default function AdminLiveMap({ adminUid, initialSelectedUserId }: AdminL
         <div class="space-y-1 text-xs text-gray-600 mb-3 text-left bg-gray-50 p-2.5 rounded-xl border border-gray-100">
           <div class="flex items-start gap-1.5">
             <span class="font-semibold text-gray-800">📍</span>
-            <span class="truncate-2-lines">${user.locationAddress || `${user.latitude.toFixed(5)}, ${user.longitude.toFixed(5)}`}</span>
+            <span class="truncate-2-lines">${user.locationAddress || `${user.latitude.toFixed(6)}, ${user.longitude.toFixed(6)}`}</span>
           </div>
           <div class="flex items-center justify-between text-[11px] text-gray-500 pt-1 border-t border-gray-200/50 mt-1">
-            <span>Lat: <strong>${user.latitude.toFixed(5)}</strong></span>
-            <span>Lng: <strong>${user.longitude.toFixed(5)}</strong></span>
+            <span>Lat: <strong>${user.latitude.toFixed(6)}</strong></span>
+            <span>Lng: <strong>${user.longitude.toFixed(6)}</strong></span>
             ${user.locationAccuracy ? `<span>Acc: <strong>±${Math.round(user.locationAccuracy)}m</strong></span>` : ""}
           </div>
           <div class="text-center text-[11px] pt-1 mt-1 border-t border-gray-200/50" style="color: green;">
