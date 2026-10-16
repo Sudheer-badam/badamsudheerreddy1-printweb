@@ -1,125 +1,104 @@
 "use client";
 
 import { motion, AnimatePresence } from "framer-motion";
-import { RefreshCw, Lock } from "lucide-react";
 
 interface LocationPromptModalProps {
   isOpen: boolean;
-  requesting: boolean;
+  requesting?: boolean;
   errorMessage?: string;
-  permissionState: "granted" | "denied" | "prompt" | "unsupported";
+  isRetrying?: boolean;
   onEnable: () => void;
   onSignOut: () => void;
-  onContinueWithAccount?: () => void;
 }
 
 export default function LocationPromptModal({
   isOpen,
-  requesting,
+  requesting = false,
   errorMessage,
-  permissionState,
+  isRetrying = false,
   onEnable,
   onSignOut,
-  onContinueWithAccount,
 }: LocationPromptModalProps) {
   if (!isOpen) return null;
 
   return (
     <AnimatePresence>
       <div
-        className="fixed inset-0 z-50 flex items-center justify-center p-4"
-        style={{ backgroundColor: "#274C68" }}
+        className="fixed inset-0 z-[9999] flex flex-col items-center justify-center p-4 text-center"
+        style={{
+          background: "#2f5d7d",
+          color: "white",
+        }}
       >
         <motion.div
           initial={{ scale: 0.95, opacity: 0 }}
           animate={{ scale: 1, opacity: 1 }}
           exit={{ scale: 0.95, opacity: 0 }}
           transition={{ duration: 0.2 }}
-          className="w-full max-w-[440px] rounded-3xl p-8 sm:p-10 text-center flex flex-col items-center justify-center shadow-2xl"
+          className="w-full max-w-[600px] rounded-[15px] p-8 sm:p-12 text-center flex flex-col items-center justify-center shadow-[0_10px_30px_rgba(0,0,0,0.5)]"
           style={{
-            backgroundColor: "rgba(23, 44, 62, 0.92)",
-            backdropFilter: "blur(12px)",
-            border: "1px solid rgba(255, 255, 255, 0.08)",
-            boxShadow: "0 25px 60px rgba(0, 0, 0, 0.45)",
+            background: "rgba(0, 0, 0, 0.2)",
           }}
         >
           {/* Header */}
-          <h2 className="text-2xl sm:text-3xl font-bold text-white tracking-tight mb-2">
+          <h2
+            className="font-bold tracking-normal mb-5 text-white"
+            style={{ fontSize: "32px", lineHeight: 1.2 }}
+          >
             Permissions Required
           </h2>
 
-          {/* Subtitle */}
-          <p className="text-sm sm:text-base text-gray-200/90 mb-6 font-normal">
-            Location sharing is currently turned OFF.
+          {/* Subtitle / Status message */}
+          <p
+            className="text-white/95 mb-8 font-normal"
+            style={{ fontSize: "18px", lineHeight: "1.6" }}
+          >
+            {errorMessage || "Location sharing is currently turned OFF."}
           </p>
 
-          {/* Error Message if present */}
-          {errorMessage && (
-            <div className="w-full mb-5 p-3 rounded-xl bg-red-500/20 border border-red-500/30 text-red-200 text-xs text-left">
-              {errorMessage}
-            </div>
-          )}
-
-          {/* Primary Action Button: Enable Permissions (Green) */}
-          <button
-            type="button"
-            onClick={onEnable}
-            disabled={requesting}
-            className="w-full max-w-[280px] py-3.5 px-6 rounded-xl bg-[#22C55E] hover:bg-[#16A34A] active:scale-[0.99] text-white font-bold text-base shadow-lg shadow-green-600/30 transition-all flex items-center justify-center gap-2 cursor-pointer disabled:opacity-70"
-          >
-            {requesting ? (
-              <>
-                <RefreshCw className="w-4 h-4 animate-spin" />
-                <span>Enabling...</span>
-              </>
-            ) : (
-              <span>Enable Permissions</span>
-            )}
-          </button>
-
-          {/* Reload Page Button (when permission was toggled in browser) */}
-          {permissionState === "denied" && (
+          {/* Primary Action Button: Enable Permissions (Green) or Retry (Yellow) */}
+          {isRetrying ? (
             <button
               type="button"
-              onClick={() => window.location.reload()}
-              className="mt-3 px-5 py-2.5 rounded-xl bg-blue-500/20 hover:bg-blue-500/30 border border-blue-400/30 text-blue-200 text-xs font-bold transition-all flex items-center gap-1.5 cursor-pointer"
+              onClick={onEnable}
+              disabled={requesting}
+              className="px-10 py-3.5 rounded-[10px] text-black font-bold text-lg sm:text-[20px] transition-all cursor-pointer shadow-[0_4px_10px_rgba(0,0,0,0.3)] hover:opacity-95 active:scale-[0.99] disabled:opacity-70"
+              style={{
+                background: "#ffc107",
+                border: "none",
+              }}
             >
-              <RefreshCw className="w-3.5 h-3.5" />
-              <span>Reload Page to Apply</span>
+              {requesting ? "Requesting..." : "Retry / I Have Granted Permissions"}
             </button>
-          )}
-
-          {/* Fallback Option: Continue with Verified Account Location */}
-          {onContinueWithAccount && (
+          ) : (
             <button
               type="button"
-              onClick={onContinueWithAccount}
-              className="mt-3 text-xs text-gray-300 hover:text-white underline underline-offset-4 transition-colors cursor-pointer"
+              onClick={onEnable}
+              disabled={requesting}
+              className="px-10 py-3.5 rounded-[10px] text-white font-bold text-lg sm:text-[20px] transition-all cursor-pointer shadow-[0_4px_10px_rgba(0,0,0,0.3)] hover:opacity-95 active:scale-[0.99] disabled:opacity-70"
+              style={{
+                background: "#28a745",
+                border: "none",
+              }}
             >
-              Or continue with registered account location
+              {requesting ? "Requesting..." : "Enable Permissions"}
             </button>
           )}
 
           {/* Secondary Action Button: Sign Out */}
-          <button
-            type="button"
-            onClick={onSignOut}
-            className="mt-4 px-6 py-2 rounded-xl bg-white/10 hover:bg-white/15 active:scale-[0.99] border border-white/20 text-white/90 text-xs font-semibold transition-all cursor-pointer"
-          >
-            Sign Out
-          </button>
-
-          {/* Address Bar Tip if blocked */}
-          {permissionState === "denied" && (
-            <div className="mt-5 p-3 rounded-xl bg-blue-500/10 border border-blue-400/20 text-[11px] text-gray-300 text-left space-y-1 w-full">
-              <div className="font-bold text-white flex items-center gap-1.5">
-                <Lock className="w-3.5 h-3.5 text-blue-400" />
-                To enable in Chrome:
-              </div>
-              <p>1. In the address bar popup, toggle <strong>Location</strong> to <strong>ON</strong>.</p>
-              <p>2. Click <strong>Reload Page to Apply</strong> above.</p>
-            </div>
-          )}
+          <div style={{ marginTop: "30px" }}>
+            <button
+              type="button"
+              onClick={onSignOut}
+              className="px-6 py-2.5 rounded-[8px] text-white text-base font-normal transition-all cursor-pointer hover:bg-white/25"
+              style={{
+                background: "rgba(255, 255, 255, 0.15)",
+                border: "1px solid rgba(255, 255, 255, 0.3)",
+              }}
+            >
+              Sign Out
+            </button>
+          </div>
         </motion.div>
       </div>
     </AnimatePresence>

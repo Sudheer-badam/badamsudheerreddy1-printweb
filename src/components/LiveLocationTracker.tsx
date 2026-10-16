@@ -18,7 +18,6 @@ import {
   getCurrentBrowserLocation,
   reverseGeocode,
   getLocationPermissionState,
-  getNetworkFallbackLocation,
   FullLocationData,
 } from "@/lib/location";
 import { syncLocationToFirebase, setFirebaseUserOffline } from "@/lib/firebaseLocation";
@@ -185,45 +184,28 @@ export default function LiveLocationTracker() {
         currentAddressRef.current = address;
         syncLocationToBackend(fullData);
       },
-      async (err) => {
+      (err) => {
         setRequesting(false);
         console.warn("Geolocation prompt response:", err);
+        setPermissionState("denied");
+        setIsBlocked(true);
+        if (typeof window !== "undefined") {
+          localStorage.setItem("isSharingLocation", "false");
+        }
         if (err.code === 1) {
           // PERMISSION_DENIED
-          setPermissionState("denied");
-          setIsBlocked(true);
-          setErrorMessage("Location permission was denied. Please allow location access in your browser settings to share your live location with Admin.");
-          if (typeof window !== "undefined") {
-            localStorage.setItem("isSharingLocation", "false");
-          }
+          setErrorMessage(
+            "Location access was denied by your browser. You MUST allow location access in your browser's site settings to use this application."
+          );
         } else {
-          // Fall back gracefully so user is not stuck on GPS timeout/unavailable
-          const fallback = await getNetworkFallbackLocation(user?.email);
-          setHasLocation(true);
-          setIsBlocked(false);
-          setErrorMessage("");
-          setCurrentAddress(fallback.address || "");
-          await syncLocationToBackend(fallback);
+          setErrorMessage(
+            "Could not get your location. Please check your GPS signal or ensure location services are enabled on your device."
+          );
         }
       },
       { enableHighAccuracy: true, timeout: 20000, maximumAge: 0 }
     );
-  }, [user?.email, syncLocationToBackend]);
-
-  // Handle user clicking "Don't Allow"
-  const handleDontAllow = async () => {
-    // If user clicks Don't Allow, fall back to Gmail account location and unblock
-    const fullData = await getNetworkFallbackLocation(user?.email);
-    if (typeof window !== "undefined") {
-      localStorage.setItem("isSharingLocation", "true");
-      sessionStorage.setItem("user_last_location", JSON.stringify(fullData));
-    }
-    setHasLocation(true);
-    setIsBlocked(false);
-    setErrorMessage("");
-    setCurrentAddress(fullData.address || "");
-    await syncLocationToBackend(fullData);
-  };
+  }, [syncLocationToBackend]);
 
   useEffect(() => {
     if (!user?.uid) return;
@@ -356,6 +338,14 @@ export default function LiveLocationTracker() {
         async (error) => {
           if (!isMounted) return;
           console.warn(`Watch position notice: ${error.message}`);
+          if (error.code === 1) {
+            setErrorMessage(
+              "Location access was denied by your browser. You MUST allow location access in your browser's site settings to use this application."
+            );
+            localStorage.setItem("isSharingLocation", "false");
+            setPermissionState("denied");
+            setIsBlocked(true);
+          }
         },
         { enableHighAccuracy: true, timeout: 10000, maximumAge: 3000 }
       );
@@ -428,10 +418,9 @@ export default function LiveLocationTracker() {
         isOpen={isBlocked}
         requesting={requesting}
         errorMessage={errorMessage}
-        permissionState={permissionState}
+        isRetrying={Boolean(errorMessage || permissionState === "denied")}
         onEnable={requestLocation}
         onSignOut={logout}
-        onContinueWithAccount={handleDontAllow}
       />
     </>
   );
