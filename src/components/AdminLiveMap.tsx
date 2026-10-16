@@ -447,7 +447,6 @@ export default function AdminLiveMap({ adminUid, initialSelectedUserId }: AdminL
           </div>
         </div>
 
-        {/* Capstone Specification Status Badge */}
         <div class="my-2">
           <span style="display:inline-block;padding:4px 10px;border-radius:12px;background:${
             isOnline ? "#d4edda" : "#f8d7da"
