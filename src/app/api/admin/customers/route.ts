@@ -41,7 +41,17 @@ export async function GET(req: NextRequest) {
       ),
     }));
 
-    return NextResponse.json(customersWithRealtimeOnline);
+    const seenEmails = new Set<string>();
+    const uniqueCustomers: typeof customersWithRealtimeOnline = [];
+    for (const c of customersWithRealtimeOnline) {
+      const emailKey = c.email ? c.email.toLowerCase().trim() : c.id;
+      if (!seenEmails.has(emailKey)) {
+        seenEmails.add(emailKey);
+        uniqueCustomers.push(c);
+      }
+    }
+
+    return NextResponse.json(uniqueCustomers);
   } catch (error) {
     console.error("Get customers error:", error);
     return NextResponse.json({ error: "Internal server error" }, { status: 500 });

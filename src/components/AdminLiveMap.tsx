@@ -1,6 +1,6 @@
 "use client";
 
-import { useEffect, useRef, useState, useCallback } from "react";
+import { useEffect, useRef, useState, useCallback, useMemo } from "react";
 import L from "leaflet";
 import "leaflet/dist/leaflet.css";
 import {
@@ -21,6 +21,60 @@ import {
   clearAllFirebaseLocations,
 } from "@/lib/firebaseLocation";
 import { toast } from "sonner";
+
+// Normalizes email addresses to prevent duplicates from casing or leading/trailing spaces
+function normalizeEmail(email?: string | null): string {
+  return (email || "").trim().toLowerCase();
+}
+
+// Canonical key generator for unique user identification
+function getCanonicalUserKey(u: { email?: string | null; firebaseUid?: string | null; id?: string | null }): string {
+  const normEmail = normalizeEmail(u.email);
+  if (normEmail) return `email:${normEmail}`;
+  const fb = (u.firebaseUid || "").trim();
+  if (fb) return `fb:${fb}`;
+  return `id:${u.id || ""}`;
+}
+
+// Lookup existing user in Map by email first, then firebaseUid, then id
+function findMatchingKey(
+  map: Map<string, LocatedUser>,
+  user: { email?: string | null; firebaseUid?: string | null; id?: string | null }
+): string | null {
+  const normEmail = normalizeEmail(user.email);
+  if (normEmail) {
+    const emailKey = `email:${normEmail}`;
+    if (map.has(emailKey)) return emailKey;
+    for (const [k, existing] of map.entries()) {
+      if (normalizeEmail(existing.email) === normEmail) {
+        return k;
+      }
+    }
+  }
+
+  const fbId = (user.firebaseUid || "").trim() || (user.id && !user.id.startsWith("cm") ? user.id.trim() : "");
+  if (fbId) {
+    const fbKey = `fb:${fbId}`;
+    if (map.has(fbKey)) return fbKey;
+    for (const [k, existing] of map.entries()) {
+      if ((existing.firebaseUid && existing.firebaseUid === fbId) || existing.id === fbId) {
+        return k;
+      }
+    }
+  }
+
+  if (user.id) {
+    const idKey = `id:${user.id}`;
+    if (map.has(idKey)) return idKey;
+    for (const [k, existing] of map.entries()) {
+      if (existing.id === user.id) {
+        return k;
+      }
+    }
+  }
+
+  return null;
+}
 
 export interface LocatedUser {
   id: string;
@@ -135,29 +189,54 @@ export default function AdminLiveMap({ adminUid, initialSelectedUserId }: AdminL
         const apiUsers: LocatedUser[] = data.users || [];
         setUsers((prevUsers) => {
           const map = new Map<string, LocatedUser>();
-          apiUsers.forEach((u) => map.set(u.id, u));
+
+          // Seed map with apiUsers deduplicated by canonical email
+          apiUsers.forEach((u) => {
+            const key = getCanonicalUserKey(u);
+            map.set(key, u);
+          });
+
+          // Merge in prevUsers (preserving latest live real-time coordinates)
           prevUsers.forEach((prev) => {
-            if (map.has(prev.id)) {
-              const u = map.get(prev.id)!;
+            const matchedKey = findMatchingKey(map, prev);
+            if (matchedKey) {
+              const u = map.get(matchedKey)!;
               const prevTime = prev.lastLocationUpdate ? new Date(prev.lastLocationUpdate).getTime() : 0;
               const currTime = u.lastLocationUpdate ? new Date(u.lastLocationUpdate).getTime() : 0;
-              if (prevTime >= currTime) {
-                map.set(prev.id, {
+              if (prevTime >= currTime || prev.isMoving) {
+                map.set(matchedKey, {
                   ...u,
+                  id: u.id || prev.id,
+                  firebaseUid: prev.firebaseUid || u.firebaseUid,
+                  name: prev.name && prev.name !== "Live User" ? prev.name : u.name,
+                  email: u.email || prev.email,
+                  phone: prev.phone || u.phone,
+                  profilePhoto: prev.profilePhoto || u.profilePhoto,
                   latitude: prev.latitude,
                   longitude: prev.longitude,
-                  locationAccuracy: prev.locationAccuracy,
+                  locationAccuracy: prev.locationAccuracy ?? u.locationAccuracy,
                   locationAddress: prev.locationAddress || u.locationAddress,
-                  isOnline: prev.isOnline,
-                  lastLocationUpdate: prev.lastLocationUpdate,
+                  locationCity: prev.locationCity || u.locationCity,
+                  locationState: prev.locationState || u.locationState,
+                  locationCountry: prev.locationCountry || u.locationCountry,
+                  isOnline: prev.isOnline !== undefined ? prev.isOnline : u.isOnline,
+                  lastLocationUpdate: prev.lastLocationUpdate || u.lastLocationUpdate,
                   speed: prev.speed,
                   heading: prev.heading,
                   isMoving: prev.isMoving,
-                  deviceOs: prev.deviceOs,
+                  deviceOs: prev.deviceOs || u.deviceOs,
+                  _count: u._count || prev._count,
+                });
+              } else {
+                map.set(matchedKey, {
+                  ...prev,
+                  ...u,
+                  firebaseUid: prev.firebaseUid || u.firebaseUid,
                 });
               }
             } else {
-              map.set(prev.id, prev);
+              const key = getCanonicalUserKey(prev);
+              map.set(key, prev);
             }
           });
           return Array.from(map.values());
@@ -192,7 +271,23 @@ export default function AdminLiveMap({ adminUid, initialSelectedUserId }: AdminL
     const unsubscribe = subscribeToFirebaseLocations((firebaseLocations) => {
       if (!firebaseLocations || firebaseLocations.length === 0) return;
       setUsers((prevUsers) => {
-        const merged = [...prevUsers];
+        const map = new Map<string, LocatedUser>();
+
+        // Build canonical deduplicated map from current state
+        prevUsers.forEach((u) => {
+          const key = getCanonicalUserKey(u);
+          if (map.has(key)) {
+            const existing = map.get(key)!;
+            const existingTime = existing.lastLocationUpdate ? new Date(existing.lastLocationUpdate).getTime() : 0;
+            const uTime = u.lastLocationUpdate ? new Date(u.lastLocationUpdate).getTime() : 0;
+            if (uTime >= existingTime || u.isMoving) {
+              map.set(key, { ...existing, ...u });
+            }
+          } else {
+            map.set(key, u);
+          }
+        });
+
         firebaseLocations.forEach((fbUser) => {
           const fbId = fbUser.uid || fbUser.user_id || fbUser.id || "";
           const userSpeed = fbUser.speed !== undefined && fbUser.speed !== null ? Number(fbUser.speed) : null;
@@ -203,42 +298,48 @@ export default function AdminLiveMap({ adminUid, initialSelectedUserId }: AdminL
             fbUser.isMoving
           );
 
-          const idx = merged.findIndex(
-            (u) =>
-              (fbId && (u.firebaseUid === fbId || u.id === fbId)) ||
-              (fbUser.email && u.email && u.email.toLowerCase() === fbUser.email.toLowerCase())
-          );
+          const matchedKey = findMatchingKey(map, {
+            email: fbUser.email,
+            firebaseUid: fbId,
+            id: fbId,
+          });
 
-          if (idx !== -1) {
-            const oldLat = merged[idx].latitude;
-            const oldLng = merged[idx].longitude;
+          if (matchedKey) {
+            const existing = map.get(matchedKey)!;
+            const oldLat = existing.latitude;
+            const oldLng = existing.longitude;
             const newLat = Number(fbUser.latitude) || oldLat;
             const newLng = Number(fbUser.longitude) || oldLng;
             const moved = Math.abs(newLat - oldLat) > 0.00003 || Math.abs(newLng - oldLng) > 0.00003;
 
             // Auto-pan if Admin is following this user
-            if (followingUserId && (merged[idx].id === followingUserId || merged[idx].firebaseUid === followingUserId)) {
+            if (followingUserId && (existing.id === followingUserId || existing.firebaseUid === followingUserId)) {
               mapInstanceRef.current?.panTo([newLat, newLng], { animate: true, duration: 0.8 });
             }
 
             // Update live coordinates from Firebase in real-time
-            merged[idx] = {
-              ...merged[idx],
+            map.set(matchedKey, {
+              ...existing,
+              firebaseUid: existing.firebaseUid || fbId,
+              name: existing.name && existing.name !== "Live User" ? existing.name : (fbUser.user_name || fbUser.name || existing.name),
+              email: existing.email || fbUser.email || null,
+              phone: existing.phone || fbUser.phone || null,
+              profilePhoto: existing.profilePhoto || fbUser.photoURL || fbUser.photo_url || null,
               latitude: newLat,
               longitude: newLng,
-              locationAccuracy: fbUser.accuracy || merged[idx].locationAccuracy,
-              locationAddress: fbUser.address || merged[idx].locationAddress,
-              locationCity: fbUser.city || merged[idx].locationCity,
-              isOnline: fbUser.is_online !== undefined ? Boolean(fbUser.is_online) : (fbUser.isOnline !== undefined ? Boolean(fbUser.isOnline) : merged[idx].isOnline),
+              locationAccuracy: fbUser.accuracy || existing.locationAccuracy,
+              locationAddress: fbUser.address || existing.locationAddress,
+              locationCity: fbUser.city || existing.locationCity,
+              isOnline: fbUser.is_online !== undefined ? Boolean(fbUser.is_online) : (fbUser.isOnline !== undefined ? Boolean(fbUser.isOnline) : existing.isOnline),
               lastLocationUpdate: fbUser.last_updated || fbUser.updatedAt || fbUser.lastLocationUpdate || new Date().toISOString(),
               speed: userSpeed,
               heading: userHeading,
               isMoving: isMoving || moved,
-              deviceOs: fbUser.device_os || merged[idx].deviceOs,
-            };
+              deviceOs: fbUser.device_os || existing.deviceOs,
+            });
           } else if (fbUser.latitude && fbUser.longitude) {
-            // Include user active from other websites / Capstone
-            merged.push({
+            // New user active on live stream
+            const newEntry: LocatedUser = {
               id: fbId || `fb-${Date.now()}`,
               firebaseUid: fbId,
               name: fbUser.user_name || fbUser.name || fbUser.email || "Live User",
@@ -260,10 +361,13 @@ export default function AdminLiveMap({ adminUid, initialSelectedUserId }: AdminL
               heading: userHeading,
               isMoving,
               deviceOs: fbUser.device_os || "Device",
-            });
+            };
+            const newKey = getCanonicalUserKey(newEntry);
+            map.set(newKey, newEntry);
           }
         });
-        return merged;
+
+        return Array.from(map.values());
       });
     });
 
@@ -697,18 +801,43 @@ export default function AdminLiveMap({ adminUid, initialSelectedUserId }: AdminL
     }
   };
 
-  // Filtered users list for the sidebar
-  const filteredUsers = users.filter((u) => {
-    if (!searchQuery) return true;
-    const q = searchQuery.toLowerCase();
-    return (
-      u.name?.toLowerCase().includes(q) ||
-      u.email?.toLowerCase().includes(q) ||
-      u.phone?.includes(q) ||
-      u.locationCity?.toLowerCase().includes(q) ||
-      u.locationAddress?.toLowerCase().includes(q)
-    );
-  });
+  // Filtered users list for the sidebar with strict email deduplication
+  const filteredUsers = useMemo(() => {
+    const seen = new Set<string>();
+    const q = searchQuery ? searchQuery.toLowerCase().trim() : "";
+    const now = Date.now();
+
+    return users.filter((u) => {
+      // Deduplicate strictly by normalized email, then firebaseUid, then id
+      const normEmail = normalizeEmail(u.email);
+      const dedupeKey = normEmail ? `email:${normEmail}` : (u.firebaseUid ? `fb:${u.firebaseUid}` : `id:${u.id}`);
+      if (seen.has(dedupeKey)) return false;
+      seen.add(dedupeKey);
+
+      if (activeFilter === "online") {
+        const isOnline = Boolean(
+          u.isOnline &&
+          u.lastLocationUpdate &&
+          now - new Date(u.lastLocationUpdate).getTime() <= 5 * 60 * 1000
+        );
+        if (!isOnline) return false;
+      } else if (activeFilter === "today") {
+        const startOfToday = new Date();
+        startOfToday.setHours(0, 0, 0, 0);
+        const updateTime = u.lastLocationUpdate ? new Date(u.lastLocationUpdate).getTime() : 0;
+        if (updateTime < startOfToday.getTime()) return false;
+      }
+
+      if (!q) return true;
+      return (
+        Boolean(u.name?.toLowerCase().includes(q)) ||
+        Boolean(u.email?.toLowerCase().includes(q)) ||
+        Boolean(u.phone?.includes(q)) ||
+        Boolean(u.locationCity?.toLowerCase().includes(q)) ||
+        Boolean(u.locationAddress?.toLowerCase().includes(q))
+      );
+    });
+  }, [users, searchQuery, activeFilter]);
 
   return (
     <div className="space-y-6">

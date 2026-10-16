@@ -181,18 +181,24 @@ export async function GET(req: NextRequest) {
       },
     });
 
-    // Dynamically guarantee isOnline is only true if lastLocationUpdate was within 5 minutes
-    const usersWithRealtimeStatus = users.map((u) => {
-      const isActuallyOnline = Boolean(
-        u.isOnline &&
-        u.lastLocationUpdate &&
-        new Date(u.lastLocationUpdate).getTime() >= fiveMinutesAgo.getTime()
-      );
-      return {
-        ...u,
-        isOnline: isActuallyOnline,
-      };
-    });
+    // Deduplicate by email so each user email only appears once (with their most recent location)
+    const uniqueUsersMap = new Map<string, any>();
+    for (const u of users) {
+      const emailKey = (u.email || "").toLowerCase().trim();
+      const key = emailKey || u.firebaseUid || u.id;
+      if (!uniqueUsersMap.has(key)) {
+        const isActuallyOnline = Boolean(
+          u.isOnline &&
+          u.lastLocationUpdate &&
+          new Date(u.lastLocationUpdate).getTime() >= fiveMinutesAgo.getTime()
+        );
+        uniqueUsersMap.set(key, {
+          ...u,
+          isOnline: isActuallyOnline,
+        });
+      }
+    }
+    const usersWithRealtimeStatus = Array.from(uniqueUsersMap.values());
 
     // Compute stats across all located users
     const totalWithLocation = await prisma.user.count({

@@ -1,6 +1,6 @@
 "use client";
 
-import { useState, useEffect } from "react";
+import { useState, useEffect, useMemo } from "react";
 import { motion } from "framer-motion";
 import Link from "next/link";
 import { Search, Users, Phone, Mail, Calendar, FileText, ChevronRight, MapPin } from "lucide-react";
@@ -44,13 +44,22 @@ export default function AdminCustomersPage() {
     }
   };
 
-  const filtered = customers.filter(
-    (c) =>
-      !search ||
-      c.name?.toLowerCase().includes(search.toLowerCase()) ||
-      c.email?.toLowerCase().includes(search.toLowerCase()) ||
-      c.phone?.includes(search)
-  );
+  const filtered = useMemo(() => {
+    const seen = new Set<string>();
+    const q = search.toLowerCase().trim();
+    return customers.filter((c) => {
+      const emailKey = c.email ? c.email.toLowerCase().trim() : c.id;
+      if (seen.has(emailKey)) return false;
+      seen.add(emailKey);
+
+      return (
+        !q ||
+        c.name?.toLowerCase().includes(q) ||
+        c.email?.toLowerCase().includes(q) ||
+        c.phone?.includes(q)
+      );
+    });
+  }, [customers, search]);
 
   return (
     <div className="space-y-6">
