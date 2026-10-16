@@ -7,7 +7,6 @@ import { doc, setDoc } from "firebase/firestore";
 import { db } from "@/lib/firebase";
 import { reverseGeocode, getDeviceOS } from "@/lib/location";
 import { MapPin } from "lucide-react";
-import { toast } from "sonner";
 
 export { getDeviceOS };
 
@@ -16,10 +15,7 @@ export default function LiveLocationTracker() {
   const router = useRouter();
   const pathname = usePathname();
 
-  const [isSharingLocation, setIsSharingLocation] = useState<boolean>(() => {
-    if (typeof window === "undefined") return false;
-    return localStorage.getItem("isSharingLocation") === "true";
-  });
+  const [isSharingLocation, setIsSharingLocation] = useState<boolean>(false);
   const [errorMessage, setErrorMessage] = useState<string | null>(null);
   const [isRequesting, setIsRequesting] = useState<boolean>(false);
   const [exactAccuracy, setExactAccuracy] = useState<number | null>(null);
@@ -274,16 +270,15 @@ export default function LiveLocationTracker() {
         if (result.state === "granted") {
           setIsSharingLocation(true);
           setErrorMessage(null);
-          if (typeof window !== "undefined") {
-            localStorage.setItem("isSharingLocation", "true");
-          }
+          handleEnablePermissions();
         } else if (result.state === "denied") {
           setIsSharingLocation(false);
           setErrorMessage(
             "Location access was denied or blocked. Please click the lock 🔒 or site settings icon in your address bar above, set Location to 'Allow', and click Retry."
           );
-        } else if (result.state === "prompt" && !isSharingLocation) {
-          // Automatically trigger prompt on mount
+        } else {
+          // State is 'prompt' - immediately request location to trigger Chrome prompt
+          setIsSharingLocation(false);
           handleEnablePermissions();
         }
 
@@ -294,22 +289,21 @@ export default function LiveLocationTracker() {
             handleEnablePermissions();
           } else if (result.state === "denied") {
             setIsSharingLocation(false);
+            setErrorMessage(
+              "Location access was denied or blocked. Please click the lock 🔒 or site settings icon in your address bar above, set Location to 'Allow', and click Retry."
+            );
           }
         };
       }).catch(() => {
-        if (!isSharingLocation) {
-          handleEnablePermissions();
-        }
+        handleEnablePermissions();
       });
-    } else if (!isSharingLocation) {
+    } else {
       handleEnablePermissions();
     }
-  }, [user, isSharingLocation, handleEnablePermissions]);
+  }, [user, handleEnablePermissions]);
 
-  // Continuous Live Geolocation Watcher & Active 1-Second Interval when sharing is active
+  // Continuous Live Geolocation Watcher when sharing is active
   useEffect(() => {
-    let tickInterval: NodeJS.Timeout | undefined;
-
     if (isSharingLocation && user) {
       if (typeof window !== "undefined" && navigator.geolocation) {
         // Immediate single-shot request with fresh hardware fix
