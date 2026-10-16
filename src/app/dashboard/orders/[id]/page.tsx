@@ -30,6 +30,7 @@ import { formatCurrency, formatDate, ORDER_STATUS_LABELS, PAYMENT_STATUS_COLORS,
 import { toast } from "sonner";
 import { upload } from "@vercel/blob/client";
 import { getCurrentBrowserLocation, reverseGeocode } from "@/lib/location";
+import ReceiptLocationCard from "@/components/ReceiptLocationCard";
 
 const PAYMENT_APPS = [
   { name: "Google Pay", src: "/payment-logos/gpay.jpeg", alt: "Google Pay", hClass: "h-5 sm:h-6" },
@@ -1552,42 +1553,13 @@ export default function OrderDetailPage() {
                     </div>
 
                     {/* Exact Xerox Place & Location Coordinates */}
-                    {((order.orderLatitude && order.orderLongitude) || latestPayment?.paymentLatitude || order.orderLocationAddress || order.orderLocationCity) && (
-                      <div className="pt-2.5 mt-2 border-t border-[#b6dec0]/80">
-                        <div className="flex items-center gap-1.5 text-xs font-bold text-gray-800 mb-1">
-                          <MapPin className="w-3.5 h-3.5 text-red-600 flex-shrink-0 animate-bounce" />
-                          <span>Exact Xerox / Order Location (GPS Verified):</span>
-                        </div>
-                        {(order.orderLocationAddress || latestPayment?.paymentLocationAddress) ? (
-                          <div className="text-xs font-semibold text-gray-900 leading-snug">
-                            {order.orderLocationAddress || latestPayment?.paymentLocationAddress}
-                          </div>
-                        ) : (order.orderLocationCity || latestPayment?.paymentLocationCity) ? (
-                          <div className="text-xs font-semibold text-gray-900">
-                            {order.orderLocationCity || latestPayment?.paymentLocationCity}, Andhra Pradesh
-                          </div>
-                        ) : null}
-
-                        {(order.orderLatitude || latestPayment?.paymentLatitude) && (
-                          <div className="mt-1 flex items-center gap-2 flex-wrap text-[11px] font-mono font-bold text-gray-700">
-                            <span className="bg-white/90 px-2 py-0.5 rounded border border-[#b6dec0]">
-                              LAT: {(order.orderLatitude || latestPayment?.paymentLatitude)?.toFixed(6)}° N
-                            </span>
-                            <span className="bg-white/90 px-2 py-0.5 rounded border border-[#b6dec0]">
-                              LNG: {(order.orderLongitude || latestPayment?.paymentLongitude)?.toFixed(6)}° E
-                            </span>
-                            <a
-                              href={`https://www.google.com/maps/search/?api=1&query=${order.orderLatitude || latestPayment?.paymentLatitude},${order.orderLongitude || latestPayment?.paymentLongitude}`}
-                              target="_blank"
-                              rel="noopener noreferrer"
-                              className="text-blue-700 hover:text-blue-900 underline font-sans text-[10px] ml-1 print:hidden"
-                            >
-                              View on Maps ↗
-                            </a>
-                          </div>
-                        )}
-                      </div>
-                    )}
+                    <ReceiptLocationCard
+                      address={order.orderLocationAddress || latestPayment?.paymentLocationAddress}
+                      city={order.orderLocationCity || latestPayment?.paymentLocationCity}
+                      latitude={order.orderLatitude || latestPayment?.paymentLatitude}
+                      longitude={order.orderLongitude || latestPayment?.paymentLongitude}
+                      accuracy={order.orderLocationAccuracy || (latestPayment as any)?.paymentLocationAccuracy}
+                    />
                   </div>
 
                   {/* Record Update Note */}

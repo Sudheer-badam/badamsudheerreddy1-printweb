@@ -1,7 +1,8 @@
 "use client";
 
 import { motion, AnimatePresence } from "framer-motion";
-import { Download, MapPin } from "lucide-react";
+import { Download } from "lucide-react";
+import ReceiptLocationCard from "@/components/ReceiptLocationCard";
 
 export interface PaymentReceiptData {
   orderNumber: string;
@@ -184,47 +185,13 @@ export default function PaymentReceiptModal({ isOpen, onClose, data }: PaymentRe
                 </div>
 
                 {/* Exact Xerox Place & Location Coordinates */}
-                {(data.latitude || data.locationAddress || data.locationCity) && (
-                  <div className="pt-2.5 mt-2 border-t border-[#b6dec0]/80">
-                    <div className="flex items-center gap-1.5 text-xs font-bold text-gray-800 mb-1">
-                      <MapPin className="w-3.5 h-3.5 text-red-600 flex-shrink-0 animate-bounce" />
-                      <span>Order & Payment Location (GPS Verified):</span>
-                    </div>
-                    {data.locationAddress ? (
-                      <div className="text-xs font-semibold text-gray-900 leading-snug">
-                        {data.locationAddress}
-                      </div>
-                    ) : data.locationCity ? (
-                      <div className="text-xs font-semibold text-gray-900">
-                        {data.locationCity}, Andhra Pradesh
-                      </div>
-                    ) : null}
-
-                    {data.latitude && data.longitude && (
-                      <div className="mt-1 flex items-center gap-2 flex-wrap text-[11px] font-mono font-bold text-gray-700">
-                        <span className="bg-white/90 px-2 py-0.5 rounded border border-[#b6dec0]">
-                          LAT: {data.latitude.toFixed(6)}° N
-                        </span>
-                        <span className="bg-white/90 px-2 py-0.5 rounded border border-[#b6dec0]">
-                          LNG: {data.longitude.toFixed(6)}° E
-                        </span>
-                        {data.locationAccuracy && (
-                          <span className="text-gray-500 font-sans text-[10px]">
-                            (±{Math.round(data.locationAccuracy)}m)
-                          </span>
-                        )}
-                        <a
-                          href={`https://www.google.com/maps/search/?api=1&query=${data.latitude},${data.longitude}`}
-                          target="_blank"
-                          rel="noopener noreferrer"
-                          className="text-blue-700 hover:text-blue-900 underline font-sans text-[10px] ml-1 print:hidden"
-                        >
-                          View Map ↗
-                        </a>
-                      </div>
-                    )}
-                  </div>
-                )}
+                <ReceiptLocationCard
+                  address={data.locationAddress}
+                  city={data.locationCity}
+                  latitude={data.latitude}
+                  longitude={data.longitude}
+                  accuracy={data.locationAccuracy}
+                />
               </div>
 
               {/* Record Update Note */}
