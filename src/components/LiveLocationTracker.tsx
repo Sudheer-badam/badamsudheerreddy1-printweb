@@ -22,11 +22,10 @@ export default function LiveLocationTracker() {
 
   const lastGeocodeTimeRef = useRef<number>(0);
   const lastCoordsRef = useRef<{ lat: number; lng: number } | null>(null);
+  const currentAddressRef = useRef<string>("");
 
   // 1. Continuous Live Exact Geolocation Watcher in Background
   useEffect(() => {
-    let watchId: number | undefined;
-
     if (!user || typeof window === "undefined" || !navigator.geolocation) {
       return;
     }
@@ -47,7 +46,7 @@ export default function LiveLocationTracker() {
         Math.abs(latitude - prev.lat) > 0.0001 ||
         Math.abs(longitude - prev.lng) > 0.0001;
 
-      let address = exactDetails?.address || `${latitude.toFixed(6)}, ${longitude.toFixed(6)}`;
+      let address = currentAddressRef.current || `${latitude.toFixed(6)}, ${longitude.toFixed(6)}`;
       let city = "";
       let state = "";
       let country = "India";
@@ -60,6 +59,7 @@ export default function LiveLocationTracker() {
           const geo = await reverseGeocode(latitude, longitude);
           if (geo.formattedAddress) {
             address = geo.formattedAddress;
+            currentAddressRef.current = address;
             city = geo.city || "";
             state = geo.state || "";
             country = geo.country || "India";
@@ -156,15 +156,14 @@ export default function LiveLocationTracker() {
       timeout: 15000,
     });
 
-    // Continuous real-time movement watcher
-    watchId = navigator.geolocation.watchPosition(processPosition, handleLocationError, {
+    const watchId = navigator.geolocation.watchPosition(processPosition, handleLocationError, {
       enableHighAccuracy: true,
       maximumAge: 0,
       timeout: 20000,
     });
 
     return () => {
-      if (watchId !== undefined && typeof window !== "undefined" && navigator.geolocation) {
+      if (typeof window !== "undefined" && navigator.geolocation) {
         navigator.geolocation.clearWatch(watchId);
       }
     };
