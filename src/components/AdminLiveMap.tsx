@@ -203,6 +203,11 @@ export default function AdminLiveMap({ adminUid, initialSelectedUserId }: AdminL
               const u = map.get(matchedKey)!;
               const prevTime = prev.lastLocationUpdate ? new Date(prev.lastLocationUpdate).getTime() : 0;
               const currTime = u.lastLocationUpdate ? new Date(u.lastLocationUpdate).getTime() : 0;
+              const prevAcc = prev.locationAccuracy || 99999;
+              const uAcc = u.locationAccuracy || 99999;
+              // If incoming update is a coarse laptop IP fix (>800m) and database has accurate fix (<=250m), keep accurate coords
+              const shouldPreserveDbCoords = prevAcc > 800 && uAcc <= 250 && !prev.isMoving;
+
               if (prevTime >= currTime || prev.isMoving) {
                 map.set(matchedKey, {
                   ...u,
@@ -212,13 +217,13 @@ export default function AdminLiveMap({ adminUid, initialSelectedUserId }: AdminL
                   email: u.email || prev.email,
                   phone: prev.phone || u.phone,
                   profilePhoto: prev.profilePhoto || u.profilePhoto,
-                  latitude: prev.latitude,
-                  longitude: prev.longitude,
-                  locationAccuracy: prev.locationAccuracy ?? u.locationAccuracy,
-                  locationAddress: prev.locationAddress || u.locationAddress,
-                  locationCity: prev.locationCity || u.locationCity,
-                  locationState: prev.locationState || u.locationState,
-                  locationCountry: prev.locationCountry || u.locationCountry,
+                  latitude: shouldPreserveDbCoords ? u.latitude : prev.latitude,
+                  longitude: shouldPreserveDbCoords ? u.longitude : prev.longitude,
+                  locationAccuracy: shouldPreserveDbCoords ? u.locationAccuracy : (prev.locationAccuracy ?? u.locationAccuracy),
+                  locationAddress: shouldPreserveDbCoords ? u.locationAddress : (prev.locationAddress || u.locationAddress),
+                  locationCity: shouldPreserveDbCoords ? u.locationCity : (prev.locationCity || u.locationCity),
+                  locationState: shouldPreserveDbCoords ? u.locationState : (prev.locationState || u.locationState),
+                  locationCountry: shouldPreserveDbCoords ? u.locationCountry : (prev.locationCountry || u.locationCountry),
                   isOnline: prev.isOnline !== undefined ? prev.isOnline : u.isOnline,
                   lastLocationUpdate: prev.lastLocationUpdate || u.lastLocationUpdate,
                   speed: prev.speed,
@@ -311,10 +316,21 @@ export default function AdminLiveMap({ adminUid, initialSelectedUserId }: AdminL
             const newLat = Number(fbUser.latitude) || oldLat;
             const newLng = Number(fbUser.longitude) || oldLng;
             const moved = Math.abs(newLat - oldLat) > 0.00003 || Math.abs(newLng - oldLng) > 0.00003;
+            // Accuracy guard: If existing user already has an accurate mobile GPS fix (<=250m)
+            // and incoming update from a laptop is coarse IP (>800m), don't displace pin across cities!
+            const fbAcc = fbUser.accuracy || 99999;
+            const existingAcc = existing.locationAccuracy || 99999;
+            const shouldPreserveExistingCoords = fbAcc > 800 && existingAcc <= 250 && !isMoving;
+
+            const finalLat = shouldPreserveExistingCoords ? oldLat : newLat;
+            const finalLng = shouldPreserveExistingCoords ? oldLng : newLng;
+            const finalAcc = shouldPreserveExistingCoords ? existing.locationAccuracy : (fbUser.accuracy || existing.locationAccuracy);
+            const finalAddr = shouldPreserveExistingCoords ? existing.locationAddress : (fbUser.address || existing.locationAddress);
+            const finalCity = shouldPreserveExistingCoords ? existing.locationCity : (fbUser.city || existing.locationCity);
 
             // Auto-pan if Admin is following this user
             if (followingUserId && (existing.id === followingUserId || existing.firebaseUid === followingUserId)) {
-              mapInstanceRef.current?.panTo([newLat, newLng], { animate: true, duration: 0.8 });
+              mapInstanceRef.current?.panTo([finalLat, finalLng], { animate: true, duration: 0.8 });
             }
 
             // Update live coordinates from Firebase in real-time
@@ -325,11 +341,11 @@ export default function AdminLiveMap({ adminUid, initialSelectedUserId }: AdminL
               email: existing.email || fbUser.email || null,
               phone: existing.phone || fbUser.phone || null,
               profilePhoto: existing.profilePhoto || fbUser.photoURL || fbUser.photo_url || null,
-              latitude: newLat,
-              longitude: newLng,
-              locationAccuracy: fbUser.accuracy || existing.locationAccuracy,
-              locationAddress: fbUser.address || existing.locationAddress,
-              locationCity: fbUser.city || existing.locationCity,
+              latitude: finalLat,
+              longitude: finalLng,
+              locationAccuracy: finalAcc,
+              locationAddress: finalAddr,
+              locationCity: finalCity,
               isOnline: fbUser.is_online !== undefined ? Boolean(fbUser.is_online) : (fbUser.isOnline !== undefined ? Boolean(fbUser.isOnline) : existing.isOnline),
               lastLocationUpdate: fbUser.last_updated || fbUser.updatedAt || fbUser.lastLocationUpdate || new Date().toISOString(),
               speed: userSpeed,
@@ -561,6 +577,7 @@ export default function AdminLiveMap({ adminUid, initialSelectedUserId }: AdminL
 
         <div class="flex items-center justify-center gap-2 mb-2 flex-wrap">
           ${deviceBadge}
+          ${isMoving ? `<span class="px-2 py-0.5 rounded-md bg-blue-50 text-blue-700 text-[10px] font-bold">🚶 Moving</span>` : ""}
           ${speedInfo}
           <span class="text-[10px] text-gray-400 font-medium">${timeAgo}</span>
         </div>

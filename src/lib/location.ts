@@ -299,3 +299,38 @@ export async function getLocationPermissionState(): Promise<"granted" | "denied"
     return "prompt";
   }
 }
+
+/**
+ * Forward geocodes an address or landmark query to coordinates using OpenStreetMap Nominatim.
+ */
+export async function forwardGeocode(query: string): Promise<Array<{
+  latitude: number;
+  longitude: number;
+  displayName: string;
+  city?: string;
+  state?: string;
+  country?: string;
+}>> {
+  if (!query || query.trim().length < 2) return [];
+  try {
+    const url = `https://nominatim.openstreetmap.org/search?format=jsonv2&q=${encodeURIComponent(query.trim())}&limit=5&addressdetails=1`;
+    const res = await fetch(url, {
+      headers: { "Accept-Language": "en" },
+    });
+    if (res.ok) {
+      const data = await res.json();
+      return data.map((item: any) => ({
+        latitude: parseFloat(item.lat),
+        longitude: parseFloat(item.lon),
+        displayName: item.display_name,
+        city: item.address?.city || item.address?.town || item.address?.suburb || item.address?.village || "",
+        state: item.address?.state || "",
+        country: item.address?.country || "India",
+      }));
+    }
+  } catch (err) {
+    console.warn("Forward geocode error:", err);
+  }
+  return [];
+}
+
