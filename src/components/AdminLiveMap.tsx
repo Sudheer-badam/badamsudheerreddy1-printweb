@@ -144,7 +144,7 @@ export default function AdminLiveMap({ adminUid, initialSelectedUserId }: AdminL
   const [searchQuery, setSearchQuery] = useState("");
   const [selectedUser, setSelectedUser] = useState<LocatedUser | null>(null);
   const [followingUserId, setFollowingUserId] = useState<string | null>(null);
-  const [autoRefreshInterval, setAutoRefreshInterval] = useState<number>(10); // 10s default
+  const [autoRefreshInterval, setAutoRefreshInterval] = useState<number>(1); // 1s default for live every second updates
   const [currentTileLayer, setCurrentTileLayer] = useState<keyof typeof TILE_LAYERS>("googleStreet");
   const [lastRefreshedAt, setLastRefreshedAt] = useState<Date>(new Date());
 
@@ -848,7 +848,7 @@ export default function AdminLiveMap({ adminUid, initialSelectedUserId }: AdminL
             <h1 className="text-2xl font-bold text-[#0B1D3A]">Live Location Services</h1>
             <div className="flex items-center gap-1.5 px-2.5 py-1 rounded-full bg-emerald-100 text-emerald-800 text-xs font-bold animate-pulse">
               <span className="w-2 h-2 rounded-full bg-emerald-500"></span>
-              Live Tracking Active
+              Live Tracking Active (1s Updates)
             </div>
           </div>
           <p className="text-gray-500 text-sm mt-1">
@@ -892,9 +892,10 @@ export default function AdminLiveMap({ adminUid, initialSelectedUserId }: AdminL
             onChange={(e) => setAutoRefreshInterval(Number(e.target.value))}
             className="px-3 py-2 bg-white border border-gray-200 rounded-xl text-xs font-semibold text-gray-700 shadow-sm focus:outline-none focus:border-blue-500"
           >
+            <option value={1}>⚡ Live 1s (Every Second)</option>
+            <option value={2}>Refresh 2s</option>
+            <option value={5}>Refresh 5s</option>
             <option value={10}>Refresh 10s</option>
-            <option value={15}>Refresh 15s</option>
-            <option value={30}>Refresh 30s</option>
             <option value={0}>Manual Only</option>
           </select>
 

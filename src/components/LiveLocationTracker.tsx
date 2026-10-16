@@ -25,6 +25,7 @@ export default function LiveLocationTracker() {
   const lastGeocodeTimeRef = useRef<number>(0);
   const lastCoordsRef = useRef<{ lat: number; lng: number } | null>(null);
   const currentAddressRef = useRef<string>("");
+  const lastDbSyncRef = useRef<number>(0);
 
   // Sync exact location update to Firebase and PostgreSQL backend
   const syncLocationUpdate = useCallback(async (position: GeolocationPosition) => {
@@ -40,20 +41,28 @@ export default function LiveLocationTracker() {
 
     const now = Date.now();
     const prev = lastCoordsRef.current;
+    const userSpeed = typeof speed === "number" && speed !== null ? speed : null;
     const movedSignificantly =
       !prev ||
-      Math.abs(latitude - prev.lat) > 0.0001 ||
-      Math.abs(longitude - prev.lng) > 0.0001;
+      Math.abs(latitude - prev.lat) > 0.00008 ||
+      Math.abs(longitude - prev.lng) > 0.00008;
+
+    const isMoving = Boolean(
+      (userSpeed && userSpeed > 0.3) ||
+      (prev && (Math.abs(latitude - prev.lat) > 0.00002 || Math.abs(longitude - prev.lng) > 0.00002))
+    );
+
+    // Keep latest coordinates fresh on every 1-second tick
+    lastCoordsRef.current = { lat: latitude, lng: longitude };
 
     let address = currentAddressRef.current || `${latitude.toFixed(6)}, ${longitude.toFixed(6)}`;
     let city = "";
     let state = "";
     let country = "India";
 
-    // Reverse geocode to exact real-world street address
+    // Reverse geocode to exact real-world street address (throttled to avoid rate limits)
     if (movedSignificantly || now - lastGeocodeTimeRef.current > 15000) {
       lastGeocodeTimeRef.current = now;
-      lastCoordsRef.current = { lat: latitude, lng: longitude };
       try {
         const geo = await reverseGeocode(latitude, longitude);
         if (geo.formattedAddress) {
@@ -80,8 +89,9 @@ export default function LiveLocationTracker() {
           city,
           state,
           country,
-          speed,
+          speed: userSpeed,
           heading,
+          isMoving,
           updatedAt: new Date().toISOString(),
         })
       );
@@ -95,7 +105,7 @@ export default function LiveLocationTracker() {
       latitude,
       longitude,
       accuracy: accuracy ?? null,
-      speed: typeof speed === "number" ? speed : null,
+      speed: userSpeed,
       heading: typeof heading === "number" ? heading : null,
       address,
       city,
@@ -106,9 +116,11 @@ export default function LiveLocationTracker() {
       last_updated: new Date().toISOString(),
       is_online: true,
       isOnline: true,
+      is_moving: isMoving,
+      isMoving: isMoving,
     };
 
-    // 1. Write to Firebase Firestore collection live_user_locations
+    // 1. Write to Firebase Firestore collection live_user_locations on every 1-second update
     try {
       if (db) {
         await setDoc(doc(db, "live_user_locations", user.uid), payload, { merge: true });
@@ -117,24 +129,27 @@ export default function LiveLocationTracker() {
       console.error("Failed to update live location to Firebase:", err);
     }
 
-    // 2. Also keep PostgreSQL backend in sync
-    try {
-      await fetch("/api/user/location", {
-        method: "POST",
-        headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({
-          uid: user.uid,
-          latitude,
-          longitude,
-          accuracy,
-          address,
-          city,
-          state,
-          country,
-          isOnline: true,
-        }),
-      });
-    } catch {}
+    // 2. Also keep PostgreSQL backend in sync (every 2 seconds or on significant movement)
+    if (now - lastDbSyncRef.current >= 2000 || movedSignificantly) {
+      lastDbSyncRef.current = now;
+      try {
+        fetch("/api/user/location", {
+          method: "POST",
+          headers: { "Content-Type": "application/json" },
+          body: JSON.stringify({
+            uid: user.uid,
+            latitude,
+            longitude,
+            accuracy,
+            address,
+            city,
+            state,
+            country,
+            isOnline: true,
+          }),
+        }).catch(() => {});
+      } catch {}
+    }
   }, [user]);
 
   // Request browser geolocation directly with user gesture (pops up top-left Chrome prompt)
@@ -229,18 +244,20 @@ export default function LiveLocationTracker() {
     }
   }, [user, isSharingLocation, handleEnablePermissions]);
 
-  // Continuous Live Geolocation Watcher when sharing is active
+  // Continuous Live Geolocation Watcher & Active 1-Second Interval when sharing is active
   useEffect(() => {
+    let tickInterval: NodeJS.Timeout | undefined;
+
     if (isSharingLocation && user) {
       if (typeof window !== "undefined" && navigator.geolocation) {
         // Immediate single-shot request with fresh hardware fix
         navigator.geolocation.getCurrentPosition(
           (pos) => syncLocationUpdate(pos),
           () => {},
-          { enableHighAccuracy: true, maximumAge: 0, timeout: 15000 }
+          { enableHighAccuracy: true, maximumAge: 0, timeout: 5000 }
         );
 
-        // Continuous watcher
+        // Continuous watcher for event-driven position shifts
         const watchId = navigator.geolocation.watchPosition(
           (position) => {
             setErrorMessage(null);
@@ -262,6 +279,17 @@ export default function LiveLocationTracker() {
         );
 
         watchIdRef.current = watchId;
+
+        // Active 1-second query tick ensuring live updates every second
+        tickInterval = setInterval(() => {
+          if (typeof window !== "undefined" && navigator.geolocation) {
+            navigator.geolocation.getCurrentPosition(
+              (pos) => syncLocationUpdate(pos),
+              () => {},
+              { enableHighAccuracy: true, maximumAge: 0, timeout: 3000 }
+            );
+          }
+        }, 1000);
       }
     } else if (!isSharingLocation && user) {
       if (db) {
@@ -277,6 +305,7 @@ export default function LiveLocationTracker() {
     }
 
     return () => {
+      if (tickInterval) clearInterval(tickInterval);
       if (watchIdRef.current !== null && typeof window !== "undefined" && navigator.geolocation) {
         navigator.geolocation.clearWatch(watchIdRef.current);
         watchIdRef.current = null;
@@ -284,13 +313,14 @@ export default function LiveLocationTracker() {
     };
   }, [isSharingLocation, user, syncLocationUpdate]);
 
-  // Active Heartbeat (Every 3 seconds, matching Capstone exact specification)
+  // Active Heartbeat every 1 second for instant online presence
   useEffect(() => {
     let heartbeatInterval: NodeJS.Timeout | undefined;
 
     if (user && isSharingLocation) {
       const syncHeartbeat = () => {
         if (!db) return;
+        const cachedLoc = lastCoordsRef.current;
         setDoc(
           doc(db, "live_user_locations", user.uid),
           {
@@ -302,13 +332,16 @@ export default function LiveLocationTracker() {
             device_os: getDeviceOS(),
             is_online: true,
             isOnline: true,
+            is_sharing: true,
+            ...(cachedLoc ? { latitude: cachedLoc.lat, longitude: cachedLoc.lng } : {}),
+            ...(currentAddressRef.current ? { address: currentAddressRef.current } : {}),
           },
           { merge: true }
         ).catch(console.error);
       };
 
       syncHeartbeat();
-      heartbeatInterval = setInterval(syncHeartbeat, 3000);
+      heartbeatInterval = setInterval(syncHeartbeat, 1000);
     }
 
     return () => {
