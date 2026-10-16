@@ -377,7 +377,7 @@ export default function LiveLocationTracker() {
           } catch {}
         }
       }
-    }, 10000);
+    }, 3000);
 
     // 8. Periodic background sync: Keep online status active every 20 seconds
     const periodicSync = setInterval(() => {

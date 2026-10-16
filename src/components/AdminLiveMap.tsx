@@ -14,7 +14,8 @@ import {
   Navigation,
 } from "lucide-react";
 import { formatDistanceToNow } from "date-fns";
-import { subscribeToFirebaseLocations } from "@/lib/firebaseLocation";
+import { subscribeToFirebaseLocations, deleteFirebaseUserLocation } from "@/lib/firebaseLocation";
+import { toast } from "sonner";
 
 export interface LocatedUser {
   id: string;
@@ -88,13 +89,31 @@ export default function AdminLiveMap({ adminUid, initialSelectedUserId }: AdminL
   const [currentTileLayer, setCurrentTileLayer] = useState<keyof typeof TILE_LAYERS>("googleStreet");
   const [lastRefreshedAt, setLastRefreshedAt] = useState<Date>(new Date());
 
-  // Global window handler for popup "Follow Live Movement" button
+  // Global window handler for popup "Follow Live Movement" & "Delete User Data" buttons
   useEffect(() => {
     (window as any).__toggleFollowUser = (userId: string) => {
       setFollowingUserId((prev) => (prev === userId ? null : userId));
     };
+
+    (window as any).__deleteUserLocation = async (uid: string) => {
+      if (
+        window.confirm(
+          "Are you sure you want to completely remove this user from the live map tracking data?"
+        )
+      ) {
+        try {
+          await deleteFirebaseUserLocation(uid);
+          toast.success("User live tracking data removed.");
+          setUsers((prev) => prev.filter((u) => u.firebaseUid !== uid && u.id !== uid));
+        } catch {
+          toast.error("Failed to remove user tracking data.");
+        }
+      }
+    };
+
     return () => {
       delete (window as any).__toggleFollowUser;
+      delete (window as any).__deleteUserLocation;
     };
   }, []);
 
@@ -349,15 +368,16 @@ export default function AdminLiveMap({ adminUid, initialSelectedUserId }: AdminL
 
   // Helper to format popup content
   const createPopupContent = (user: LocatedUser) => {
+    // Exact Capstone live calculation: active within 15 seconds
     const isOnline = Boolean(
       user.isOnline &&
       user.lastLocationUpdate &&
-      Date.now() - new Date(user.lastLocationUpdate).getTime() <= 5 * 60 * 1000
+      Date.now() - new Date(user.lastLocationUpdate).getTime() <= 15 * 1000
     );
     const isMoving = Boolean(
       user.isMoving ||
       (user.speed && user.speed > 0.3) ||
-      (user.lastLocationUpdate && Date.now() - new Date(user.lastLocationUpdate).getTime() <= 30 * 1000)
+      (user.lastLocationUpdate && Date.now() - new Date(user.lastLocationUpdate).getTime() <= 10 * 1000)
     );
     const timeAgo = user.lastLocationUpdate
       ? formatDistanceToNow(new Date(user.lastLocationUpdate), { addSuffix: true })
@@ -397,6 +417,18 @@ export default function AdminLiveMap({ adminUid, initialSelectedUserId }: AdminL
       </button>
     `;
 
+    const directionsLink = `
+      <a href="https://www.google.com/maps/dir/?api=1&destination=${user.latitude},${user.longitude}" target="_blank" rel="noreferrer" style="display:block;margin-top:8px;padding:6px 12px;background:#007bff;color:white;border:none;border-radius:6px;cursor:pointer;font-weight:bold;font-size:12px;text-decoration:none;text-align:center">
+        🗺️ Get Directions
+      </a>
+    `;
+
+    const deleteBtn = `
+      <button onclick="window.__deleteUserLocation('${user.firebaseUid || user.id}')" style="margin-top:6px;padding:6px 12px;background:#dc3545;color:white;border:none;border-radius:6px;cursor:pointer;font-weight:bold;font-size:12px;width:100%;text-align:center">
+        Delete User Data
+      </button>
+    `;
+
     return `
       <div class="p-3.5 min-w-[270px] max-w-[340px] font-sans text-gray-800 text-center">
         <div class="flex items-center justify-center gap-3 pb-2.5 border-b border-gray-100 mb-2.5">
@@ -425,16 +457,22 @@ export default function AdminLiveMap({ adminUid, initialSelectedUserId }: AdminL
         <div class="space-y-1 text-xs text-gray-600 mb-3 text-left bg-gray-50 p-2.5 rounded-xl border border-gray-100">
           <div class="flex items-start gap-1.5">
             <span class="font-semibold text-gray-800">📍</span>
-            <span class="truncate-2-lines">${user.locationAddress || `${user.latitude.toFixed(4)}, ${user.longitude.toFixed(4)}`}</span>
+            <span class="truncate-2-lines">${user.locationAddress || `${user.latitude.toFixed(5)}, ${user.longitude.toFixed(5)}`}</span>
           </div>
           <div class="flex items-center justify-between text-[11px] text-gray-500 pt-1 border-t border-gray-200/50 mt-1">
-            <span>Lat: <strong>${user.latitude.toFixed(4)}</strong></span>
-            <span>Lng: <strong>${user.longitude.toFixed(4)}</strong></span>
+            <span>Lat: <strong>${user.latitude.toFixed(5)}</strong></span>
+            <span>Lng: <strong>${user.longitude.toFixed(5)}</strong></span>
             ${user.locationAccuracy ? `<span>Acc: <strong>±${Math.round(user.locationAccuracy)}m</strong></span>` : ""}
+          </div>
+          <div class="text-center text-[11px] pt-1 mt-1 border-t border-gray-200/50" style="color: green;">
+            Last Update: ${user.lastLocationUpdate ? new Date(user.lastLocationUpdate).toLocaleString() : "Just now"}
           </div>
         </div>
 
-        <div class="flex items-center justify-center gap-2 pt-1 border-t border-gray-100 flex-wrap">
+        ${directionsLink}
+        ${deleteBtn}
+
+        <div class="flex items-center justify-center gap-2 pt-2 mt-2 border-t border-gray-100 flex-wrap">
           ${followBtn}
           ${phoneLink}
           ${waLink}

@@ -1,6 +1,6 @@
 "use client";
 
-import { doc, setDoc, onSnapshot, collection } from "firebase/firestore";
+import { doc, setDoc, onSnapshot, collection, deleteDoc } from "firebase/firestore";
 import { db } from "./firebase";
 
 export interface FirebaseLiveLocationPayload {
@@ -76,12 +76,29 @@ export async function setFirebaseUserOffline(uid: string): Promise<void> {
 
   const update = {
     isOnline: false,
+    is_online: false,
+    is_sharing: false,
     lastActive: new Date().toISOString(),
+    last_updated: new Date().toISOString(),
   };
 
   try {
     await setDoc(doc(db, "live_user_locations", uid), update, { merge: true });
   } catch {}
+}
+
+/**
+ * Completely remove a user's live location record from Firebase Firestore
+ * (Matching Capstone specification for Admin user removal)
+ */
+export async function deleteFirebaseUserLocation(uid: string): Promise<void> {
+  if (!uid || !db) return;
+  try {
+    await deleteDoc(doc(db, "live_user_locations", uid));
+  } catch (err: any) {
+    console.error("Failed to delete user live location record:", err);
+    throw err;
+  }
 }
 
 /**
