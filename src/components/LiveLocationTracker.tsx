@@ -21,6 +21,7 @@ import {
   FullLocationData,
 } from "@/lib/location";
 import { syncLocationToFirebase, setFirebaseUserOffline } from "@/lib/firebaseLocation";
+import { toast } from "sonner";
 import LocationPromptModal from "./LocationPromptModal";
 
 export default function LiveLocationTracker() {
@@ -139,11 +140,12 @@ export default function LiveLocationTracker() {
   const requestLocation = useCallback(() => {
     if (typeof window === "undefined" || !navigator.geolocation) {
       setErrorMessage("Geolocation is not supported by your browser.");
+      toast.error("Geolocation is not supported by your browser.");
       return;
     }
 
     setRequesting(true);
-    setErrorMessage("");
+    toast.info("Verifying location permissions...");
 
     // SYNCHRONOUS BROWSER USER ACTIVATION CALL
     // In Chromium and Safari, calling this synchronously in the click handler
@@ -155,6 +157,7 @@ export default function LiveLocationTracker() {
         setHasLocation(true);
         setPermissionState("granted");
         setErrorMessage("");
+        toast.success("Location verified! Access granted.");
 
         if (typeof window !== "undefined") {
           localStorage.setItem("isSharingLocation", "true");
@@ -197,13 +200,24 @@ export default function LiveLocationTracker() {
           setErrorMessage(
             "Location access was denied by your browser. You MUST allow location access in your browser's site settings to use this application."
           );
+          toast.error(
+            "Location is blocked. Click the lock icon 🔒 next to the website URL to allow location, then reload.",
+            {
+              action: {
+                label: "Reload Page",
+                onClick: () => window.location.reload(),
+              },
+              duration: 8000,
+            }
+          );
         } else {
           setErrorMessage(
             "Could not get your location. Please check your GPS signal or ensure location services are enabled on your device."
           );
+          toast.error("Could not retrieve GPS signal. Please check your device location settings.");
         }
       },
-      { enableHighAccuracy: true, timeout: 20000, maximumAge: 0 }
+      { enableHighAccuracy: true, timeout: 15000, maximumAge: 0 }
     );
   }, [syncLocationToBackend]);
 
@@ -400,6 +414,23 @@ export default function LiveLocationTracker() {
     };
   }, [user?.uid, userRole, requestLocation, syncLocationToBackend, handleLocationStopped]);
 
+  // Handle user signing out cleanly
+  const handleSignOut = async () => {
+    setIsBlocked(false);
+    setErrorMessage("");
+    if (typeof window !== "undefined") {
+      localStorage.removeItem("isSharingLocation");
+      sessionStorage.removeItem("user_last_location");
+    }
+    await logout();
+    router.replace("/auth/login");
+  };
+
+  // If user is not logged in, NEVER show the location permissions modal
+  if (!user) {
+    return null;
+  }
+
   return (
     <>
       {/* 1. Live Indicator Badge (Shown when location is active and user is unblocked) */}
@@ -415,12 +446,12 @@ export default function LiveLocationTracker() {
 
       {/* 2. Fullscreen Permissions Required Screen matching reference design */}
       <LocationPromptModal
-        isOpen={isBlocked}
+        isOpen={isBlocked && Boolean(user)}
         requesting={requesting}
         errorMessage={errorMessage}
         isRetrying={Boolean(errorMessage || permissionState === "denied")}
         onEnable={requestLocation}
-        onSignOut={logout}
+        onSignOut={handleSignOut}
       />
     </>
   );
