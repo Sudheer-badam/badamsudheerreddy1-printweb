@@ -31,13 +31,16 @@ import { toast } from "sonner";
 import { upload } from "@vercel/blob/client";
 import { getCurrentBrowserLocation, reverseGeocode } from "@/lib/location";
 import ReceiptLocationCard from "@/components/ReceiptLocationCard";
+import { generateQrDataUrl } from "@/lib/youpi/qr";
+import { buildAppIntents } from "@/lib/youpi/upi";
+import { BankSmsParser } from "@/lib/youpi/bankSmsParser";
 
 const PAYMENT_APPS = [
-  { name: "Google Pay", src: "/payment-logos/gpay.jpeg", alt: "Google Pay", hClass: "h-5 sm:h-6" },
-  { name: "PhonePe", src: "/payment-logos/phonepe.webp", alt: "PhonePe", hClass: "h-5 sm:h-6" },
-  { name: "Paytm", src: "/payment-logos/paytm.jpeg", alt: "Paytm", hClass: "h-4 sm:h-5" },
-  { name: "BHIM", src: "/payment-logos/bhim.png", alt: "BHIM UPI", hClass: "h-4 sm:h-5" },
-  { name: "UPI", src: "/payment-logos/upi.jpeg", alt: "UPI", hClass: "h-4 sm:h-5" },
+  { name: "Google Pay", key: "gpay", src: "/payment-logos/gpay.jpeg", alt: "Google Pay", hClass: "h-5 sm:h-6" },
+  { name: "PhonePe", key: "phonepe", src: "/payment-logos/phonepe.webp", alt: "PhonePe", hClass: "h-5 sm:h-6" },
+  { name: "Paytm", key: "paytm", src: "/payment-logos/paytm.jpeg", alt: "Paytm", hClass: "h-4 sm:h-5" },
+  { name: "BHIM", key: "bhim", src: "/payment-logos/bhim.png", alt: "BHIM UPI", hClass: "h-4 sm:h-5" },
+  { name: "UPI", key: "upi", src: "/payment-logos/upi.jpeg", alt: "UPI", hClass: "h-4 sm:h-5" },
 ];
 
 interface OrderDetail {
@@ -238,12 +241,12 @@ export default function OrderDetailPage() {
 
   const handleDownloadQr = () => {
     if (!order) return;
-    const qrUrl =
-      qrType === "DYNAMIC"
-        ? `https://api.qrserver.com/v1/create-qr-code/?size=500x500&data=${encodeURIComponent(
-            `upi://pay?pa=${merchantUpiId}&pn=${merchantName}&am=${order.totalAmount.toFixed(2)}&cu=INR&tn=Order ${order.orderNumber}`
-          )}`
-        : merchantQrImage;
+    const dynamicQr =
+      youpiQrDataUrl ||
+      `https://api.qrserver.com/v1/create-qr-code/?size=500x500&data=${encodeURIComponent(
+        `upi://pay?pa=${merchantUpiId}&pn=${merchantName}&am=${order.totalAmount.toFixed(2)}&cu=INR&tn=Order ${order.orderNumber}`
+      )}`;
+    const qrUrl = qrType === "DYNAMIC" ? dynamicQr : merchantQrImage;
 
     const link = document.createElement("a");
     link.href = qrUrl;
@@ -463,6 +466,19 @@ export default function OrderDetailPage() {
   const dynamicUpiUri = `upi://pay?pa=${encodeURIComponent(merchantUpiId)}&pn=${encodeURIComponent(
     merchantName
   )}&am=${order.totalAmount.toFixed(2)}&cu=INR&tn=${encodeURIComponent("Order " + order.orderNumber)}`;
+
+  // YouPI Pure Vector QR Data URL (zero network latency, 100% offline scannable)
+  const youpiQrDataUrl = dynamicUpiUri ? generateQrDataUrl(dynamicUpiUri, 8, 2) : "";
+
+  // YouPI UPI App Intent Deep Links
+  const appIntents = order
+    ? buildAppIntents({
+        payeeVpa: merchantUpiId,
+        payeeName: merchantName,
+        amount: order.totalAmount,
+        transactionRef: order.orderNumber,
+      })
+    : ({} as Record<string, string>);
 
   // GST calculation logic: 18% of Total Price (e.g. ₹ 1.00 -> ₹ 0.18 GST)
   const effectiveGstRate = typeof order.gstRate === "number" && order.gstRate > 0 ? order.gstRate : 18.0;
@@ -1203,9 +1219,18 @@ export default function OrderDetailPage() {
                         </div>
                         <div className="flex items-center justify-center gap-2 sm:gap-2.5 flex-wrap">
                           {PAYMENT_APPS.map((app) => (
-                            <div
+                            <button
+                              type="button"
                               key={app.name}
-                              className="flex items-center gap-1.5 bg-white px-2.5 py-1.5 rounded-xl border border-gray-200/90 shadow-2xs hover:border-blue-400 hover:shadow-xs transition-all group"
+                              onClick={() => {
+                                const intentUrl = (app.key && appIntents[app.key]) || dynamicUpiUri;
+                                if (/Android|iPhone|iPad|iPod/i.test(navigator.userAgent)) {
+                                  window.location.href = intentUrl;
+                                } else {
+                                  copyUpiId();
+                                }
+                              }}
+                              className="flex items-center gap-1.5 bg-white px-2.5 py-1.5 rounded-xl border border-gray-200/90 shadow-2xs hover:border-blue-400 hover:shadow-xs transition-all group cursor-pointer"
                               title={`Pay using ${app.name}`}
                             >
                               <div className="h-6 w-7 flex items-center justify-center shrink-0">
@@ -1218,7 +1243,7 @@ export default function OrderDetailPage() {
                               <span className="text-[11px] font-bold text-gray-700">
                                 {app.name}
                               </span>
-                            </div>
+                            </button>
                           ))}
                         </div>
                       </div>
@@ -1228,9 +1253,7 @@ export default function OrderDetailPage() {
                         <img
                           src={
                             qrType === "DYNAMIC"
-                              ? `https://api.qrserver.com/v1/create-qr-code/?size=220x220&data=${encodeURIComponent(
-                                  dynamicUpiUri
-                                )}`
+                              ? (youpiQrDataUrl || `https://api.qrserver.com/v1/create-qr-code/?size=220x220&data=${encodeURIComponent(dynamicUpiUri)}`)
                               : merchantQrImage
                           }
                           alt="UPI QR Code"
@@ -1314,11 +1337,23 @@ export default function OrderDetailPage() {
                         <input
                           id="upi-utr-input"
                           type="text"
-                          inputMode="numeric"
-                          maxLength={12}
+                          maxLength={120}
                           value={transactionId}
-                          onChange={(e) => setTransactionId(e.target.value.replace(/\D/g, ""))}
-                          placeholder="e.g. 428812345678"
+                          onChange={(e) => {
+                            const raw = e.target.value;
+                            // YouPI Intelligent Extractor: If user pasted a full bank SMS notification
+                            if (raw.length > 15 && /[a-zA-Z]/.test(raw)) {
+                              const parsed = BankSmsParser.parse({ text: raw });
+                              if (parsed?.bankReferenceNumber) {
+                                const cleanUtr = parsed.bankReferenceNumber.replace(/\D/g, "").slice(0, 12);
+                                setTransactionId(cleanUtr);
+                                toast.success(`Extracted 12-digit UTR from SMS: ${cleanUtr}`);
+                                return;
+                              }
+                            }
+                            setTransactionId(raw.replace(/\D/g, "").slice(0, 12));
+                          }}
+                          placeholder="e.g. 428812345678 (or paste bank SMS)"
                           className="w-full px-3.5 py-2.5 rounded-xl border-2 border-blue-300 text-sm font-mono font-bold tracking-wider text-gray-900 placeholder:text-gray-400 placeholder:font-normal focus:outline-none focus:border-blue-600 focus:ring-2 focus:ring-blue-100 bg-white transition-all shadow-xs"
                         />
                       </div>

@@ -13,8 +13,13 @@ const eslintConfig = [
   {
     ignores: [
       "temp-repo-ecommerce/**",
+      "YouPI-PG-main/**",
       "scratch/**",
+      "next-env.d.ts",
+      "*.d.ts",
+      "**/*.d.ts",
       "*.js",
+      "**/*.js",
       ".next/**",
       "node_modules/**",
     ],

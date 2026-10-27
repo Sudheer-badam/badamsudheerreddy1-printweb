@@ -1,6 +1,7 @@
 import { NextRequest, NextResponse } from "next/server";
 import { prisma } from "@/lib/prisma";
 import { sendOrderStatusEmail } from "@/lib/email";
+import { BankSmsParser } from "@/lib/youpi/bankSmsParser";
 
 // GET - List payments (Admins see all with status filtering; Customers see only their own)
 export async function GET(req: NextRequest) {
@@ -98,7 +99,13 @@ export async function POST(req: NextRequest) {
       return NextResponse.json({ error: "User ID and Order ID are required" }, { status: 400 });
     }
 
-    const cleanTransactionId = (transactionId || "").trim() || null;
+    let cleanTransactionId = (transactionId || "").trim() || null;
+    if (cleanTransactionId && cleanTransactionId.length > 15 && /[a-zA-Z]/.test(cleanTransactionId)) {
+      const parsed = BankSmsParser.parse({ text: cleanTransactionId });
+      if (parsed?.bankReferenceNumber) {
+        cleanTransactionId = parsed.bankReferenceNumber.replace(/\D/g, "").slice(0, 12);
+      }
+    }
 
     // 2. Authenticate customer
     const user = await prisma.user.findUnique({ where: { firebaseUid: uid } });
