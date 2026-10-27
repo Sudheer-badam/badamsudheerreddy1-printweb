@@ -24,6 +24,12 @@ import {
   Info,
   CreditCard,
   MapPin,
+  Smartphone,
+  Zap,
+  Radio,
+  Timer,
+  Check,
+  ExternalLink,
 } from "lucide-react";
 import { useAuth } from "@/contexts/AuthContext";
 import { formatCurrency, formatDate, ORDER_STATUS_LABELS, PAYMENT_STATUS_COLORS, PAYMENT_STATUS_LABELS } from "@/lib/utils";
@@ -163,6 +169,38 @@ export default function OrderDetailPage() {
   const showPaymentModalRef = useRef(showPaymentModal);
   showPaymentModalRef.current = showPaymentModal;
 
+  // YouPI Dynamic Countdown Timer & Modern Tab States
+  const [paymentTimerSeconds, setPaymentTimerSeconds] = useState(300);
+  const [activeYoupiTab, setActiveYoupiTab] = useState<"QR" | "APPS" | "UTR">("QR");
+  const [isCopiedUpi, setIsCopiedUpi] = useState(false);
+
+  // YouPI Dynamic Countdown Timer Effect
+  useEffect(() => {
+    let timer: NodeJS.Timeout;
+    if (showPaymentModal && paymentTimerSeconds > 0) {
+      timer = setInterval(() => {
+        setPaymentTimerSeconds((prev) => (prev > 0 ? prev - 1 : 0));
+      }, 1000);
+    }
+    return () => {
+      if (timer) clearInterval(timer);
+    };
+  }, [showPaymentModal, paymentTimerSeconds]);
+
+  // Reset timer on modal open
+  useEffect(() => {
+    if (showPaymentModal) {
+      setPaymentTimerSeconds(300);
+      setActiveYoupiTab("QR");
+    }
+  }, [showPaymentModal]);
+
+  const formatTimer = (sec: number) => {
+    const mins = Math.floor(sec / 60);
+    const remainingSecs = sec % 60;
+    return `${String(mins).padStart(2, "0")}:${String(remainingSecs).padStart(2, "0")}`;
+  };
+
   // Review States
   const [rating, setRating] = useState(5);
   const [comment, setComment] = useState("");
@@ -231,7 +269,9 @@ export default function OrderDetailPage() {
 
   const copyUpiId = () => {
     navigator.clipboard.writeText(merchantUpiId);
+    setIsCopiedUpi(true);
     toast.success("Merchant UPI ID copied: " + merchantUpiId);
+    setTimeout(() => setIsCopiedUpi(false), 2000);
   };
 
   const copyOrderId = () => {
@@ -1012,261 +1052,242 @@ export default function OrderDetailPage() {
       {/* ============================================================ */}
       <AnimatePresence>
         {showPaymentModal && (
-          <div className="fixed inset-0 z-50 flex items-center justify-center p-2 sm:p-4 md:p-5 bg-black/75 backdrop-blur-sm overflow-y-auto">
+          <div className="fixed inset-0 z-50 flex items-center justify-center p-2 sm:p-4 md:p-5 bg-black/80 backdrop-blur-md overflow-y-auto">
             <motion.div
-              initial={{ opacity: 0, scale: 0.96, y: 12 }}
+              initial={{ opacity: 0, scale: 0.95, y: 15 }}
               animate={{ opacity: 1, scale: 1, y: 0 }}
-              exit={{ opacity: 0, scale: 0.96 }}
-              className="bg-white rounded-2xl sm:rounded-3xl w-full max-w-4xl max-h-[96vh] overflow-y-auto md:overflow-hidden shadow-2xl flex flex-col md:flex-row border border-gray-100 my-auto"
+              exit={{ opacity: 0, scale: 0.95, y: 10 }}
+              className="bg-white rounded-3xl w-full max-w-4xl max-h-[96vh] overflow-y-auto md:overflow-hidden shadow-2xl flex flex-col md:flex-row border border-gray-100 my-auto"
             >
-              {/* ---------------------------------------------------- */}
-              {/* MOBILE COMPACT HEADER (MOBILE ONLY, < md screens)    */}
-              {/* Ensures QR code is immediately visible at the top!  */}
-              {/* ---------------------------------------------------- */}
-              <div className="md:hidden bg-[#0B2D6B] text-white p-3.5 flex items-center justify-between border-b border-blue-900 shrink-0">
-                <div className="flex items-center gap-2.5">
-                  <img
-                    src="/logo.png"
-                    alt="PRINT DOCKER"
-                    className="w-9 h-9 object-contain rounded-xl bg-white p-1"
-                  />
-                  <div>
-                    <div className="font-extrabold text-xs tracking-wide uppercase leading-tight text-white font-sans">
-                      PRINT DOCKER
-                    </div>
-                    <div className="text-[10px] text-blue-200 font-mono mt-0.5">
-                      {order.orderNumber}
-                    </div>
-                  </div>
-                </div>
-                <div className="flex items-center gap-3">
-                  <div className="text-right">
-                    <span className="text-[9px] text-blue-200 block uppercase font-bold leading-none">
-                      Payable
-                    </span>
-                    <span className="font-black text-base text-white font-mono leading-tight">
-                      ₹ {order.totalAmount.toFixed(2)}
-                    </span>
-                    <span className="text-[8px] text-blue-200/90 block leading-none mt-0.5 font-medium">
-                      (Incl. of all taxes)
-                    </span>
-                  </div>
-                  <button
-                    type="button"
-                    onClick={handleAbortPayment}
-                    className="p-1 hover:bg-white/10 rounded-full text-white/80 hover:text-white transition-colors"
-                    title="Cancel"
-                  >
-                    <XCircle className="w-5 h-5" />
-                  </button>
-                </div>
-              </div>
-
-              {/* ---------------------------------------------------- */}
-              {/* LEFT COLUMN: ORDER SUMMARY (DEEP BLUE THEME)        */}
-              {/* Visible on md+ desktop, hidden on mobile so QR fits */}
-              {/* ---------------------------------------------------- */}
-              <div className="hidden md:flex md:w-[42%] bg-[#0B2D6B] text-white p-5 lg:p-6 flex-col justify-between shrink-0 overflow-y-auto">
+              {/* ========================================================= */}
+              {/* LEFT COLUMN: YOUPI MERCHANT & ORDER SUMMARY (DEEP SLATE)  */}
+              {/* ========================================================= */}
+              <div className="w-full md:w-[38%] bg-gradient-to-b from-[#0B1D3A] via-[#091830] to-[#040C1A] text-white p-5 sm:p-6 flex flex-col justify-between shrink-0 border-b md:border-b-0 md:border-r border-blue-900/40">
                 <div>
-                  {/* Organization Card Header */}
-                  <div className="bg-white rounded-xl p-3 sm:p-3.5 text-[#0B2D6B] text-center shadow-md">
-                    <img
-                      src="/logo.png"
-                      alt="PRINT DOCKER"
-                      className="w-10 h-10 mx-auto object-contain mb-1.5 rounded-xl"
-                    />
-                    <div className="font-extrabold text-base sm:text-lg tracking-wide uppercase leading-tight font-sans text-blue-600">
-                      PRINT DOCKER
-                    </div>
-                    <div className="font-bold text-xs tracking-wider uppercase leading-tight mt-0.5 text-[#0B1D3A]">
-                      BADAM SUDHEER REDDY
-                    </div>
-                    <div className="text-[9px] text-gray-500 font-bold tracking-normal mt-1 border-t border-gray-100 pt-0.5">
-                      SMART PRINTING PORTAL • VIJAYAWADA
+                  {/* Brand Header */}
+                  <div className="flex items-center justify-between pb-4 border-b border-white/10">
+                    <div className="flex items-center gap-3">
+                      <div className="w-11 h-11 rounded-2xl bg-white p-1 border border-white/20 shadow-md flex items-center justify-center shrink-0">
+                        <img
+                          src="/logo.png"
+                          alt="PRINT DOCKER"
+                          className="w-full h-full object-contain rounded-xl"
+                        />
+                      </div>
+                      <div className="leading-tight">
+                        <div className="font-black text-sm tracking-wide text-white uppercase font-sans">
+                          PRINT DOCKER
+                        </div>
+                        <div className="text-[10px] font-bold text-blue-300 tracking-wider uppercase">
+                          {merchantName || "BADAM SUDHEER REDDY"}
+                        </div>
+                        <div className="text-[9px] text-gray-400 font-medium">
+                          YouPI 0% Fee Self-Hosted UPI
+                        </div>
+                      </div>
                     </div>
                   </div>
 
-                  {/* Order Details List */}
-                  <div className="space-y-2.5 sm:space-y-3 my-4 text-xs sm:text-sm">
-                    <div>
-                      <span className="text-blue-200 text-xs block font-medium">Order ID</span>
-                      <span className="font-mono font-bold text-white text-sm sm:text-base tracking-wide">
+                  {/* Order & Amount Specifications */}
+                  <div className="my-5 space-y-3">
+                    <div className="bg-white/5 rounded-2xl p-3.5 border border-white/10">
+                      <div className="flex items-center justify-between text-xs text-blue-200 mb-1">
+                        <span>Order Reference</span>
+                        <button
+                          type="button"
+                          onClick={copyOrderId}
+                          className="text-[10px] text-blue-300 hover:text-white flex items-center gap-1 font-mono transition-colors"
+                        >
+                          <Copy className="w-3 h-3" /> Copy
+                        </button>
+                      </div>
+                      <div className="font-mono font-bold text-sm text-white tracking-wide">
                         {order.orderNumber}
-                      </span>
+                      </div>
                     </div>
 
-                    <div>
-                      <span className="text-blue-200 text-xs block font-medium">Merchant</span>
-                      <span className="font-semibold text-white tracking-wide">
-                        {merchantName || "PRINT DOCKER • BADAM SUDHEER REDDY"}
-                      </span>
-                    </div>
-
-                    <div className="border-t border-white/20 pt-2.5 space-y-1.5">
-                      <div className="flex justify-between items-center text-blue-100">
-                        <span>Order Amount</span>
+                    {/* Cost Breakdown */}
+                    <div className="space-y-2 text-xs">
+                      <div className="flex justify-between items-center text-blue-200">
+                        <span>Order Subtotal</span>
                         <span className="font-semibold text-white font-mono">₹ {orderBaseAmount.toFixed(2)}</span>
                       </div>
-                      <div className="flex justify-between items-center text-blue-100">
-                        <span>Convenience Fee</span>
-                        <span className="font-semibold text-white font-mono">₹ 0.00</span>
-                      </div>
-                      {order.discount > 0 && (
-                        <div className="flex justify-between items-center text-emerald-200">
-                          <span>Discount</span>
-                          <span className="font-semibold font-mono">- ₹ {order.discount.toFixed(2)}</span>
-                        </div>
-                      )}
-                      <div className="flex justify-between items-center text-blue-100">
+                      <div className="flex justify-between items-center text-blue-200">
                         <span>Total GST @ {effectiveGstRate.toFixed(2)}%</span>
                         <span className="font-semibold text-white font-mono">₹ {gstAmountCalculated.toFixed(2)}</span>
                       </div>
+                      <div className="flex justify-between items-center text-emerald-300">
+                        <span className="flex items-center gap-1">
+                          <span>Gateway / Service Fee</span>
+                          <span className="text-[9px] bg-emerald-500/20 text-emerald-300 px-1.5 py-0.2 rounded font-bold">
+                            FREE
+                          </span>
+                        </span>
+                        <span className="font-bold font-mono">₹ 0.00</span>
+                      </div>
+                      {order.discount > 0 && (
+                        <div className="flex justify-between items-center text-amber-300">
+                          <span>Discount Applied</span>
+                          <span className="font-semibold font-mono">- ₹ {order.discount.toFixed(2)}</span>
+                        </div>
+                      )}
                     </div>
 
-                    <div className="border-t-2 border-white/30 pt-2 flex justify-between items-baseline">
+                    {/* Total Highlight */}
+                    <div className="border-t-2 border-white/20 pt-3 flex justify-between items-baseline">
                       <div className="flex flex-col">
-                        <span className="font-bold text-sm text-white">Total Payable</span>
-                        <span className="text-[10px] text-blue-200 font-medium tracking-tight">
-                          (Incl. of all taxes)
+                        <span className="text-xs font-bold text-blue-100 uppercase tracking-wider">Total Payable</span>
+                        <span className="text-[10px] text-blue-300 font-medium">(Zero convenience fee)</span>
+                      </div>
+                      <div className="text-right">
+                        <span className="font-black text-2xl sm:text-3xl text-white font-mono">
+                          ₹ {order.totalAmount.toFixed(2)}
                         </span>
                       </div>
-                      <span className="font-black text-xl sm:text-2xl text-white font-mono">
-                        ₹ {order.totalAmount.toFixed(2)}
-                      </span>
                     </div>
-
-                    <p className="text-[10px] text-blue-200/90 leading-relaxed bg-white/10 rounded-xl p-2 border border-white/10 mt-2">
-                      No convenience fee or service charge is payable by the customer on Debit card / UPI transactions.
-                    </p>
                   </div>
                 </div>
 
-                {/* Powered By & Trust Badges */}
-                <div className="border-t border-white/15 pt-3 mt-2 pb-2">
-                  <div className="flex items-center justify-between text-[11px] text-blue-200 mb-1.5">
-                    <span>
-                      Accepted via <strong>UPI Apps</strong>
-                    </span>
-                    <span className="bg-white/20 px-2 py-0.5 rounded text-[10px] font-bold text-white border border-white/20">
-                      Zero Fees
-                    </span>
+                {/* YouPI Security Badges */}
+                <div className="border-t border-white/10 pt-4 mt-auto space-y-2">
+                  <div className="flex items-center gap-2 text-[11px] text-blue-200 font-medium">
+                    <ShieldCheck className="w-4 h-4 text-emerald-400 shrink-0" />
+                    <span>Direct Bank Settlement (0% MDR)</span>
                   </div>
-                  <div className="flex items-center gap-1.5 flex-wrap mb-2">
-                    {PAYMENT_APPS.map((app) => (
-                      <div
-                        key={app.name}
-                        className="bg-white rounded-lg px-2 py-0.5 flex items-center justify-center border border-white/30 shadow-xs"
-                        title={app.name}
-                      >
-                        <img
-                          src={app.src}
-                          alt={app.alt}
-                          className="h-3.5 w-auto max-w-[40px] object-contain"
-                        />
-                      </div>
-                    ))}
+                  <div className="flex items-center gap-2 text-[11px] text-blue-200 font-medium">
+                    <Radio className="w-4 h-4 text-blue-400 shrink-0 animate-pulse" />
+                    <span>Bank SMS Observer Mesh Active</span>
                   </div>
-                  <div className="flex items-center justify-between gap-1 opacity-80 text-[10px] text-blue-100 font-semibold flex-wrap">
-                    <span>Instant UPI Verification</span>
-                    <span>•</span>
-                    <span>Direct Merchant Settlement</span>
-                    <span>•</span>
-                    <span>100% Secure</span>
+                  <div className="flex items-center gap-2 text-[10px] text-gray-400">
+                    <span>NPCI UPI 2.0 • ISO/IEC 18004 Vector QR</span>
                   </div>
                 </div>
               </div>
 
-              {/* ---------------------------------------------------- */}
-              {/* RIGHT COLUMN: UPI PAYMENT (NO CARDS, NO NETBANKING) */}
-              {/* ---------------------------------------------------- */}
-              <div className="w-full md:w-[58%] bg-white p-4 sm:p-6 md:p-7 flex flex-col justify-between overflow-y-auto">
+              {/* ========================================================= */}
+              {/* RIGHT COLUMN: YOUPI INTERACTIVE CHECKOUT WORKSPACE        */}
+              {/* ========================================================= */}
+              <div className="w-full md:w-[62%] bg-white p-4 sm:p-6 md:p-7 flex flex-col justify-between overflow-y-auto">
                 <div>
-                  {/* Top Header */}
-                  <div className="flex items-center justify-between border-b border-gray-100 pb-3 mb-4">
+                  {/* Top Header Row with Timer & Close Button */}
+                  <div className="flex items-center justify-between border-b border-gray-100 pb-3 mb-3.5">
                     <div className="flex items-center gap-2">
+                      <div className="flex items-center gap-1.5 px-2.5 py-1 rounded-full bg-emerald-50 border border-emerald-200 text-emerald-700 text-[11px] font-bold">
+                        <span className="w-2 h-2 rounded-full bg-emerald-500 animate-ping"></span>
+                        <span>Live UPI Auto-Detect Active</span>
+                      </div>
+                    </div>
+
+                    <div className="flex items-center gap-2">
+                      {/* Dynamic Countdown Timer Pill */}
+                      <div
+                        className={`flex items-center gap-1.5 px-3 py-1 rounded-full text-xs font-mono font-black border transition-all ${
+                          paymentTimerSeconds < 60
+                            ? "bg-red-50 border-red-200 text-red-600 animate-pulse"
+                            : "bg-blue-50 border-blue-200 text-blue-700"
+                        }`}
+                        title="Payment session countdown"
+                      >
+                        <Timer className="w-3.5 h-3.5" />
+                        <span>{formatTimer(paymentTimerSeconds)}</span>
+                      </div>
+
                       <button
                         type="button"
                         onClick={handleAbortPayment}
-                        className="p-1.5 hover:bg-gray-100 rounded-lg text-gray-500 transition-colors"
-                        title="Back / Cancel"
+                        className="p-1.5 hover:bg-gray-100 rounded-full text-gray-400 hover:text-gray-700 transition-colors cursor-pointer"
+                        title="Cancel transaction"
                       >
-                        <ArrowLeft className="w-4 h-4 text-gray-700" />
+                        <XCircle className="w-5 h-5" />
                       </button>
-                      <span className="font-extrabold text-base tracking-wide text-[#0B1D3A] uppercase">
-                        UPI Payment
+                    </div>
+                  </div>
+
+                  {/* YouPI Live Auto-Refresh Radar Bar */}
+                  <div className="mb-4 bg-gradient-to-r from-blue-50 via-indigo-50 to-blue-50 border border-blue-200 rounded-2xl p-2.5 flex items-center justify-between gap-2 shadow-2xs">
+                    <div className="flex items-center gap-2 text-[11px] text-gray-700 font-medium">
+                      <RefreshCw className="w-3.5 h-3.5 text-blue-600 animate-spin shrink-0" />
+                      <span>
+                        <strong>Auto-detecting payment in real time:</strong> As soon as you pay in your app, this modal will automatically verify!
                       </span>
                     </div>
+                    <span className="text-[10px] font-bold text-blue-700 bg-white px-2 py-0.5 rounded-md border border-blue-100 shrink-0">
+                      1.0s Polling
+                    </span>
+                  </div>
+
+                  {/* YouPI Mode Selector Tabs */}
+                  <div className="grid grid-cols-3 gap-1.5 p-1 bg-gray-100 rounded-2xl mb-4 text-xs font-bold">
                     <button
                       type="button"
-                      onClick={handleAbortPayment}
-                      className="p-1.5 hover:bg-gray-100 rounded-full text-gray-400 hover:text-gray-700 transition-colors"
-                      title="Cancel transaction"
+                      onClick={() => setActiveYoupiTab("QR")}
+                      className={`py-2 px-2 rounded-xl flex items-center justify-center gap-1.5 transition-all cursor-pointer ${
+                        activeYoupiTab === "QR"
+                          ? "bg-white text-blue-700 shadow-xs border border-gray-200/80"
+                          : "text-gray-600 hover:text-gray-900"
+                      }`}
                     >
-                      <XCircle className="w-5 h-5" />
+                      <QrCode className="w-3.5 h-3.5" />
+                      <span>Scan QR</span>
+                    </button>
+
+                    <button
+                      type="button"
+                      onClick={() => setActiveYoupiTab("APPS")}
+                      className={`py-2 px-2 rounded-xl flex items-center justify-center gap-1.5 transition-all cursor-pointer ${
+                        activeYoupiTab === "APPS"
+                          ? "bg-white text-blue-700 shadow-xs border border-gray-200/80"
+                          : "text-gray-600 hover:text-gray-900"
+                      }`}
+                    >
+                      <Smartphone className="w-3.5 h-3.5" />
+                      <span>1-Tap Apps</span>
+                    </button>
+
+                    <button
+                      type="button"
+                      onClick={() => setActiveYoupiTab("UTR")}
+                      className={`py-2 px-2 rounded-xl flex items-center justify-center gap-1.5 transition-all cursor-pointer ${
+                        activeYoupiTab === "UTR"
+                          ? "bg-white text-blue-700 shadow-xs border border-gray-200/80"
+                          : "text-gray-600 hover:text-gray-900"
+                      }`}
+                    >
+                      <CheckCircle className="w-3.5 h-3.5" />
+                      <span>Paste SMS / UTR</span>
                     </button>
                   </div>
 
-                  {/* "Scan and Pay" Card (Screenshot 2 Style) */}
-                  <div className="border border-gray-200 rounded-2xl p-4 sm:p-5 bg-gradient-to-b from-gray-50/60 to-white mb-4">
+                  {/* ===================================================== */}
+                  {/* TAB 1: SCAN QR CODE VIEW                             */}
+                  {/* ===================================================== */}
+                  {activeYoupiTab === "QR" && (
                     <div className="text-center">
-                      <h4 className="font-extrabold text-base text-[#0B1D3A]">Scan and Pay</h4>
-                      <p className="text-xs text-gray-500 mt-0.5">Scan the QR code using any UPI app</p>
+                      {/* Crisp YouPI Vector QR Container */}
+                      <div className="relative inline-block p-3.5 bg-white rounded-3xl border-2 border-indigo-200 shadow-lg my-1 group">
+                        {/* Corner Target Markers */}
+                        <div className="absolute top-2 left-2 w-3.5 h-3.5 border-t-2 border-l-2 border-blue-600 rounded-tl-sm"></div>
+                        <div className="absolute top-2 right-2 w-3.5 h-3.5 border-t-2 border-r-2 border-blue-600 rounded-tr-sm"></div>
+                        <div className="absolute bottom-2 left-2 w-3.5 h-3.5 border-b-2 border-l-2 border-blue-600 rounded-bl-sm"></div>
+                        <div className="absolute bottom-2 right-2 w-3.5 h-3.5 border-b-2 border-r-2 border-blue-600 rounded-br-sm"></div>
 
-                      {/* Brand Logos Strip (Google Pay, PhonePe, Paytm, BHIM, UPI) */}
-                      <div className="my-3">
-                        <div className="text-[10px] font-extrabold text-gray-400 uppercase tracking-widest mb-1.5">
-                          Supported UPI Apps
-                        </div>
-                        <div className="flex items-center justify-center gap-2 sm:gap-2.5 flex-wrap">
-                          {PAYMENT_APPS.map((app) => (
-                            <button
-                              type="button"
-                              key={app.name}
-                              onClick={() => {
-                                const intentUrl = (app.key && appIntents[app.key]) || dynamicUpiUri;
-                                if (/Android|iPhone|iPad|iPod/i.test(navigator.userAgent)) {
-                                  window.location.href = intentUrl;
-                                } else {
-                                  copyUpiId();
-                                }
-                              }}
-                              className="flex items-center gap-1.5 bg-white px-2.5 py-1.5 rounded-xl border border-gray-200/90 shadow-2xs hover:border-blue-400 hover:shadow-xs transition-all group cursor-pointer"
-                              title={`Pay using ${app.name}`}
-                            >
-                              <div className="h-6 w-7 flex items-center justify-center shrink-0">
-                                <img
-                                  src={app.src}
-                                  alt={app.alt}
-                                  className={`${app.hClass} w-auto max-w-[56px] object-contain transition-transform group-hover:scale-105`}
-                                />
-                              </div>
-                              <span className="text-[11px] font-bold text-gray-700">
-                                {app.name}
-                              </span>
-                            </button>
-                          ))}
-                        </div>
-                      </div>
-
-                      {/* QR Display */}
-                      <div className="inline-block p-2.5 bg-white rounded-2xl border-2 border-indigo-100 shadow-md my-1">
                         <img
                           src={
                             qrType === "DYNAMIC"
                               ? (youpiQrDataUrl || `https://api.qrserver.com/v1/create-qr-code/?size=220x220&data=${encodeURIComponent(dynamicUpiUri)}`)
                               : merchantQrImage
                           }
-                          alt="UPI QR Code"
-                          className="w-44 h-44 sm:w-48 sm:h-48 object-contain mx-auto rounded-lg"
+                          alt="YouPI Pure Vector QR"
+                          className="w-44 h-44 sm:w-48 sm:h-48 object-contain mx-auto rounded-xl"
                         />
                       </div>
 
-                      {/* QR Switcher */}
-                      <div className="flex items-center justify-center gap-1 text-[11px] font-semibold mt-2 max-w-xs mx-auto">
+                      {/* QR Type Switcher */}
+                      <div className="flex items-center justify-center gap-1.5 text-[11px] font-bold mt-2.5">
                         <button
                           type="button"
                           onClick={() => setQrType("DYNAMIC")}
-                          className={`px-2.5 py-1 rounded-md transition-colors ${
+                          className={`px-3 py-1 rounded-lg transition-all cursor-pointer ${
                             qrType === "DYNAMIC"
                               ? "bg-blue-600 text-white shadow-xs"
                               : "bg-gray-100 text-gray-600 hover:bg-gray-200"
@@ -1277,201 +1298,260 @@ export default function OrderDetailPage() {
                         <button
                           type="button"
                           onClick={() => setQrType("MERCHANT")}
-                          className={`px-2.5 py-1 rounded-md transition-colors ${
+                          className={`px-3 py-1 rounded-lg transition-all cursor-pointer ${
                             qrType === "MERCHANT"
                               ? "bg-blue-600 text-white shadow-xs"
                               : "bg-gray-100 text-gray-600 hover:bg-gray-200"
                           }`}
                         >
-                          Standee QR
+                          Merchant Standee QR
+                        </button>
+                        <button
+                          type="button"
+                          onClick={handleDownloadQr}
+                          className="px-2.5 py-1 bg-gray-100 text-gray-700 hover:bg-gray-200 rounded-lg flex items-center gap-1 cursor-pointer"
+                          title="Save QR Code"
+                        >
+                          <Download className="w-3 h-3" />
                         </button>
                       </div>
-                    </div>
-                  </div>
 
-                  {/* Project Branded UTR Verification Card */}
-                  <div className="bg-gradient-to-br from-blue-50/70 via-indigo-50/30 to-white border-2 border-blue-200/90 rounded-2xl p-4 sm:p-5 my-3 shadow-xs text-left">
-                    {/* Project Header Banner with Official Logo */}
-                    <div className="flex items-center gap-3 pb-3 border-b border-blue-100">
-                      <div className="w-12 h-12 rounded-2xl bg-white p-1 border border-blue-100 shadow-xs flex items-center justify-center shrink-0">
-                        <img
-                          src="/logo.png"
-                          alt="PRINT DOCKER"
-                          className="w-full h-full object-contain rounded-xl"
-                        />
-                      </div>
-                      <div className="flex-1 min-w-0">
-                        <div className="flex items-center gap-1.5">
-                          <span className="font-black text-sm sm:text-base text-[#0B1D3A] tracking-tight block truncate">
-                            PRINT DOCKER
-                          </span>
-                          <span className="text-[9px] font-black text-blue-700 bg-blue-100/90 px-1.5 py-0.5 rounded border border-blue-200 shrink-0 uppercase">
-                            Official
+                      {/* Payee VPA Pill with Instant Copy */}
+                      <div className="mt-3.5 max-w-sm mx-auto bg-gray-50 border border-gray-200 rounded-xl p-2 flex items-center justify-between gap-2">
+                        <div className="text-left min-w-0">
+                          <span className="text-[9px] uppercase font-bold text-gray-400 block leading-tight">Payee UPI ID (VPA)</span>
+                          <span className="text-xs font-mono font-bold text-gray-800 truncate block">
+                            {merchantUpiId}
                           </span>
                         </div>
-                        <span className="text-[10px] sm:text-[11px] font-bold text-blue-600 uppercase tracking-wider block">
-                          BADAM SUDHEER REDDY
-                        </span>
-                        <span className="text-[10px] text-gray-500 block truncate">
-                          Smart Printing Portal • UPI Verification
-                        </span>
-                      </div>
-                    </div>
-
-                    {/* 12-Digit UTR Input Form */}
-                    <div className="mt-3.5">
-                      <div className="flex items-center justify-between mb-1.5">
-                        <label
-                          htmlFor="upi-utr-input"
-                          className="text-xs font-black text-[#0B1D3A] flex items-center gap-1.5"
+                        <button
+                          type="button"
+                          onClick={copyUpiId}
+                          className={`px-2.5 py-1 text-xs font-bold rounded-lg transition-all flex items-center gap-1 cursor-pointer shrink-0 ${
+                            isCopiedUpi ? "bg-emerald-600 text-white" : "bg-white border border-gray-200 text-blue-600 hover:bg-blue-50"
+                          }`}
                         >
-                          <span className="flex h-2 w-2 rounded-full bg-blue-600"></span>
-                          Enter 12-Digit UPI Reference No. (UTR):
-                        </label>
-                        <span className="text-[10px] font-bold text-blue-700 font-mono bg-blue-50 px-2 py-0.5 rounded border border-blue-100">
-                          {transactionId.length}/12 Digits
-                        </span>
+                          {isCopiedUpi ? <Check className="w-3.5 h-3.5" /> : <Copy className="w-3.5 h-3.5" />}
+                          <span>{isCopiedUpi ? "Copied" : "Copy"}</span>
+                        </button>
                       </div>
 
-                      <div className="relative">
-                        <input
-                          id="upi-utr-input"
-                          type="text"
-                          maxLength={120}
-                          value={transactionId}
-                          onChange={(e) => {
-                            const raw = e.target.value;
-                            // YouPI Intelligent Extractor: If user pasted a full bank SMS notification
-                            if (raw.length > 15 && /[a-zA-Z]/.test(raw)) {
-                              const parsed = BankSmsParser.parse({ text: raw });
-                              if (parsed?.bankReferenceNumber) {
-                                const cleanUtr = parsed.bankReferenceNumber.replace(/\D/g, "").slice(0, 12);
-                                setTransactionId(cleanUtr);
-                                toast.success(`Extracted 12-digit UTR from SMS: ${cleanUtr}`);
-                                return;
-                              }
-                            }
-                            setTransactionId(raw.replace(/\D/g, "").slice(0, 12));
-                          }}
-                          placeholder="e.g. 428812345678 (or paste bank SMS)"
-                          className="w-full px-3.5 py-2.5 rounded-xl border-2 border-blue-300 text-sm font-mono font-bold tracking-wider text-gray-900 placeholder:text-gray-400 placeholder:font-normal focus:outline-none focus:border-blue-600 focus:ring-2 focus:ring-blue-100 bg-white transition-all shadow-xs"
-                        />
-                      </div>
-
-                      <div className="mt-2.5 bg-blue-50/60 rounded-xl p-2.5 border border-blue-100 text-[11px] text-gray-600 leading-relaxed">
-                        <div className="flex items-center gap-1.5 font-bold text-[#0B1D3A] mb-1">
-                          <span>Pay via any UPI app:</span>
-                        </div>
-                        <div className="flex items-center gap-1.5 flex-wrap mb-1.5">
-                          {PAYMENT_APPS.map((app) => (
-                            <span
-                              key={app.name}
-                              className="inline-flex items-center gap-1 bg-white px-2 py-0.5 rounded-md border border-blue-100 text-[10px] font-semibold text-gray-700 shadow-2xs"
-                            >
-                              <img src={app.src} alt={app.name} className="h-3 w-auto object-contain" />
-                              <span>{app.name}</span>
-                            </span>
-                          ))}
-                        </div>
-                        After paying <strong>₹{order.totalAmount.toFixed(2)}</strong>, copy the <strong>12-digit UTR / UPI Ref ID</strong> from your transaction receipt and enter it above.
+                      {/* Brand Logos Row */}
+                      <div className="mt-3.5 flex items-center justify-center gap-2 flex-wrap">
+                        {PAYMENT_APPS.map((app) => (
+                          <div
+                            key={app.name}
+                            className="bg-white border border-gray-200 rounded-lg px-2 py-1 shadow-2xs flex items-center gap-1"
+                          >
+                            <img src={app.src} alt={app.alt} className="h-3.5 w-auto object-contain" />
+                            <span className="text-[10px] font-bold text-gray-600">{app.name}</span>
+                          </div>
+                        ))}
                       </div>
                     </div>
-                  </div>
+                  )}
 
-                  {/* Primary UTR Confirmation Action Button */}
-                  <button
-                    type="button"
-                    onClick={() => handleAutomaticPayment(transactionId)}
-                    disabled={submittingPayment}
-                    className="w-full py-3.5 bg-gradient-to-r from-blue-600 via-indigo-600 to-blue-700 text-white rounded-xl font-black text-xs sm:text-sm hover:opacity-95 transition-all shadow-lg shadow-blue-600/25 flex items-center justify-center gap-2 cursor-pointer disabled:opacity-50"
-                  >
-                    {submittingPayment ? (
-                      <>
-                        <RefreshCw className="w-4 h-4 animate-spin" /> Verifying & Saving Transaction...
-                      </>
-                    ) : (
-                      <>
-                        <CheckCircle className="w-5 h-5 text-emerald-300" /> Confirm 12-Digit UTR & View Receipt
-                      </>
-                    )}
-                  </button>
+                  {/* ===================================================== */}
+                  {/* TAB 2: 1-TAP MOBILE UPI INTENT LAUNCHER              */}
+                  {/* ===================================================== */}
+                  {activeYoupiTab === "APPS" && (
+                    <div className="space-y-3.5 text-center">
+                      {/* Master 1-Tap Trigger Button */}
+                      <button
+                        type="button"
+                        onClick={() => {
+                          window.location.href = dynamicUpiUri;
+                        }}
+                        className="w-full py-4 bg-gradient-to-r from-blue-600 via-indigo-600 to-blue-700 text-white rounded-2xl font-black text-sm hover:opacity-95 transition-all shadow-lg shadow-blue-600/30 flex items-center justify-center gap-2 cursor-pointer"
+                      >
+                        <Zap className="w-5 h-5 text-amber-300" />
+                        <span>Pay ₹{order.totalAmount.toFixed(2)} via Any UPI App</span>
+                      </button>
 
-                  {/* Optional Screenshot Upload Toggle */}
-                  <div className="mt-3 text-center">
-                    <button
-                      type="button"
-                      onClick={() => setShowManualInput(!showManualInput)}
-                      className="text-[11px] text-gray-500 hover:text-blue-600 font-semibold underline underline-offset-2 transition-colors cursor-pointer"
-                    >
-                      {showManualInput ? "▲ Hide screenshot upload" : "▼ Want to attach payment screenshot? (Optional)"}
-                    </button>
-                  </div>
+                      <p className="text-[11px] text-gray-500">
+                        Or select your preferred UPI app directly below:
+                      </p>
 
-                  {/* Collapsible Screenshot Form */}
-                  {showManualInput && (
-                    <form onSubmit={handlePaymentSubmission} className="space-y-3 pt-3 mt-2 border-t border-gray-100">
-                      <div>
-                        <label className="block text-xs font-bold uppercase tracking-wider text-[#0B1D3A] mb-1">
-                          Payment Screenshot <span className="text-gray-400 font-normal">(Optional)</span>
-                        </label>
-                        <input
-                          type="file"
-                          accept="image/png,image/jpeg,image/webp"
-                          onChange={(e) => {
-                            const file = e.target.files?.[0];
-                            if (file) {
-                              if (file.size > 10 * 1024 * 1024) {
-                                toast.error("File size must be under 10MB");
-                                return;
-                              }
-                              setScreenshotFile(file);
-                              setScreenshotPreview(URL.createObjectURL(file));
-                            }
-                          }}
-                          className="w-full text-xs text-gray-500 file:mr-3 file:py-1.5 file:px-3 file:rounded-lg file:border-0 file:text-xs file:font-bold file:bg-blue-50 file:text-blue-700 hover:file:bg-blue-100 cursor-pointer"
-                        />
-
-                        {screenshotPreview && (
-                          <div className="mt-2 relative rounded-xl overflow-hidden border border-gray-200 bg-gray-50 p-1 flex items-center justify-between">
-                            <img
-                              src={screenshotPreview}
-                              alt="Screenshot Proof"
-                              className="h-14 w-auto object-cover rounded-lg border border-gray-200"
-                            />
+                      {/* App Switcher Tiles Grid */}
+                      <div className="grid grid-cols-2 gap-2 sm:gap-2.5 text-left">
+                        {PAYMENT_APPS.map((app) => {
+                          const intentUrl = (app.key && appIntents[app.key]) || dynamicUpiUri;
+                          return (
                             <button
                               type="button"
+                              key={app.name}
                               onClick={() => {
-                                setScreenshotFile(null);
-                                setScreenshotPreview(null);
+                                window.location.href = intentUrl;
                               }}
-                              className="p-1.5 bg-red-100 text-red-600 rounded-lg hover:bg-red-200 transition-colors mr-2"
-                              title="Remove screenshot"
+                              className="p-3 bg-white border border-gray-200 hover:border-blue-500 hover:shadow-md rounded-2xl transition-all flex items-center gap-2.5 cursor-pointer group text-left"
                             >
-                              <Trash2 className="w-4 h-4" />
+                              <div className="w-9 h-9 rounded-xl bg-gray-50 p-1 border border-gray-200/80 flex items-center justify-center shrink-0 group-hover:scale-105 transition-transform">
+                                <img src={app.src} alt={app.alt} className="h-6 w-auto object-contain" />
+                              </div>
+                              <div className="min-w-0 flex-1">
+                                <span className="font-bold text-xs text-gray-900 block truncate group-hover:text-blue-600">
+                                  {app.name}
+                                </span>
+                                <span className="text-[10px] text-gray-400 block truncate">
+                                  1-Tap Launch
+                                </span>
+                              </div>
+                              <ExternalLink className="w-3.5 h-3.5 text-gray-400 group-hover:text-blue-600" />
                             </button>
-                          </div>
-                        )}
+                          );
+                        })}
                       </div>
 
+                      <div className="bg-blue-50/70 border border-blue-100 rounded-xl p-3 text-[11px] text-gray-600 text-left leading-relaxed">
+                        💡 <strong>Mobile Deep Linking:</strong> Tapping any button immediately launches the installed UPI app on your phone with the payee name (<strong>{merchantName}</strong>), exact amount (<strong>₹{order.totalAmount.toFixed(2)}</strong>), and order ID automatically populated.
+                      </div>
+                    </div>
+                  )}
+
+                  {/* ===================================================== */}
+                  {/* TAB 3: SMART BANK SMS & 12-DIGIT UTR PARSER           */}
+                  {/* ===================================================== */}
+                  {activeYoupiTab === "UTR" && (
+                    <div className="space-y-3.5 text-left">
+                      <div>
+                        <div className="flex items-center justify-between mb-1.5">
+                          <label
+                            htmlFor="youpi-utr-input"
+                            className="text-xs font-black text-[#0B1D3A] flex items-center gap-1.5"
+                          >
+                            <span className="flex h-2 w-2 rounded-full bg-blue-600"></span>
+                            <span>Enter 12-Digit Bank UTR / Ref No:</span>
+                          </label>
+                          <span className="text-[10px] font-bold text-blue-700 font-mono bg-blue-50 px-2 py-0.5 rounded border border-blue-100">
+                            {transactionId.length}/12 Digits
+                          </span>
+                        </div>
+
+                        <div className="relative">
+                          <input
+                            id="youpi-utr-input"
+                            type="text"
+                            maxLength={120}
+                            value={transactionId}
+                            onChange={(e) => {
+                              const raw = e.target.value;
+                              // YouPI Intelligent Bank SMS Parser
+                              if (raw.length > 15 && /[a-zA-Z]/.test(raw)) {
+                                const parsed = BankSmsParser.parse({ text: raw });
+                                if (parsed?.bankReferenceNumber) {
+                                  const cleanUtr = parsed.bankReferenceNumber.replace(/\D/g, "").slice(0, 12);
+                                  setTransactionId(cleanUtr);
+                                  toast.success(`Extracted 12-digit UTR from SMS: ${cleanUtr}`);
+                                  return;
+                                }
+                              }
+                              setTransactionId(raw.replace(/\D/g, "").slice(0, 12));
+                            }}
+                            placeholder="e.g. 428812345678 (or paste full bank SMS)"
+                            className="w-full px-3.5 py-3 rounded-xl border-2 border-blue-300 text-sm font-mono font-bold tracking-wider text-gray-900 placeholder:text-gray-400 placeholder:font-normal focus:outline-none focus:border-blue-600 focus:ring-2 focus:ring-blue-100 bg-white transition-all shadow-xs"
+                          />
+                        </div>
+
+                        <p className="text-[11px] text-gray-500 mt-1">
+                          You can paste your entire bank SMS (SBI, HDFC, ICICI, Axis, Paytm, GPay) and YouPI will automatically isolate the 12-digit UTR.
+                        </p>
+                      </div>
+
+                      {/* Primary UTR Confirmation Button */}
                       <button
-                        type="submit"
+                        type="button"
+                        onClick={() => handleAutomaticPayment(transactionId)}
                         disabled={submittingPayment}
-                        className="w-full py-2 bg-blue-600 text-white rounded-xl font-bold text-xs hover:bg-blue-700 transition-colors"
+                        className="w-full py-3.5 bg-gradient-to-r from-blue-600 via-indigo-600 to-blue-700 text-white rounded-xl font-black text-xs sm:text-sm hover:opacity-95 transition-all shadow-lg shadow-blue-600/25 flex items-center justify-center gap-2 cursor-pointer disabled:opacity-50"
                       >
-                        Submit Screenshot with UTR
+                        {submittingPayment ? (
+                          <>
+                            <RefreshCw className="w-4 h-4 animate-spin" /> Verifying Transaction...
+                          </>
+                        ) : (
+                          <>
+                            <CheckCircle className="w-5 h-5 text-emerald-300" /> Confirm 12-Digit UTR & View Receipt
+                          </>
+                        )}
                       </button>
-                    </form>
+
+                      {/* Optional Screenshot Form Toggle */}
+                      <div className="text-center pt-1">
+                        <button
+                          type="button"
+                          onClick={() => setShowManualInput(!showManualInput)}
+                          className="text-[11px] text-gray-500 hover:text-blue-600 font-semibold underline underline-offset-2 transition-colors cursor-pointer"
+                        >
+                          {showManualInput ? "▲ Hide screenshot upload" : "▼ Attach payment screenshot proof? (Optional)"}
+                        </button>
+                      </div>
+
+                      {showManualInput && (
+                        <form onSubmit={handlePaymentSubmission} className="space-y-3 pt-2 border-t border-gray-100">
+                          <div>
+                            <label className="block text-xs font-bold uppercase tracking-wider text-[#0B1D3A] mb-1">
+                              Payment Screenshot <span className="text-gray-400 font-normal">(Optional)</span>
+                            </label>
+                            <input
+                              type="file"
+                              accept="image/png,image/jpeg,image/webp"
+                              onChange={(e) => {
+                                const file = e.target.files?.[0];
+                                if (file) {
+                                  if (file.size > 10 * 1024 * 1024) {
+                                    toast.error("File size must be under 10MB");
+                                    return;
+                                  }
+                                  setScreenshotFile(file);
+                                  setScreenshotPreview(URL.createObjectURL(file));
+                                }
+                              }}
+                              className="w-full text-xs text-gray-500 file:mr-3 file:py-1.5 file:px-3 file:rounded-lg file:border-0 file:text-xs file:font-bold file:bg-blue-50 file:text-blue-700 hover:file:bg-blue-100 cursor-pointer"
+                            />
+
+                            {screenshotPreview && (
+                              <div className="mt-2 relative rounded-xl overflow-hidden border border-gray-200 bg-gray-50 p-1 flex items-center justify-between">
+                                <img
+                                  src={screenshotPreview}
+                                  alt="Screenshot Proof"
+                                  className="h-14 w-auto object-cover rounded-lg border border-gray-200"
+                                />
+                                <button
+                                  type="button"
+                                  onClick={() => {
+                                    setScreenshotFile(null);
+                                    setScreenshotPreview(null);
+                                  }}
+                                  className="p-1.5 bg-red-100 text-red-600 rounded-lg hover:bg-red-200 transition-colors mr-2 cursor-pointer"
+                                  title="Remove screenshot"
+                                >
+                                  <Trash2 className="w-4 h-4" />
+                                </button>
+                              </div>
+                            )}
+                          </div>
+
+                          <button
+                            type="submit"
+                            disabled={submittingPayment}
+                            className="w-full py-2 bg-blue-600 text-white rounded-xl font-bold text-xs hover:bg-blue-700 transition-colors cursor-pointer"
+                          >
+                            Submit Screenshot with UTR
+                          </button>
+                        </form>
+                      )}
+                    </div>
                   )}
                 </div>
 
-                {/* Cancel Button (Centered Text Button from Screenshot 2) */}
-                <div className="text-center pt-3 mt-2 border-t border-gray-100">
+                {/* Cancel Transaction Action */}
+                <div className="text-center pt-3 mt-3 border-t border-gray-100">
                   <button
                     type="button"
                     onClick={handleAbortPayment}
-                    className="text-xs text-gray-500 hover:text-red-600 transition-colors font-semibold"
+                    className="text-xs text-gray-400 hover:text-red-600 transition-colors font-semibold cursor-pointer"
                   >
-                    Cancel
+                    Cancel Transaction
                   </button>
                 </div>
               </div>
