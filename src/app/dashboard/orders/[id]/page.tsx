@@ -38,7 +38,7 @@ import { upload } from "@vercel/blob/client";
 import { getCurrentBrowserLocation, reverseGeocode } from "@/lib/location";
 import ReceiptLocationCard from "@/components/ReceiptLocationCard";
 import { generateQrDataUrl } from "@/lib/youpi/qr";
-import { buildAppIntents } from "@/lib/youpi/upi";
+import { buildUpiUri, buildAppIntents } from "@/lib/youpi/upi";
 import { BankSmsParser } from "@/lib/youpi/bankSmsParser";
 
 const PAYMENT_APPS = [
@@ -502,10 +502,15 @@ export default function OrderDetailPage() {
   const isCancelled = order.status === "CANCELLED";
   const latestPayment = order.payments && order.payments.length > 0 ? order.payments[0] : null;
 
-  // Dynamic UPI URI with auto-filled order parameters
-  const dynamicUpiUri = `upi://pay?pa=${encodeURIComponent(merchantUpiId)}&pn=${encodeURIComponent(
-    merchantName
-  )}&am=${order.totalAmount.toFixed(2)}&cu=INR&tn=${encodeURIComponent("Order " + order.orderNumber)}`;
+  // Dynamic UPI URI with auto-filled order parameters (NPCI specification: unencoded @ in pa, no tr)
+  const dynamicUpiUri = order
+    ? buildUpiUri({
+        payeeVpa: merchantUpiId,
+        payeeName: merchantName,
+        amount: order.totalAmount,
+        transactionRef: order.orderNumber,
+      })
+    : "";
 
   // YouPI Pure Vector QR Data URL (zero network latency, 100% offline scannable)
   const youpiQrDataUrl = dynamicUpiUri ? generateQrDataUrl(dynamicUpiUri, 8, 2) : "";
@@ -1060,9 +1065,40 @@ export default function OrderDetailPage() {
               className="bg-white rounded-3xl w-full max-w-4xl max-h-[96vh] overflow-y-auto md:overflow-hidden shadow-2xl flex flex-col md:flex-row border border-gray-100 my-auto"
             >
               {/* ========================================================= */}
-              {/* LEFT COLUMN: YOUPI MERCHANT & ORDER SUMMARY (DEEP SLATE)  */}
+              {/* MOBILE COMPACT HEADER (MOBILE ONLY, < md screens)         */}
+              {/* Ensures QR code and buttons are visible immediately!      */}
               {/* ========================================================= */}
-              <div className="w-full md:w-[38%] bg-gradient-to-b from-[#0B1D3A] via-[#091830] to-[#040C1A] text-white p-5 sm:p-6 flex flex-col justify-between shrink-0 border-b md:border-b-0 md:border-r border-blue-900/40">
+              <div className="md:hidden bg-gradient-to-r from-[#0B1D3A] via-[#091830] to-[#040C1A] text-white p-3.5 flex items-center justify-between border-b border-blue-900 shrink-0">
+                <div className="flex items-center gap-2.5">
+                  <div className="w-8 h-8 rounded-xl bg-white p-1 flex items-center justify-center shrink-0">
+                    <img src="/logo.png" alt="PRINT DOCKER" className="w-full h-full object-contain" />
+                  </div>
+                  <div>
+                    <div className="font-black text-xs uppercase tracking-wide text-white">PRINT DOCKER</div>
+                    <div className="text-[10px] text-blue-200 font-mono">{order.orderNumber}</div>
+                  </div>
+                </div>
+                <div className="flex items-center gap-2.5">
+                  <div className="text-right">
+                    <span className="text-[8px] text-blue-200 block uppercase font-bold leading-none">Payable</span>
+                    <span className="font-black text-sm text-white font-mono leading-tight">
+                      ₹ {order.totalAmount.toFixed(2)}
+                    </span>
+                  </div>
+                  <button
+                    type="button"
+                    onClick={handleAbortPayment}
+                    className="p-1 hover:bg-white/10 rounded-full text-white/80 hover:text-white transition-colors cursor-pointer"
+                  >
+                    <XCircle className="w-5 h-5" />
+                  </button>
+                </div>
+              </div>
+
+              {/* ========================================================= */}
+              {/* LEFT COLUMN: YOUPI MERCHANT & ORDER SUMMARY (DESKTOP ONLY)*/}
+              {/* ========================================================= */}
+              <div className="hidden md:flex md:w-[38%] bg-gradient-to-b from-[#0B1D3A] via-[#091830] to-[#040C1A] text-white p-5 sm:p-6 flex-col justify-between shrink-0 border-r border-blue-900/40">
                 <div>
                   {/* Brand Header */}
                   <div className="flex items-center justify-between pb-4 border-b border-white/10">
@@ -1316,6 +1352,17 @@ export default function OrderDetailPage() {
                         </button>
                       </div>
 
+                      {/* Mobile Direct 1-Tap Trigger (Visible on small screens) */}
+                      <div className="mt-3 block md:hidden">
+                        <a
+                          href={dynamicUpiUri}
+                          className="w-full py-3 px-4 bg-gradient-to-r from-blue-600 via-indigo-600 to-blue-700 text-white rounded-xl font-black text-xs hover:opacity-95 shadow-md flex items-center justify-center gap-2 text-center"
+                        >
+                          <Zap className="w-4 h-4 text-amber-300" />
+                          <span>Tap to Pay ₹{order.totalAmount.toFixed(2)} on this Phone</span>
+                        </a>
+                      </div>
+
                       {/* Payee VPA Pill with Instant Copy */}
                       <div className="mt-3.5 max-w-sm mx-auto bg-gray-50 border border-gray-200 rounded-xl p-2 flex items-center justify-between gap-2">
                         <div className="text-left min-w-0">
@@ -1356,17 +1403,14 @@ export default function OrderDetailPage() {
                   {/* ===================================================== */}
                   {activeYoupiTab === "APPS" && (
                     <div className="space-y-3.5 text-center">
-                      {/* Master 1-Tap Trigger Button */}
-                      <button
-                        type="button"
-                        onClick={() => {
-                          window.location.href = dynamicUpiUri;
-                        }}
-                        className="w-full py-4 bg-gradient-to-r from-blue-600 via-indigo-600 to-blue-700 text-white rounded-2xl font-black text-sm hover:opacity-95 transition-all shadow-lg shadow-blue-600/30 flex items-center justify-center gap-2 cursor-pointer"
+                      {/* Master 1-Tap Trigger Link (Native Anchor for Mobile OS intercept) */}
+                      <a
+                        href={dynamicUpiUri}
+                        className="w-full py-4 bg-gradient-to-r from-blue-600 via-indigo-600 to-blue-700 text-white rounded-2xl font-black text-sm hover:opacity-95 transition-all shadow-lg shadow-blue-600/30 flex items-center justify-center gap-2 cursor-pointer text-center"
                       >
                         <Zap className="w-5 h-5 text-amber-300" />
                         <span>Pay ₹{order.totalAmount.toFixed(2)} via Any UPI App</span>
-                      </button>
+                      </a>
 
                       <p className="text-[11px] text-gray-500">
                         Or select your preferred UPI app directly below:
@@ -1377,12 +1421,9 @@ export default function OrderDetailPage() {
                         {PAYMENT_APPS.map((app) => {
                           const intentUrl = (app.key && appIntents[app.key]) || dynamicUpiUri;
                           return (
-                            <button
-                              type="button"
+                            <a
                               key={app.name}
-                              onClick={() => {
-                                window.location.href = intentUrl;
-                              }}
+                              href={intentUrl}
                               className="p-3 bg-white border border-gray-200 hover:border-blue-500 hover:shadow-md rounded-2xl transition-all flex items-center gap-2.5 cursor-pointer group text-left"
                             >
                               <div className="w-9 h-9 rounded-xl bg-gray-50 p-1 border border-gray-200/80 flex items-center justify-center shrink-0 group-hover:scale-105 transition-transform">
@@ -1397,7 +1438,7 @@ export default function OrderDetailPage() {
                                 </span>
                               </div>
                               <ExternalLink className="w-3.5 h-3.5 text-gray-400 group-hover:text-blue-600" />
-                            </button>
+                            </a>
                           );
                         })}
                       </div>
